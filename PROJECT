@@ -1,0 +1,6 @@
+domain: ccs.tv2.dk
+layout:
+- go.kubebuilder.io/v4-alpha
+projectName: ccs-cloud-gateway-controller
+repo: github.com/tv2/ccs-cloud-gateway-controller
+version: "3"
