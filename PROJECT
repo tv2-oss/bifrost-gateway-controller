@@ -3,4 +3,10 @@ layout:
 - go.kubebuilder.io/v4-alpha
 projectName: ccs-cloud-gateway-controller
 repo: github.com/tv2/ccs-cloud-gateway-controller
+resources:
+- controller: true
+  domain: ccs.tv2.dk
+  group: networking.k8s.io
+  kind: Gateway
+  version: v1beta1
 version: "3"
