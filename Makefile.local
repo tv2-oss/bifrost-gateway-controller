@@ -1,3 +1,4 @@
+#################
 ifeq ($(GATEWAY_API_VERSION),)
 GATEWAY_API_VERSION=v0.5.1
 endif
@@ -11,3 +12,14 @@ gateway-api-upstream-get:
 .PHONY: deploy-gateway-api
 deploy-gateway-api:
 	kubectl apply -f upstream-gateway-api-crds
+
+#################
+.PHONY: deploy-istio
+deploy-istio:
+	helm repo add istio https://istio-release.storage.googleapis.com/charts
+	helm repo update
+	kubectl create namespace istio-system
+	helm install istio-base istio/base -n istio-system
+	helm install istiod istio/istiod -n istio-system
+
+#################
