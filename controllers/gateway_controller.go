@@ -18,7 +18,7 @@ package controllers
 
 import (
 	"context"
-
+	"fmt"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,8 +46,25 @@ type GatewayReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
 func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
-	log.Info("Testing...")
+	logger := log.FromContext(ctx)
+	logger.Info("Reconcile")
+
+	var g gateway.Gateway
+	if err := r.Get(ctx, req.NamespacedName, &g); err != nil {
+		logger.Error(err, "Unable to fetch Gateway")
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	logger.Info("Gateway")
+
+	if g.Spec.GatewayClassName != "istio" {
+		logger.Info("Creating Istio Gateway")
+		newGW := BuildGatewayResource(&g)
+		if err := r.Create(ctx, newGW); err != nil {
+			logger.Error(err, "Unable to create gateway")
+			return ctrl.Result{}, err
+		}
+	}
 
 	// TODO(user): your logic here
 
@@ -58,5 +75,17 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gateway.Gateway{}).
+		//Owns(&gateway.Gateway{}).
 		Complete(r)
+}
+
+func BuildGatewayResource(gateway *gateway.Gateway) *gateway.Gateway {
+	name := fmt.Sprintf("%s-%s", gateway.ObjectMeta.Name, "istio")
+	gw := gateway.DeepCopy()
+	gw.ResourceVersion = ""
+	gw.ObjectMeta.Name = name
+	gw.Spec.GatewayClassName = "istio"
+	gw.ObjectMeta.Annotations["networking.istio.io/service-type"] = "ClusterIP"
+
+	return gw
 }
