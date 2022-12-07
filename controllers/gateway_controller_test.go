@@ -1,16 +1,14 @@
 package controllers
 
 import (
-	//"context"
-	//"reflect"
-	//"time"
-
 	"context"
+	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
-
-	//"k8s.io/apimachinery/pkg/types"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
@@ -31,6 +29,11 @@ spec:
 
 var _ = Describe("Gateway controller", func() {
 
+	const (
+		timeout  = time.Second * 10
+		interval = time.Millisecond * 250
+	)
+
 	Context("When building Gateway resource from input Gateway", func() {
 		It("Should return a new Gateway", func() {
 			//By("By creating a new CronJob")
@@ -42,12 +45,27 @@ var _ = Describe("Gateway controller", func() {
 	})
 
 	Context("When applying a parent Gateway", func() {
+		// Initial setup
+		ctx := context.Background()
+		gw := &gateway.Gateway{}
+		_ = yaml.Unmarshal([]byte(gatewayManifest), gw)
+
+		It("Validate Gateway creation", func() {
+			Expect(k8sClient.Create(ctx, gw)).Should(Succeed())
+			Expect(string(gw.Spec.GatewayClassName)).To(Equal("default"))
+		})
+
 		It("Should create a child gateway", func() {
-			ctx := context.Background()
-			gateway := &gateway.Gateway{}
-			_ = yaml.Unmarshal([]byte(gatewayManifest), gateway)
-			Expect(k8sClient.Create(ctx, gateway)).Should(Succeed())
-			Expect(string(gateway.Spec.GatewayClassName)).To(Equal("default"))
+			childGateway := &gateway.Gateway{}
+			name := fmt.Sprintf("%s-%s", gw.ObjectMeta.Name, "istio")
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, childGateway)
+				if err != nil {
+					return false
+				}
+				return true
+			}, timeout, interval).Should(BeTrue())
 		})
 	})
 })
