@@ -85,6 +85,9 @@ func BuildGatewayResource(gateway *gateway.Gateway) *gateway.Gateway {
 	gw.ResourceVersion = ""
 	gw.ObjectMeta.Name = name
 	gw.Spec.GatewayClassName = "istio"
+	if gw.ObjectMeta.Annotations == nil {
+		gw.ObjectMeta.Annotations = map[string]string{}
+	}
 	gw.ObjectMeta.Annotations["networking.istio.io/service-type"] = "ClusterIP"
 
 	return gw
