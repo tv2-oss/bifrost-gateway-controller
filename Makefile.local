@@ -1,13 +1,13 @@
 #################
 ifeq ($(GATEWAY_API_VERSION),)
-GATEWAY_API_VERSION=v0.5.1
+GATEWAY_API_VERSION=v0.6.0
 endif
 
 .PHONY: gateway-api-upstream-get
 gateway-api-upstream-get:
 	mkdir upstream-gateway-api-crds
-	#kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
-	kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
+	kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
+	#kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
 
 .PHONY: deploy-gateway-api
 deploy-gateway-api:
