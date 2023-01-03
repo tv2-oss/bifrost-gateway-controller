@@ -1,25 +1,31 @@
 #################
 ifeq ($(GATEWAY_API_VERSION),)
-GATEWAY_API_VERSION=v0.5.1
+GATEWAY_API_VERSION=v0.6.0
 endif
 
 .PHONY: gateway-api-upstream-get
 gateway-api-upstream-get:
 	mkdir upstream-gateway-api-crds
-	#kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
-	kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
+	kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
+	#kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
 
 .PHONY: deploy-gateway-api
 deploy-gateway-api:
 	kubectl apply -f upstream-gateway-api-crds
 
 #################
+.PHONY: create-cluster
+create-cluster:
+	kind create cluster --config test-data/kind-config.yaml
+
+.PHONY: delete-cluster
+delete-cluster:
+	kind delete cluster
+
+#################
 .PHONY: deploy-istio
 deploy-istio:
-	helm repo add istio https://istio-release.storage.googleapis.com/charts
-	helm repo update
-	kubectl create namespace istio-system
-	helm install istio-base istio/base -n istio-system
-	helm install istiod istio/istiod -n istio-system
+	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts base base     --version 1.16.1 -n istio-system --create-namespace
+	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts istiod istiod --version 1.16.1 -n istio-system
 
 #################
