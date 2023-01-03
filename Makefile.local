@@ -14,6 +14,15 @@ deploy-gateway-api:
 	kubectl apply -f upstream-gateway-api-crds
 
 #################
+.PHONY: create-cluster
+create-cluster:
+	kind create cluster --config test-data/kind-config.yaml
+
+.PHONY: delete-cluster
+delete-cluster:
+	kind delete cluster
+
+#################
 .PHONY: deploy-istio
 deploy-istio:
 	helm repo add istio https://istio-release.storage.googleapis.com/charts
