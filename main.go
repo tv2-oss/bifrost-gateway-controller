@@ -39,6 +39,10 @@ import (
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
+
+	version = "Version not set"
+	date    = "Date not set"
+	commit  = "Commit not set"
 )
 
 func init() {
@@ -63,6 +67,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	setupLog.Info("cloud-gateway-controller", "version", version, "build-date", date, "commit", commit)
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
