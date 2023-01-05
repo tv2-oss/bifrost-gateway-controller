@@ -9,4 +9,9 @@ resources:
   group: networking.k8s.io
   kind: Gateway
   version: v1beta1
+- controller: true
+  domain: ccs.tv2.dk
+  group: gateway.networking.k8s.io
+  kind: GatewayClass
+  version: v1beta1
 version: "3"
