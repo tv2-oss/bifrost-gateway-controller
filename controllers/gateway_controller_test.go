@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -36,8 +37,6 @@ var _ = Describe("Gateway controller", func() {
 
 	Context("When building Gateway resource from input Gateway", func() {
 		It("Should return a new Gateway", func() {
-			//By("By creating a new CronJob")
-			//ctx := context.Background()
 			gateway := &gateway.Gateway{}
 			gw_out := BuildGatewayResource(gateway)
 			Expect(gw_out).NotTo(BeNil())
@@ -45,7 +44,6 @@ var _ = Describe("Gateway controller", func() {
 	})
 
 	Context("When reconciling a parent Gateway", func() {
-		// Initial setup
 		ctx := context.Background()
 		gw := &gateway.Gateway{}
 		_ = yaml.Unmarshal([]byte(gatewayManifest), gw)
@@ -55,8 +53,8 @@ var _ = Describe("Gateway controller", func() {
 			Expect(string(gw.Spec.GatewayClassName)).To(Equal("default"))
 		})
 
+		childGateway := &gateway.Gateway{}
 		It("Should create a child gateway", func() {
-			childGateway := &gateway.Gateway{}
 			name := fmt.Sprintf("%s-%s", gw.ObjectMeta.Name, "istio")
 
 			Eventually(func() bool {
@@ -68,21 +66,17 @@ var _ = Describe("Gateway controller", func() {
 			}, timeout, interval).Should(BeTrue())
 		})
 
-		It("Should delete gateway", func() {
-			Expect(k8sClient.Delete(ctx, gw)).Should(Succeed())
-		})
-
-		It("Should delete child gateway", func() {
-			childGateway := &gateway.Gateway{}
-			name := fmt.Sprintf("%s-%s", gw.ObjectMeta.Name, "istio")
-
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, childGateway)
-				if err != nil {
-					return false
-				}
-				return true
-			}, timeout, interval).Should(BeFalse())
+		It("Should set owner reference to enable garbage collection", func() {
+			var t bool = true
+			expectedOwnerReference := v1.OwnerReference{
+				Kind:               "Gateway",
+				APIVersion:         "gateway.networking.k8s.io/v1beta1",
+				UID:                gw.ObjectMeta.GetUID(),
+				Name:               gw.ObjectMeta.Name,
+				Controller:         &t,
+				BlockOwnerDeletion: &t,
+			}
+			Expect(childGateway.ObjectMeta.OwnerReferences).To(ContainElement(expectedOwnerReference))
 		})
 	})
 })
