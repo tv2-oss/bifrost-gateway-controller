@@ -60,6 +60,11 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if g.Spec.GatewayClassName != "istio" {
 		logger.Info("Creating Istio Gateway")
 		newGW := BuildGatewayResource(&g)
+
+		if err := ctrl.SetControllerReference(&g, newGW, r.Scheme); err != nil {
+			return ctrl.Result{}, err
+		}
+
 		if err := r.Create(ctx, newGW); err != nil {
 			logger.Error(err, "Unable to create gateway")
 			return ctrl.Result{}, err

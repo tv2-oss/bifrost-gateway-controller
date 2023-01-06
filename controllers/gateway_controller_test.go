@@ -44,13 +44,13 @@ var _ = Describe("Gateway controller", func() {
 		})
 	})
 
-	Context("When applying a parent Gateway", func() {
+	Context("When reconciling a parent Gateway", func() {
 		// Initial setup
 		ctx := context.Background()
 		gw := &gateway.Gateway{}
 		_ = yaml.Unmarshal([]byte(gatewayManifest), gw)
 
-		It("Validate Gateway creation", func() {
+		It("should create gateway", func() {
 			Expect(k8sClient.Create(ctx, gw)).Should(Succeed())
 			Expect(string(gw.Spec.GatewayClassName)).To(Equal("default"))
 		})
@@ -66,6 +66,23 @@ var _ = Describe("Gateway controller", func() {
 				}
 				return true
 			}, timeout, interval).Should(BeTrue())
+		})
+
+		It("Should delete gateway", func() {
+			Expect(k8sClient.Delete(ctx, gw)).Should(Succeed())
+		})
+
+		It("Should delete child gateway", func() {
+			childGateway := &gateway.Gateway{}
+			name := fmt.Sprintf("%s-%s", gw.ObjectMeta.Name, "istio")
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, childGateway)
+				if err != nil {
+					return false
+				}
+				return true
+			}, timeout, interval).Should(BeFalse())
 		})
 	})
 })
