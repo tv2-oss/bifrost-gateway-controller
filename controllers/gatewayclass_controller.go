@@ -47,17 +47,28 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	log := logger.FromContext(ctx)
 
 	gwc, err := lookupOurGatewayClass(r, ctx, gateway.ObjectName(req.Name))
-	if err != nil {
+	if err != nil || gwc == nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// TODO: More validation here
+	var valid bool = true
+	// Dummy validation - require parameters...
+	if gwc.Spec.ParametersRef == nil {
+		valid = false
+	}
 
-	log.Info("Accepted", "GatewayClass", req.Name)
-	meta.SetStatusCondition(&gwc.Status.Conditions, metav1.Condition{
-		Type:   string(gateway.GatewayClassConditionStatusAccepted),
-		Status: "True",
-		Reason: string(gateway.GatewayClassReasonAccepted)})
+	if valid {
+		log.Info("Accepted", "GatewayClass", req.Name)
+		meta.SetStatusCondition(&gwc.Status.Conditions, metav1.Condition{
+			Type:   string(gateway.GatewayClassConditionStatusAccepted),
+			Status: "True",
+			Reason: string(gateway.GatewayClassReasonAccepted)})
+	} else {
+		meta.SetStatusCondition(&gwc.Status.Conditions, metav1.Condition{
+			Type:   string(gateway.GatewayClassConditionStatusAccepted),
+			Status: "False",
+			Reason: string(gateway.GatewayClassReasonInvalidParameters)})
+	}
 
 	err = r.Client.Status().Update(ctx, gwc)
 	if err != nil {

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,7 +22,8 @@ func lookupOurGatewayClass(r Controller, ctx context.Context, name gateway.Objec
 		return nil, err
 	}
 	if gwc.Spec.ControllerName != SelfControllerName {
-		return &gwc, fmt.Errorf("GatewayClass %q not implemented by us (%q)", name, SelfControllerName)
+		// Silent error if not implemented by us
+		return nil, nil
 	}
 	return &gwc, nil
 }
