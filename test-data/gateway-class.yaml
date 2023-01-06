@@ -3,7 +3,7 @@ kind: GatewayClass
 metadata:
   name: default
 spec:
-  controllerName: "github.com/pixelperfekt-dk/cloud-gateway-controller"
+  controllerName: "github.com/tv2/cloud-gateway-controller"
   parametersRef:
     group: v1
     kind: ConfigMap

@@ -61,9 +61,11 @@ test: manifests generate fmt vet envtest ## Run tests.
 
 ##@ Build
 
+BUILD_COMMIT = $(shell git describe --match="" --always --abbrev=20 --dirty)
+
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager main.go
+	go build -ldflags="-X main.commit=$(BUILD_COMMIT)" -o bin/manager main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.

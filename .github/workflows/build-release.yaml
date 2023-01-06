@@ -11,12 +11,30 @@ permissions:
   packages: write
 
 jobs:
-  # These are non-release builds, e.g. PRs
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Run tests
+        run: |
+          make test
+
+
+  # This is PR builds
   build-pr:
     if: "!startsWith(github.ref, 'refs/tags/')"
     runs-on: ubuntu-latest
-    #env:
-    #  DOCKER_CLI_EXPERIMENTAL: "enabled"
+    needs: ["tests"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -78,8 +96,7 @@ jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
-    #env:
-    #  DOCKER_CLI_EXPERIMENTAL: "enabled"
+    needs: ["tests"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
