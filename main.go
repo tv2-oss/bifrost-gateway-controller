@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/tv2/ccs-cloud-gateway-controller/controllers"
+	"github.com/tv2/cloud-gateway-controller/controllers"
 	//+kubebuilder:scaffold:imports
 )
 

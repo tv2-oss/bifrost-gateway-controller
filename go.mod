@@ -1,4 +1,4 @@
-module github.com/tv2/ccs-cloud-gateway-controller
+module github.com/tv2/cloud-gateway-controller
 
 go 1.19
 

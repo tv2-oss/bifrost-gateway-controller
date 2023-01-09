@@ -6,7 +6,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - gateway.networking.k8s.io.ccs.tv2.dk
+  - gateway.networking.k8s.io
   resources:
   - gatewayclasses
   verbs:
@@ -18,13 +18,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - gateway.networking.k8s.io.ccs.tv2.dk
+  - gateway.networking.k8s.io
   resources:
   - gatewayclasses/finalizers
   verbs:
   - update
 - apiGroups:
-  - gateway.networking.k8s.io.ccs.tv2.dk
+  - gateway.networking.k8s.io
   resources:
   - gatewayclasses/status
   verbs:
@@ -32,7 +32,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - networking.k8s.io.ccs.tv2.dk
+  - networking.k8s.io
   resources:
   - gateways
   verbs:
@@ -44,13 +44,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - networking.k8s.io.ccs.tv2.dk
+  - networking.k8s.io
   resources:
   - gateways/finalizers
   verbs:
   - update
 - apiGroups:
-  - networking.k8s.io.ccs.tv2.dk
+  - networking.k8s.io
   resources:
   - gateways/status
   verbs:
