@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	// "github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
@@ -28,6 +30,8 @@ func lookupOurGatewayClass(r Controller, ctx context.Context, name gateway.Objec
 		return nil, nil, nil
 	}
 
+	logger := log.FromContext(ctx)
+	logger.Info("Lookup", "GWC", gwc)
 	// if gwc.Spec.ParametersRef.Kind != "ConfigMap" {
 	// 	return nil, nil, errors.New("Kind is not a ConfigMap")
 	// }
