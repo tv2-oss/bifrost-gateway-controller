@@ -1,16 +1,13 @@
-domain: ccs.tv2.dk
 layout:
 - go.kubebuilder.io/v4-alpha
-projectName: ccs-cloud-gateway-controller
-repo: github.com/tv2/ccs-cloud-gateway-controller
+projectName: cloud-gateway-controller
+repo: github.com/tv2/cloud-gateway-controller
 resources:
 - controller: true
-  domain: ccs.tv2.dk
   group: networking.k8s.io
   kind: Gateway
   version: v1beta1
 - controller: true
-  domain: ccs.tv2.dk
   group: gateway.networking.k8s.io
   kind: GatewayClass
   version: v1beta1
