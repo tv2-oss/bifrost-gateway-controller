@@ -58,22 +58,31 @@ var _ = Describe("GatewayClass controller", func() {
 		interval = time.Millisecond * 250
 	)
 
-	Context("When a gatewayclass we own is created", func() {
+	var (
+		gwcIn, gwc *gateway.GatewayClass
+		ctx        context.Context
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		gwcIn = &gateway.GatewayClass{}
+		gwc = &gateway.GatewayClass{}
+	})
+
+	When("A gatewayclass we own is created", func() {
+
 		It("Should be marked as accepted", func() {
 			By("Setting a condition")
-			ctx := context.Background()
 
-			gwc_in := &gateway.GatewayClass{}
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest), gwc_in)
+			err := yaml.Unmarshal([]byte(gatewayclass_manifest), gwcIn)
 			Expect(err).Should(Succeed())
-			Expect(k8sClient.Create(ctx, gwc_in)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
 			cm := &corev1.ConfigMap{}
 			Expect(yaml.Unmarshal([]byte(gwClassConfigMapManifest), cm)).To(Succeed())
 			Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
 
-			lookupKey := types.NamespacedName{Name: gwc_in.ObjectMeta.Name, Namespace: ""}
-			gwc := &gateway.GatewayClass{}
+			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, lookupKey, gwc)
@@ -87,18 +96,15 @@ var _ = Describe("GatewayClass controller", func() {
 		})
 	})
 
-	Context("When a invalid gatewayclass we own is created", func() {
+	When("An invalid gatewayclass we own is created", func() {
 		It("Should be marked as invalid", func() {
 			By("Setting a condition")
-			ctx := context.Background()
 
-			gwc_in := &gateway.GatewayClass{}
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest_invalid), gwc_in)
+			err := yaml.Unmarshal([]byte(gatewayclass_manifest_invalid), gwcIn)
 			Expect(err).Should(Succeed())
-			Expect(k8sClient.Create(ctx, gwc_in)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
-			lookupKey := types.NamespacedName{Name: gwc_in.ObjectMeta.Name, Namespace: ""}
-			gwc := &gateway.GatewayClass{}
+			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, lookupKey, gwc)
@@ -113,18 +119,15 @@ var _ = Describe("GatewayClass controller", func() {
 		})
 	})
 
-	Context("When a gatewayclass we do not own is created", func() {
+	When("A gatewayclass we do not own is created", func() {
 		It("Should not be marked as accepted", func() {
 			By("Not setting a condition")
-			ctx := context.Background()
 
-			gwc_in := &gateway.GatewayClass{}
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest_not_our), gwc_in)
+			err := yaml.Unmarshal([]byte(gatewayclass_manifest_not_our), gwcIn)
 			Expect(err).Should(Succeed())
-			Expect(k8sClient.Create(ctx, gwc_in)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
-			lookupKey := types.NamespacedName{Name: gwc_in.ObjectMeta.Name, Namespace: ""}
-			gwc := &gateway.GatewayClass{}
+			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, lookupKey, gwc)
@@ -136,5 +139,4 @@ var _ = Describe("GatewayClass controller", func() {
 			}, timeout, interval).Should(BeTrue())
 		})
 	})
-
 })
