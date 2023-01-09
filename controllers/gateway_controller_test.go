@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -41,6 +42,15 @@ spec:
     hostname: example.com
 `
 
+const configMapManifest string = `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: default-gateway-class
+  namespace: default
+data:
+  tier2GatewayClass: istio`
+
 var _ = Describe("Gateway controller", func() {
 
 	const (
@@ -53,6 +63,14 @@ var _ = Describe("Gateway controller", func() {
 	Context("When building Gateway resource from input Gateway", func() {
 		It("should create GatewayClass", func() {
 			Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
+		})
+	})
+
+	cm := &corev1.ConfigMap{}
+	Expect(yaml.Unmarshal([]byte(configMapManifest), cm)).To(Succeed())
+	Context("When applying configMap", func() {
+		It("should create a configMap", func() {
+			Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
 		})
 	})
 
