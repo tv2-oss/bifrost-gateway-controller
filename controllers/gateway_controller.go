@@ -61,7 +61,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	logger.Info("Gateway")
 
-	gwc, err := lookupOurGatewayClass(r, ctx, g.Spec.GatewayClassName)
+	gwc, _, err := lookupOurGatewayClass(r, ctx, g.Spec.GatewayClassName)
 	if err != nil || gwc == nil {
 		logger.Error(err, "Unable to lookup GatewayClass")
 		return ctrl.Result{}, client.IgnoreNotFound(err)

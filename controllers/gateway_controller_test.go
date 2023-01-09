@@ -13,6 +13,19 @@ import (
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
+const gatewayClassManifest string = `
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: default
+spec:
+  controllerName: "github.com/tv2/cloud-gateway-controller"
+  parametersRef:
+    group: v1
+    kind: ConfigMap
+    name: default-gateway-class
+    namespace: default`
+
 const gatewayManifest string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
@@ -34,6 +47,14 @@ var _ = Describe("Gateway controller", func() {
 		timeout  = time.Second * 10
 		interval = time.Millisecond * 250
 	)
+
+	gwc := &gateway.GatewayClass{}
+	Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
+	Context("When building Gateway resource from input Gateway", func() {
+		It("should create GatewayClass", func() {
+			Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
+		})
+	})
 
 	Context("When building Gateway resource from input Gateway", func() {
 		It("Should return a new Gateway", func() {
