@@ -28,13 +28,17 @@ import (
 
 // GatewayReconciler reconciles a Gateway object
 type GatewayReconciler struct {
-	client.Client
+	Client client.Client
 	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=gateways/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=gateways/finalizers,verbs=update
+
+func (r *GatewayReconciler) GetClient() client.Client {
+	return r.Client
+}
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -50,25 +54,28 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	logger.Info("Reconcile")
 
 	var g gateway.Gateway
-	if err := r.Get(ctx, req.NamespacedName, &g); err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, &g); err != nil {
 		logger.Error(err, "Unable to fetch Gateway")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	logger.Info("Gateway")
 
-	if g.Spec.GatewayClassName != "istio" {
-		logger.Info("Creating Istio Gateway")
-		newGW := BuildGatewayResource(&g)
+	gwc, err := lookupOurGatewayClass(r, ctx, g.Spec.GatewayClassName)
+	if err != nil || gwc == nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
 
-		if err := ctrl.SetControllerReference(&g, newGW, r.Scheme); err != nil {
-			return ctrl.Result{}, err
-		}
+	logger.Info("Creating Istio Gateway")
+	newGW := BuildGatewayResource(&g)
 
-		if err := r.Create(ctx, newGW); err != nil {
-			logger.Error(err, "Unable to create gateway")
-			return ctrl.Result{}, err
-		}
+	if err := ctrl.SetControllerReference(&g, newGW, r.Scheme); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.Client.Create(ctx, newGW); err != nil {
+		logger.Error(err, "Unable to create gateway")
+		return ctrl.Result{}, err
 	}
 
 	// TODO(user): your logic here
