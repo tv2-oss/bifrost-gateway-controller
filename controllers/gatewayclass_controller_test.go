@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -22,7 +23,7 @@ spec:
   parametersRef:
     group: v1
     kind: ConfigMap
-    name: default-gateway-class
+    name: cloud-gw-params
     namespace: default`
 
 const gatewayclass_manifest_invalid string = `
@@ -41,6 +42,15 @@ metadata:
 spec:
   controllerName: "github.com/acme/cloud-gateway-controller"`
 
+const gwClassConfigMapManifest string = `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-gw-params
+  namespace: default
+data:
+  tier2GatewayClass: istio`
+
 var _ = Describe("GatewayClass controller", func() {
 
 	const (
@@ -57,6 +67,10 @@ var _ = Describe("GatewayClass controller", func() {
 			err := yaml.Unmarshal([]byte(gatewayclass_manifest), gwc_in)
 			Expect(err).Should(Succeed())
 			Expect(k8sClient.Create(ctx, gwc_in)).Should(Succeed())
+
+			cm := &corev1.ConfigMap{}
+			Expect(yaml.Unmarshal([]byte(gwClassConfigMapManifest), cm)).To(Succeed())
+			Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
 
 			lookupKey := types.NamespacedName{Name: gwc_in.ObjectMeta.Name, Namespace: ""}
 			gwc := &gateway.GatewayClass{}

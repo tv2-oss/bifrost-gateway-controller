@@ -46,14 +46,13 @@ func (r *GatewayClassReconciler) GetClient() client.Client {
 func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logger.FromContext(ctx)
 
-	gwc, _, err := lookupOurGatewayClass(r, ctx, gateway.ObjectName(req.Name))
+	gwc, cm, err := lookupOurGatewayClass(r, ctx, gateway.ObjectName(req.Name))
 	if err != nil || gwc == nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	var valid bool = true
-	// Dummy validation - require parameters...
-	if gwc.Spec.ParametersRef == nil {
+	if cm == nil {
 		valid = false
 	}
 
