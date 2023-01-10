@@ -2,8 +2,7 @@ package controllers
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"errors"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,12 +33,12 @@ func lookupOurGatewayClass(r Controller, ctx context.Context, name gateway.Objec
 	}
 
 	if gwc.Spec.ParametersRef.Kind != "ConfigMap" {
-		return nil, nil, errors.New("Kind is not a ConfigMap")
+		return &gwc, nil, errors.New("Kind is not a ConfigMap")
 	}
 
 	var cm corev1.ConfigMap
 	if err := r.GetClient().Get(ctx, types.NamespacedName{Name: gwc.Spec.ParametersRef.Name, Namespace: string(*gwc.Spec.ParametersRef.Namespace)}, &cm); err != nil {
-		return nil, nil, err
+		return &gwc, nil, err
 	}
 
 	return &gwc, &cm, nil
