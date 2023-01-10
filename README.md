@@ -1,94 +1,37 @@
-# cloud-gateway-controller
-// TODO(user): Add simple overview of use/purpose
+# Cloud Gateway Controller
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+The cloud-gateway-controller is an augmented Kubernetes network
+gateway-controller -- think of it as a Kubernetes ingress-controller
+that not only provides a data-path inside Kubernetes, but extends the
+data-path outside Kubernetes into the surrounding cloud
+infrastructure.
 
-## Getting Started
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
+## End-to-end Network Path
 
-### Running on the cluster
-1. Install Instances of Custom Resources:
+xxx
 
-```sh
-kubectl apply -f config/samples/
-```
+When building a platform, it is essential to provide a well-designed
+API to abstractions that are useful and manageable to users.
 
-2. Build and push your image to the location specified by `IMG`:
-	
-```sh
-make docker-build docker-push IMG=<some-registry>/cloud-gateway-controller:tag
-```
-	
-3. Deploy the controller to the cluster with the image specified by `IMG`:
+xxx
 
-```sh
-make deploy IMG=<some-registry>/cloud-gateway-controller:tag
-```
+The [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io/) is an
+API for describing network gateways and configure routing from
+gateways to Kubernetes services. This API is fast becoming the
+standard API and is [widely
+supported](https://gateway-api.sigs.k8s.io/implementations/).
 
-### Uninstall CRDs
-To delete the CRDs from the cluster:
+## User Journeys
 
-```sh
-make uninstall
-```
+One of the principles driving the Gateway API was to support multiple
+personas, i.e. design an API that has Kubernetes resources for each
+persona. See e.g. the following example:
 
-### Undeploy controller
-UnDeploy the controller to the cluster:
+> ![Gateway-API personas](doc/images/gateway-api-personas.png)
+(source: https://gateway-api.sigs.k8s.io/)
 
-```sh
-make undeploy
-```
+The following presents users journeys (user actions and corresponding
+cloud-gateway-controller responses) and will use the personas
+illustrated above.
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-### How it works
-This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
-
-It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/) 
-which provides a reconcile function responsible for synchronizing resources untile the desired state is reached on the cluster 
-
-### Test It Out
-1. Install the CRDs into the cluster:
-
-```sh
-make install
-```
-
-2. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
-
-```sh
-make run
-```
-
-**NOTE:** You can also run this in one step by running: `make install run`
-
-### Modifying the API definitions
-If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
-
-```sh
-make manifests
-```
-
-**NOTE:** Run `make --help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-## License
-
-Copyright 2022.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+- [Basic Network Datapath](doc/basic-datapath.md)
