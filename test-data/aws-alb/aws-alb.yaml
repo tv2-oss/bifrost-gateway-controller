@@ -1,0 +1,119 @@
+# This SG needs to be manually added as an 'allowed source' in the cluster SG
+apiVersion: ec2.aws.crossplane.io/v1beta1
+kind: SecurityGroup
+metadata:
+  name: aws-alb-test-shared
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    description: "Common SG for ALBs"
+    groupName: aws-alb-test-shared
+    region: eu-central-1
+    vpcId: $VPC_ID
+    egress:
+    - ipRanges:
+      - cidrIp: 0.0.0.0/0
+      ipProtocol: tcp
+      fromPort: 80
+      toPort: 8080
+    ingress:
+    - ipRanges:
+      - cidrIp: 0.0.0.0/0
+      ipProtocol: tcp
+      fromPort: 80
+      toPort: 8080
+---
+apiVersion: elbv2.aws.crossplane.io/v1alpha1
+kind: LoadBalancer
+metadata:
+  name: aws-alb-test
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    name: aws-alb-test
+    region: eu-central-1
+    securityGroups:
+    - $SG_ID
+    subnetMappings:
+    - subnetID: $SUBNET1
+    - subnetID: $SUBNET2
+    - subnetID: $SUBNET3
+---
+apiVersion: elbv2.aws.crossplane.io/v1alpha1
+kind: TargetGroup
+metadata:
+  name: aws-alb-test
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    name: aws-alb-test
+    region: eu-central-1
+    vpcID: $VPC_ID
+    port: 8080
+    protocol: HTTP
+    targetType: ip
+---
+apiVersion: elbv2.aws.crossplane.io/v1alpha1
+kind: Listener
+metadata:
+  name: aws-alb-test
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    region: eu-central-1
+    port: 8080
+    protocol: HTTP
+    loadBalancerArn: $ALB_ARN
+    defaultActions:
+    - actionType: forward
+      targetGroupArn: $TG_ARN
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: aws-alb-test
+  name: aws-alb-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aws-alb-test
+  template:
+    metadata:
+      labels:
+        app: aws-alb-test
+    spec:
+      containers:
+      - image: praqma/network-multitool
+        name: network-multitool
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: aws-alb-test
+  name: aws-alb-test
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: aws-alb-test
+  type: ClusterIP
+---
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  name: aws-alb-test
+spec:
+  targetGroupARN: $TG_ARN
+  targetType: ip
+  serviceRef:
+    name: aws-alb-test
+    port: 8080
