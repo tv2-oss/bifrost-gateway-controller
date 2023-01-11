@@ -94,7 +94,7 @@ Similarly, a copy is created of the `HTTPRoute` to configure the Istio
 gateway. Note, that the gateway reference in `parentRefs` is changed
 to the Istio gateway:
 
-```
+```yaml
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
@@ -160,7 +160,7 @@ controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller)
 and updates the AWS `TargetGroup` with the addresses of the Istio
 ingress-gateway Pods.
 
-```
+```yaml
 apiVersion: elbv2.k8s.aws/v1beta1
 kind: TargetGroupBinding
 metadata:
