@@ -58,12 +58,20 @@ var _ = Describe("Gateway controller", func() {
 		interval = time.Millisecond * 250
 	)
 
-	gwc := &gateway.GatewayClass{}
-	Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
-	Context("When building Gateway resource from input Gateway", func() {
-		It("should create GatewayClass", func() {
-			Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
-		})
+	var (
+		gwc *gateway.GatewayClass
+		ctx context.Context
+	)
+
+	BeforeEach(func() {
+		gwc = &gateway.GatewayClass{}
+		ctx = context.Background()
+		Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
+	})
+
+	AfterEach(func() {
+		Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
 	})
 
 	cm := &corev1.ConfigMap{}
