@@ -46,7 +46,7 @@ need a full service-mesh while others do not.
 
 The following is two examples of network datapaths:
 
-> ![Example network datapath](doc/images/example-network-datapath.png)
+![Example network datapath](doc/images/example-network-datapath.png)
 
 ## Using the Kubernetes Gateway API
 
@@ -130,7 +130,7 @@ One of the principles driving the Gateway API was to support multiple
 personas, i.e. design an API that has Kubernetes resources for each
 persona. See e.g. the following example:
 
-> ![Gateway-API personas](doc/images/gateway-api-personas.png)
+![Gateway-API personas](doc/images/gateway-api-personas.png)
 (source: https://gateway-api.sigs.k8s.io/)
 
 In the following we describe how to use the *cloud-gateway-controller*

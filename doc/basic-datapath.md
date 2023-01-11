@@ -7,7 +7,7 @@ Kubernetes Service as shown below. This example will be single
 cluster, single namespace, ignore path-based routing. Also, the
 `foo-store` service is not included in this example.
 
-> ![Gateway-API example](images/gateway-api-multi-namespace.png)
+![Gateway-API example](images/gateway-api-multi-namespace.png)
 (source: https://gateway-api.sigs.k8s.io/)
 
 The `foo` team SRE persona, or possibly a platform/cluster operator,
