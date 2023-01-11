@@ -91,19 +91,22 @@ var _ = Describe("Gateway controller", func() {
 	})
 
 	Context("When reconciling a parent Gateway", func() {
-		ctx := context.Background()
-		gw := &gateway.Gateway{}
-		_ = yaml.Unmarshal([]byte(gatewayManifest), gw)
+		var childGateway, gw *gateway.Gateway
 
-		It("should create gateway", func() {
-			Expect(k8sClient.Create(ctx, gw)).Should(Succeed())
-			Expect(string(gw.Spec.GatewayClassName)).To(Equal("default"))
+		BeforeEach(func() {
+			gw = &gateway.Gateway{}
+			childGateway = &gateway.Gateway{}
+			Expect(yaml.Unmarshal([]byte(gatewayManifest), gw)).To(Succeed())
 		})
 
-		childGateway := &gateway.Gateway{}
-		It("Should create a child gateway", func() {
-			name := fmt.Sprintf("%s-%s", gw.ObjectMeta.Name, "istio")
+		It("Should lifecycle correctly", func() {
 
+			By("Creating the gateway")
+			Expect(k8sClient.Create(ctx, gw)).Should(Succeed())
+			Expect(string(gw.Spec.GatewayClassName)).To(Equal("default"))
+
+			By("Creating the child gateway")
+			name := fmt.Sprintf("%s-%s", gw.ObjectMeta.Name, "istio")
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, childGateway)
 				if err != nil {
@@ -111,9 +114,8 @@ var _ = Describe("Gateway controller", func() {
 				}
 				return true
 			}, timeout, interval).Should(BeTrue())
-		})
 
-		It("Should set owner reference to enable garbage collection", func() {
+			By("Setting the owner reference to enable garbage collection")
 			var t bool = true
 			expectedOwnerReference := v1.OwnerReference{
 				Kind:               "Gateway",
