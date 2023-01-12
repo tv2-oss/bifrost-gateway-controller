@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 // GatewayReconciler reconciles a Gateway object
@@ -54,7 +54,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	logger := log.FromContext(ctx)
 	logger.Info("Reconcile")
 
-	var g gateway.Gateway
+	var g gatewayapi.Gateway
 	if err := r.Client.Get(ctx, req.NamespacedName, &g); err != nil {
 		logger.Error(err, "Unable to fetch Gateway")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -77,7 +77,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	logger.Info("Creating Istio Gateway")
-	newGW := BuildGatewayResource(&g, &cm)
+	newGW := BuildGatewayResource(&g, cm)
 
 	if err := ctrl.SetControllerReference(&g, newGW, r.Scheme); err != nil {
 		return ctrl.Result{}, err
@@ -96,20 +96,22 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 // SetupWithManager sets up the controller with the Manager.
 func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&gateway.Gateway{}).
-		//Owns(&gateway.Gateway{}).
+		For(&gatewayapi.Gateway{}).
 		Complete(r)
 }
 
-func BuildGatewayResource(gateway *gateway.Gateway, i **corev1.ConfigMap) *gateway.Gateway {
-	name := fmt.Sprintf("%s-%s", gateway.ObjectMeta.Name, "istio")
+func BuildGatewayResource(gateway *gatewayapi.Gateway, cm *corev1.ConfigMap) *gatewayapi.Gateway {
+	gatewayClassName := gatewayapi.ObjectName(cm.Data["tier2GatewayClass"])
+	name := fmt.Sprintf("%s-%s", gateway.ObjectMeta.Name, gatewayClassName)
 	gw := gateway.DeepCopy()
 	gw.ResourceVersion = ""
 	gw.ObjectMeta.Name = name
-	gw.Spec.GatewayClassName = "istio"
+	gw.Spec.GatewayClassName = gatewayClassName
+
 	if gw.ObjectMeta.Annotations == nil {
 		gw.ObjectMeta.Annotations = map[string]string{}
 	}
+
 	gw.ObjectMeta.Annotations["networking.istio.io/service-type"] = "ClusterIP"
 
 	return gw
