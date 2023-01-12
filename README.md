@@ -104,7 +104,10 @@ gateway controllers such as Istio, Contour etc.
 
 The overarching purpose of the *cloud-gateway-controller* is to
 orchestrate the Kubernetes external and internal datapaths and this
-complete datapath is configured using the Gateway API.
+complete datapath is configured using the Gateway API. This is
+illustrated below.
+
+![Controller hierarchy](doc/images/controller-hierarchy.png)
 
 ### Why Not Use e.g. Crossplane or Helm?
 
