@@ -97,6 +97,15 @@ through other controllers and with resources configured through
 `GatewayClass` resources, the *cloud-gateway-controller* is
 cloud-agnostic (but `GatewayClass` definitions are not).
 
+Similarly, the *cloud-gateway-controller* does not create datapaths
+inside Kubernetes, e.g. the *service mesh gateway* shown in the image
+above. These parts of the datapath are implemented by traditional
+gateway controllers such as Istio, Contour etc.
+
+The overarching purpose of the *cloud-gateway-controller* is to
+orchestrate the Kubernetes external and internal datapaths and this
+complete datapath is configured using the Gateway API.
+
 ### Why Not Use e.g. Crossplane or Helm?
 
 An important objective of the *cloud-gateway-controller* is to maintain
