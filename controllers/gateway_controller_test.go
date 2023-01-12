@@ -77,7 +77,7 @@ var _ = Describe("Gateway controller", func() {
 	Context("When building Gateway resource from input Gateway", func() {
 		It("Should return a new Gateway", func() {
 			gateway := &gateway.Gateway{}
-			gw_out := BuildGatewayResource(gateway)
+			gw_out := BuildGatewayResource(gateway, nil)
 			Expect(gw_out).NotTo(BeNil())
 		})
 	})

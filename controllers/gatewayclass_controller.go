@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	meta "k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,18 +46,21 @@ func (r *GatewayClassReconciler) GetClient() client.Client {
 func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logger.FromContext(ctx)
 
-	gwc, cm, err := lookupOurGatewayClass(r, ctx, gateway.ObjectName(req.Name))
-	if err != nil || gwc == nil {
-		if gwc == nil { // Also covers not implemented by us
-			return ctrl.Result{}, client.IgnoreNotFound(err)
-		} else {
-			return ctrl.Result{}, fmt.Errorf("gatewayclass parameters not found")
-		}
+	var valid = true
+
+	gwc, err := lookupGatewayClass(r, ctx, gateway.ObjectName(req.Name))
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
-	var valid bool = true
-	if cm == nil {
+	if !isOurGatewayClass(gwc) {
+		return ctrl.Result{}, nil
+	}
+
+	_, err = lookupGatewayClassParameters(r, ctx, gwc)
+	if err != nil {
 		valid = false
+		log.Error(err, "Parameters for GatewayClass not found", "gatewayClassName", gwc.ObjectMeta.Name)
 	}
 
 	if valid {

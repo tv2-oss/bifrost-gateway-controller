@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -61,13 +62,22 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	logger.Info("Gateway")
 
-	gwc, _, err := lookupOurGatewayClass(r, ctx, g.Spec.GatewayClassName)
-	if err != nil || gwc == nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+	gwc, err := lookupGatewayClass(r, ctx, g.Spec.GatewayClassName)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if !isOurGatewayClass(gwc) {
+		return ctrl.Result{}, nil
+	}
+
+	cm, err := lookupGatewayClassParameters(r, ctx, gwc)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("Parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
 
 	logger.Info("Creating Istio Gateway")
-	newGW := BuildGatewayResource(&g)
+	newGW := BuildGatewayResource(&g, &cm)
 
 	if err := ctrl.SetControllerReference(&g, newGW, r.Scheme); err != nil {
 		return ctrl.Result{}, err
@@ -91,7 +101,7 @@ func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func BuildGatewayResource(gateway *gateway.Gateway) *gateway.Gateway {
+func BuildGatewayResource(gateway *gateway.Gateway, i **corev1.ConfigMap) *gateway.Gateway {
 	name := fmt.Sprintf("%s-%s", gateway.ObjectMeta.Name, "istio")
 	gw := gateway.DeepCopy()
 	gw.ResourceVersion = ""
