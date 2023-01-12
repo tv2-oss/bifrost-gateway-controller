@@ -153,6 +153,11 @@ spec:
       targetGroupArn: <inserted by cloud-gateway-controller when known>
 ```
 
+Note, that in the above resource, there are inter-resource
+references. These will be filled out by the controller as they become
+known. Also, the `GatewayClass` may have been configured with some
+static values, e.g. the subnet IDs above.
+
 The final link between the `TargetGroup` created above and the Istio
 ingress-gateway Pods is the following `TargetGroupBinding`. This
 resource is managed by the [AWS load balancer
