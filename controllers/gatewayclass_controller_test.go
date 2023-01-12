@@ -72,7 +72,6 @@ var _ = Describe("GatewayClass controller", func() {
 	When("A gatewayclass we own is created", func() {
 
 		It("Should be marked as accepted", func() {
-			By("Setting a condition")
 
 			err := yaml.Unmarshal([]byte(gatewayclass_manifest), gwcIn)
 			Expect(err).Should(Succeed())
@@ -98,7 +97,6 @@ var _ = Describe("GatewayClass controller", func() {
 
 	When("An invalid gatewayclass we own is created", func() {
 		It("Should be marked as invalid", func() {
-			By("Setting a condition")
 
 			err := yaml.Unmarshal([]byte(gatewayclass_manifest_invalid), gwcIn)
 			Expect(err).Should(Succeed())
@@ -121,7 +119,6 @@ var _ = Describe("GatewayClass controller", func() {
 
 	When("A gatewayclass we do not own is created", func() {
 		It("Should not be marked as accepted", func() {
-			By("Not setting a condition")
 
 			err := yaml.Unmarshal([]byte(gatewayclass_manifest_not_our), gwcIn)
 			Expect(err).Should(Succeed())
