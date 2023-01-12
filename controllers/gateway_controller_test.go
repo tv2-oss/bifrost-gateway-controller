@@ -60,37 +60,38 @@ var _ = Describe("Gateway controller", func() {
 
 	var (
 		gwc *gateway.GatewayClass
+		cm  *corev1.ConfigMap
 		ctx context.Context
 	)
 
 	BeforeEach(func() {
 		gwc = &gateway.GatewayClass{}
+		cm = &corev1.ConfigMap{}
 		ctx = context.Background()
 		Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
+		Expect(yaml.Unmarshal([]byte(configMapManifest), cm)).To(Succeed())
 	})
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
 	})
 
-	cm := &corev1.ConfigMap{}
-	Expect(yaml.Unmarshal([]byte(configMapManifest), cm)).To(Succeed())
-	Context("When applying configMap", func() {
+	When("Applying a configMap", func() {
 		It("should create a configMap", func() {
 			Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
 		})
 	})
 
-	Context("When building Gateway resource from input Gateway", func() {
+	When("Building Gateway resource from input Gateway", func() {
 		It("Should return a new Gateway", func() {
 			gateway := &gateway.Gateway{}
-			gw_out := BuildGatewayResource(gateway, cm)
-			Expect(gw_out).NotTo(BeNil())
+			gwOut := BuildGatewayResource(gateway, cm)
+			Expect(gwOut).NotTo(BeNil())
 		})
 	})
 
-	Context("When reconciling a parent Gateway", func() {
+	When("Reconciling a parent Gateway", func() {
 		var childGateway, gw *gateway.Gateway
 
 		BeforeEach(func() {
