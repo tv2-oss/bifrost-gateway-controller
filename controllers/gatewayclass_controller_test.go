@@ -41,6 +41,15 @@ metadata:
 spec:
   controllerName: "github.com/acme/cloud-gateway-controller"`
 
+const gwClassConfigMapManifest string = `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-gw-params
+  namespace: default
+data:
+  tier2GatewayClass: istio`
+
 var _ = Describe("GatewayClass controller", func() {
 
 	const (
@@ -58,7 +67,7 @@ var _ = Describe("GatewayClass controller", func() {
 			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
 			cm := &corev1.ConfigMap{}
-			Expect(yaml.Unmarshal([]byte(configMapManifest), cm)).To(Succeed())
+			Expect(yaml.Unmarshal([]byte(gwClassConfigMapManifest), cm)).To(Succeed())
 			Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
 
 			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
