@@ -149,5 +149,5 @@ persona. See e.g. the following example:
 In the following we describe how to use the *cloud-gateway-controller*
 as seen from the perspective of these personas.
 
-- [Basic Network Datapath](doc/basic-datapath.md)
+- [Basic Network Datapath for Small Team](doc/basic-datapath.md)
 - Configuring a Datapath through a GatewayClass Definition

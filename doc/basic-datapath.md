@@ -1,18 +1,32 @@
-# Basic Network Datapath
+# Basic Network Datapath for Small Team
 
 This document describe user actions necessary to create a basic
-datapath. The datapath will consist of an application hosted on the
-domain `foo.example.com` and traffic is routed to the `foo-site`
-Kubernetes Service as shown below. This example will be single
-cluster, single namespace, ignore path-based routing. Also, the
-`foo-store` service is not included in this example.
+datapath for a 'small team'. The team is considered 'small' because
+they deploy a single Kubernetes Service and they manage both `Gateway`
+and `HTTPRoute` resources themselves, i.e. this applies to an **SRE**
+and **developer** persona.
 
-![Gateway API example](images/gateway-api-multi-namespace.png)
+The team will host their service on the domain `foo.example.com` and
+HTTP traffic will be routed to the `foo-site` Kubernetes service as
+shown below.
+
+![Gateway API example](images/gateway-api-simple.png)
 (source: https://gateway-api.sigs.k8s.io/)
 
-The `foo` team SRE persona, or possibly a platform/cluster operator,
-defines the network path using a `Gateway` resource and chooses the
-`public-gw-gateway-class` class as the 'implementation':
+To achieve this, the SRE/developer persona needs to:
+
+- Create a `Gateway` resource that specify the domain name and the protocol used.
+- Choose a `GatewayClass` for the `Gateway` that results in public
+  reachability of the gateway. The available `GatewayClass`es and
+  their characteristics will be available from platform documentation.
+- Create an `HTTPRoute` resource that route traffic from the gateway to the `foo-site` Kubernetes service.
+
+Prior to this, a cluster operator persona have configured the
+`GatewayClass` named `public-class` such that gateways using this
+class results in public reachability.
+
+The team SRE/developer persona creates a `Gateway` resource as
+follows:
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -20,7 +34,7 @@ kind: Gateway
 metadata:
   name: foo-gateway
 spec:
-  gatewayClassName: public-gw-gateway-class
+  gatewayClassName: public-class
   listeners:
   - name: web
     port: 80
@@ -28,8 +42,9 @@ spec:
     hostname: "foo.example.com"
 ```
 
-Additionally, developers define routing from the gateway to the
-`foo-site` Kubernetes service with the following `HTTPRoute` resource:
+Additionally, the team SRE/developer persona define routing from the
+gateway to the `foo-site` Kubernetes service with the following
+`HTTPRoute` resource:
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -46,11 +61,15 @@ spec:
       port: 80
 ```
 
+With these two resources, the datapath illustrated above will be
+created by the *cloud-gateway-controller* and the 'small team'
+SRE/developer persona do not need to perform any additional actions.
+
 ## Implementation by *cloud-gateway-controller*
 
 The definitions above are generic Gateway API definitions. To
 illustrate how the *cloud-gateway-controller* implements this datapath
-we will assume the `GatewayClass` specified (`public-gw-gateway-class`)
+we will assume the `GatewayClass` specified (`public-class`)
 defines an implementation with an Istio service-mesh inside Kubernetes
 and ingress through an Istio ingress-gateway. Additionally we assume
 an AWS cloud infrastructure managed through Crossplane. To simplify
@@ -67,7 +86,7 @@ distribution being one example of this.
 
 To create the Istio ingress-gateway, the *cloud-gateway-controller*
 create a copy of the `foo-gateway` `Gateway` resource specifying an
-`istio` class instead of `public-gw-gateway-class`:
+`istio` class instead of `public-class`:
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -113,7 +132,7 @@ spec:
 
 The cloud infrastructure resources are provisioned through Crossplane
 using basic AWS resources. For this example, the `GatewayClass`
-`public-gw-gateway-class` define an AWS ALB based network path exposed
+`public-class` define an AWS ALB based network path exposed
 to the Internet through public subnets. Thus, the
 *cloud-gateway-controller* creates the AWS ALB using the following
 resources. Note how the port and protocol are propagated from the
