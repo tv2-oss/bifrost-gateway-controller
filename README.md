@@ -64,12 +64,12 @@ supported](https://gateway-api.sigs.k8s.io/implementations/).
 **The *cloud-gateway-controller* presents the gateway API to users as
 the sole interface for network datapath definition.** This is the only
 interface users need to know and it fully supports a GitOps-based
-workflows. Users to not need to work with Terraform or generally know
-how the gateway-API is implemented by the platform.
+workflow. Users do not need to work with Terraform or generally know
+how the Gateway API is implemented by the platform.
 
 The Gateway API does not cover concerns such as DNS or web application
 firewall (WAF) configuration. **The *cloud-gateway-controller*
-implements concerns beyond Gateway-API scope using configuration in
+implements concerns beyond Gateway API scope using configuration in
 `GatewayClass` resources.** E.g., a specific `GatewayClass` defines a
 specific set of WAF rules.  This is very similar to how Kubernetes
 [storage
@@ -113,14 +113,14 @@ Istio for managing the Kubernetes-internal datapath.
 ### Why Not Use e.g. Crossplane or Helm?
 
 An important objective of the *cloud-gateway-controller* is to maintain
-a Gateway-API compatible interface towards users. This would not be
+a Gateway API compatible interface towards users. This would not be
 possible with techniques such as Crossplane and Helm.  Also, the
-mapping from the gateway-API to e.g. a Crossplane composition is
+mapping from the Gateway API to e.g. a Crossplane composition is
 non-trivial, i.e. it is difficult to do with purely templating.
 
 The *cloud-gateway-controller* implements some of the same composition
 logic as e.g. Crossplane. Why did we not use Crossplane compositions,
-e.g. build a gateway-API implementation using the following hierarchy
+e.g. build a Gateway API implementation using the following hierarchy
 of services?
 
 - Cloud-gateway-controller implements facade gateway API, stamps out Crossplane claim
@@ -143,7 +143,7 @@ One of the principles driving the Gateway API was to support multiple
 personas, i.e. design an API that has Kubernetes resources for each
 persona. See e.g. the following example:
 
-![Gateway-API personas](doc/images/gateway-api-personas.png)
+![Gateway API personas](doc/images/gateway-api-personas.png)
 (source: https://gateway-api.sigs.k8s.io/)
 
 In the following we describe how to use the *cloud-gateway-controller*

@@ -7,7 +7,7 @@ Kubernetes Service as shown below. This example will be single
 cluster, single namespace, ignore path-based routing. Also, the
 `foo-store` service is not included in this example.
 
-![Gateway-API example](images/gateway-api-multi-namespace.png)
+![Gateway API example](images/gateway-api-multi-namespace.png)
 (source: https://gateway-api.sigs.k8s.io/)
 
 The `foo` team SRE persona, or possibly a platform/cluster operator,
@@ -66,7 +66,7 @@ distribution being one example of this.
 ### Creating Istio Ingress Gateway
 
 To create the Istio ingress-gateway, the *cloud-gateway-controller*
-create a copy of the `foo-gateay` `Gateway` resource specifying an
+create a copy of the `foo-gateway` `Gateway` resource specifying an
 `istio` class instead of `public-gw-gateway-class`:
 
 ```yaml
@@ -116,7 +116,7 @@ using basic AWS resources. For this example, the `GatewayClass`
 `public-gw-gateway-class` define an AWS ALB based network path exposed
 to the Internet through public subnets. Thus, the
 *cloud-gateway-controller* creates the AWS ALB using the following
-resources. note how the port and protocol are propagated from the
+resources. Note how the port and protocol are propagated from the
 `Gateway` resource to the `Listener` resource:
 
 ```yaml
