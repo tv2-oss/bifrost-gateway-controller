@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -83,7 +82,6 @@ var _ = Describe("Gateway controller", func() {
 	})
 
 	Context("When reconciling a parent Gateway", func() {
-		ctx := context.Background()
 		gw := &gateway.Gateway{}
 		_ = yaml.Unmarshal([]byte(gatewayManifest), gw)
 

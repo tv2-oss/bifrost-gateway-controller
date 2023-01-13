@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,6 +11,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
+
+const cloudGwGatewayClassManifest string = `
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: cloud-gw
+spec:
+  controllerName: "github.com/tv2/cloud-gateway-controller"
+  parametersRef:
+    group: v1
+    kind: ConfigMap
+    name: cloud-gw-params
+    namespace: default`
 
 const gatewayClassManifestInvalid string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -39,10 +51,9 @@ var _ = Describe("GatewayClass controller", func() {
 	Context("When a gatewayclass we own is created", func() {
 		It("Should be marked as accepted", func() {
 			By("Setting a condition")
-			ctx := context.Background()
 
 			gwcIn := &gateway.GatewayClass{}
-			err := yaml.Unmarshal([]byte(gatewayClassManifest), gwcIn)
+			err := yaml.Unmarshal([]byte(cloudGwGatewayClassManifest), gwcIn)
 			Expect(err).Should(Succeed())
 			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
@@ -68,7 +79,6 @@ var _ = Describe("GatewayClass controller", func() {
 	Context("When a invalid gatewayclass we own is created", func() {
 		It("Should be marked as invalid", func() {
 			By("Setting a condition")
-			ctx := context.Background()
 
 			gwcIn := &gateway.GatewayClass{}
 			err := yaml.Unmarshal([]byte(gatewayClassManifestInvalid), gwcIn)
@@ -94,7 +104,6 @@ var _ = Describe("GatewayClass controller", func() {
 	Context("When a gatewayclass we do not own is created", func() {
 		It("Should not be marked as accepted", func() {
 			By("Not setting a condition")
-			ctx := context.Background()
 
 			gwcIn := &gateway.GatewayClass{}
 			err := yaml.Unmarshal([]byte(gatewayClassManifestNotOur), gwcIn)
