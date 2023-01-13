@@ -13,20 +13,7 @@ import (
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-const gatewayclass_manifest string = `
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: GatewayClass
-metadata:
-  name: cloud-gw
-spec:
-  controllerName: "github.com/tv2/cloud-gateway-controller"
-  parametersRef:
-    group: v1
-    kind: ConfigMap
-    name: cloud-gw-params
-    namespace: default`
-
-const gatewayclass_manifest_invalid string = `
+const gatewayClassManifestInvalid string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
@@ -34,22 +21,13 @@ metadata:
 spec:
   controllerName: "github.com/tv2/cloud-gateway-controller"`
 
-const gatewayclass_manifest_not_our string = `
+const gatewayClassManifestNotOur string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
   name: not-our-gatewayclass
 spec:
   controllerName: "github.com/acme/cloud-gateway-controller"`
-
-const gwClassConfigMapManifest string = `
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cloud-gw-params
-  namespace: default
-data:
-  tier2GatewayClass: istio`
 
 var _ = Describe("GatewayClass controller", func() {
 
@@ -63,16 +41,16 @@ var _ = Describe("GatewayClass controller", func() {
 			By("Setting a condition")
 			ctx := context.Background()
 
-			gwc_in := &gateway.GatewayClass{}
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest), gwc_in)
+			gwcIn := &gateway.GatewayClass{}
+			err := yaml.Unmarshal([]byte(gatewayClassManifest), gwcIn)
 			Expect(err).Should(Succeed())
-			Expect(k8sClient.Create(ctx, gwc_in)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
 			cm := &corev1.ConfigMap{}
-			Expect(yaml.Unmarshal([]byte(gwClassConfigMapManifest), cm)).To(Succeed())
+			Expect(yaml.Unmarshal([]byte(configMapManifest), cm)).To(Succeed())
 			Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
 
-			lookupKey := types.NamespacedName{Name: gwc_in.ObjectMeta.Name, Namespace: ""}
+			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
 			gwc := &gateway.GatewayClass{}
 
 			Eventually(func() bool {
@@ -92,12 +70,12 @@ var _ = Describe("GatewayClass controller", func() {
 			By("Setting a condition")
 			ctx := context.Background()
 
-			gwc_in := &gateway.GatewayClass{}
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest_invalid), gwc_in)
+			gwcIn := &gateway.GatewayClass{}
+			err := yaml.Unmarshal([]byte(gatewayClassManifestInvalid), gwcIn)
 			Expect(err).Should(Succeed())
-			Expect(k8sClient.Create(ctx, gwc_in)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
-			lookupKey := types.NamespacedName{Name: gwc_in.ObjectMeta.Name, Namespace: ""}
+			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
 			gwc := &gateway.GatewayClass{}
 
 			Eventually(func() bool {
@@ -118,12 +96,12 @@ var _ = Describe("GatewayClass controller", func() {
 			By("Not setting a condition")
 			ctx := context.Background()
 
-			gwc_in := &gateway.GatewayClass{}
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest_not_our), gwc_in)
+			gwcIn := &gateway.GatewayClass{}
+			err := yaml.Unmarshal([]byte(gatewayClassManifestNotOur), gwcIn)
 			Expect(err).Should(Succeed())
-			Expect(k8sClient.Create(ctx, gwc_in)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
-			lookupKey := types.NamespacedName{Name: gwc_in.ObjectMeta.Name, Namespace: ""}
+			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
 			gwc := &gateway.GatewayClass{}
 
 			Eventually(func() bool {

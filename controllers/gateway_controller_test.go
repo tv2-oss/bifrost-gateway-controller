@@ -14,19 +14,6 @@ import (
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-const gatewayClassManifest string = `
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: GatewayClass
-metadata:
-  name: default
-spec:
-  controllerName: "github.com/tv2/cloud-gateway-controller"
-  parametersRef:
-    group: v1
-    kind: ConfigMap
-    name: default-gateway-class
-    namespace: default`
-
 const gatewayManifest string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
@@ -41,6 +28,19 @@ spec:
     protocol: HTTP
     hostname: example.com
 `
+
+const gatewayClassManifest string = `
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: default
+spec:
+  controllerName: "github.com/tv2/cloud-gateway-controller"
+  parametersRef:
+    group: v1
+    kind: ConfigMap
+    name: default-gateway-class
+    namespace: default`
 
 const configMapManifest string = `
 apiVersion: v1
@@ -77,8 +77,8 @@ var _ = Describe("Gateway controller", func() {
 	Context("When building Gateway resource from input Gateway", func() {
 		It("Should return a new Gateway", func() {
 			gateway := &gateway.Gateway{}
-			gw_out := BuildGatewayResource(gateway, cm)
-			Expect(gw_out).NotTo(BeNil())
+			gwOut := BuildGatewayResource(gateway, cm)
+			Expect(gwOut).NotTo(BeNil())
 		})
 	})
 
@@ -98,15 +98,12 @@ var _ = Describe("Gateway controller", func() {
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, childGateway)
-				if err != nil {
-					return false
-				}
-				return true
+				return err == nil
 			}, timeout, interval).Should(BeTrue())
 		})
 
 		It("Should set owner reference to enable garbage collection", func() {
-			var t bool = true
+			var t = true
 			expectedOwnerReference := v1.OwnerReference{
 				Kind:               "Gateway",
 				APIVersion:         "gateway.networking.k8s.io/v1beta1",
