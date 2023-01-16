@@ -7,23 +7,23 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 const (
-	SelfControllerName gateway.GatewayController = "github.com/tv2/cloud-gateway-controller"
+	SelfControllerName gatewayapi.GatewayController = "github.com/tv2/cloud-gateway-controller"
 )
 
 type Controller interface {
 	GetClient() client.Client
 }
 
-func isOurGatewayClass(gwc *gateway.GatewayClass) bool {
+func isOurGatewayClass(gwc *gatewayapi.GatewayClass) bool {
 	return gwc.Spec.ControllerName == SelfControllerName
 }
 
-func lookupGatewayClass(r Controller, ctx context.Context, name gateway.ObjectName) (*gateway.GatewayClass, error) {
-	var gwc gateway.GatewayClass
+func lookupGatewayClass(r Controller, ctx context.Context, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
+	var gwc gatewayapi.GatewayClass
 	if err := r.GetClient().Get(ctx, types.NamespacedName{Name: string(name)}, &gwc); err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func lookupGatewayClass(r Controller, ctx context.Context, name gateway.ObjectNa
 	return &gwc, nil
 }
 
-func lookupGatewayClassParameters(r Controller, ctx context.Context, gwc *gateway.GatewayClass) (*corev1.ConfigMap, error) {
+func lookupGatewayClassParameters(r Controller, ctx context.Context, gwc *gatewayapi.GatewayClass) (*corev1.ConfigMap, error) {
 	if gwc.Spec.ParametersRef == nil {
 		return nil, errors.New("GatewayClass without parameters")
 	}
@@ -49,4 +49,12 @@ func lookupGatewayClassParameters(r Controller, ctx context.Context, gwc *gatewa
 	// FIXME: Validate ConfigMap
 
 	return &cm, nil
+}
+
+func lookupGateway(ctx context.Context, r Controller, name gatewayapi.ObjectName, namespace string) (*gatewayapi.Gateway, error) {
+	var gw gatewayapi.Gateway
+	if err := r.GetClient().Get(ctx, types.NamespacedName{Name: string(name), Namespace: string(namespace)}, &gw); err != nil {
+		return nil, err
+	}
+	return &gw, nil
 }
