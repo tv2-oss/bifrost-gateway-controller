@@ -71,16 +71,12 @@ var _ = Describe("Gateway controller", func() {
 		Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
 		Expect(yaml.Unmarshal([]byte(configMapManifest), cm)).To(Succeed())
+		Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
 	})
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
-	})
-
-	When("Applying a configMap", func() {
-		It("should create a configMap", func() {
-			Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
-		})
+		Expect(k8sClient.Delete(ctx, cm)).Should(Succeed())
 	})
 
 	When("Building Gateway resource from input Gateway", func() {
