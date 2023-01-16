@@ -53,7 +53,7 @@ func lookupGatewayClassParameters(r Controller, ctx context.Context, gwc *gatewa
 
 func lookupGateway(ctx context.Context, r Controller, name gatewayapi.ObjectName, namespace string) (*gatewayapi.Gateway, error) {
 	var gw gatewayapi.Gateway
-	if err := r.GetClient().Get(ctx, types.NamespacedName{Name: string(name), Namespace: string(namespace)}, &gw); err != nil {
+	if err := r.GetClient().Get(ctx, types.NamespacedName{Name: string(name), Namespace: namespace}, &gw); err != nil {
 		return nil, err
 	}
 	return &gw, nil

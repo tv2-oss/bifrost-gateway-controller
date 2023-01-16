@@ -41,12 +41,11 @@ func (r *HTTPRouteReconciler) GetClient() client.Client {
 	return r.Client
 }
 
-func lookupParent(ctx context.Context, r Controller, rt *gatewayapi.HTTPRoute, p *gatewayapi.ParentReference) (*gatewayapi.Gateway, error) {
+func lookupParent(ctx context.Context, r Controller, rt *gatewayapi.HTTPRoute, p gatewayapi.ParentReference) (*gatewayapi.Gateway, error) {
 	if p.Namespace == nil {
 		return lookupGateway(ctx, r, p.Name, rt.ObjectMeta.Namespace)
-	} else {
-		return lookupGateway(ctx, r, p.Name, string(*p.Namespace))
 	}
+	return lookupGateway(ctx, r, p.Name, string(*p.Namespace))
 }
 
 func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -62,7 +61,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	isAttached := false
 	rt.Status.Parents = []gatewayapi.RouteParentStatus{}
 	for _, parent := range rt.Spec.ParentRefs {
-		gw, err := lookupParent(ctx, r, &rt, &parent)
+		gw, err := lookupParent(ctx, r, &rt, parent)
 		if err != nil {
 			continue
 		}
