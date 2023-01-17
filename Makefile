@@ -69,7 +69,7 @@ BUILD_COMMIT = $(shell git describe --match="" --always --abbrev=20 --dirty)
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	CGO_ENABLED=0 go build -ldflags="-X main.commit=$(BUILD_COMMIT)" -o bin/cloud-gateway-controller main.go
+	HEAD_SHA=$(shell git describe --match="" --always --abbrev=7 --dirty) goreleaser build --single-target --rm-dist --snapshot --output $(PWD)/cloud-gateway-controller
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
