@@ -37,5 +37,4 @@ servers:
     configBlock: |-
       stubzones
       path /skydns
-      #endpoint http://etcd-test-only-headless.default.svc.cluster.local:2379
-      endpoint http://10.244.0.15:2379
+      endpoint http://etcd-test-only-headless.default.svc.cluster.local:2379
