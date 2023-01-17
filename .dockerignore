@@ -1,4 +1,11 @@
 # More info: https://docs.docker.com/engine/reference/builder/#dockerignore-file
 # Ignore build and test binaries.
-bin/
+api/
+config/
+doc/
+dist/
+hack/
+test/
 testbin/
+test-data/
+upstream-gateway-api-crds/
