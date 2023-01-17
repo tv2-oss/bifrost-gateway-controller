@@ -67,7 +67,7 @@ spec:
         #   type: RuntimeDefault
       containers:
       - command:
-        - /manager
+        - /cloud-gateway-controller
         args:
         - --leader-elect
         image: controller:latest
