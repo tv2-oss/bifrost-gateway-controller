@@ -39,6 +39,8 @@ type GatewayClassReconciler struct {
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/finalizers,verbs=update
 
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch
+
 func (r *GatewayClassReconciler) GetClient() client.Client {
 	return r.Client
 }
