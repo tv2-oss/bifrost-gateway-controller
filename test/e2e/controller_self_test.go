@@ -20,7 +20,7 @@ limitations under the License.
 // tests here to validate the deployment of the controller on the
 // external cluster.
 
-package e2e_suite
+package e2esuite
 
 import (
 	"context"
@@ -28,14 +28,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-const gatewayclass_manifest string = `
+const gatewayclassManifest string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
@@ -69,30 +68,30 @@ var _ = Describe("GatewayClass controller", func() {
 			By("Setting a condition")
 			ctx := context.Background()
 
-			gwc_in := &gatewayapi.GatewayClass{}
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest), gwc_in)
+			gwc := &gatewayapi.GatewayClass{}
+			err := yaml.Unmarshal([]byte(gatewayclassManifest), gwc)
 			Expect(err).Should(Succeed())
-			Expect(k8sClient.Create(ctx, gwc_in)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
 
 			cm := &corev1.ConfigMap{}
 			Expect(yaml.Unmarshal([]byte(gwClassConfigMapManifest), cm)).To(Succeed())
 			Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
 
-			lookupKey := types.NamespacedName{Name: gwc_in.ObjectMeta.Name, Namespace: ""}
-			gwc := &gatewayapi.GatewayClass{}
+			lookupKey := types.NamespacedName{Name: gwc.ObjectMeta.Name, Namespace: ""}
+			gwcRead := &gatewayapi.GatewayClass{}
 
 			Eventually(func() bool {
-				err := k8sClient.Get(ctx, lookupKey, gwc)
+				err := k8sClient.Get(ctx, lookupKey, gwcRead)
 				if err != nil ||
-					gwc.Status.Conditions[0].Type != string(gatewayapi.GatewayClassConditionStatusAccepted) ||
-					gwc.Status.Conditions[0].Status != "True" {
+					gwcRead.Status.Conditions[0].Type != string(gatewayapi.GatewayClassConditionStatusAccepted) ||
+					gwcRead.Status.Conditions[0].Status != "True" {
 					return false
 				}
 				return true
 			}, timeout, interval).Should(BeTrue())
 
 			Expect(k8sClient.Delete(ctx, cm)).Should(Succeed())
-			Expect(k8sClient.Delete(ctx, gwc_in)).Should(Succeed())
+			Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
 		})
 	})
 })
