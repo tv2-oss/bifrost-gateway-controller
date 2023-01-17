@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +49,35 @@ func lookupParent(ctx context.Context, r Controller, rt *gatewayapi.HTTPRoute, p
 	return lookupGateway(ctx, r, p.Name, string(*p.Namespace))
 }
 
+func findParentRouteStatus(rtStatus *gatewayapi.RouteStatus, parent gatewayapi.ParentReference) *gatewayapi.RouteParentStatus {
+	for i := range rtStatus.Parents {
+		pStat := &rtStatus.Parents[i]
+		if pStat.ParentRef == parent && pStat.ControllerName == SelfControllerName {
+			return pStat
+		}
+	}
+	return nil
+}
+
+func setRouteStatusCondition(rtStatus *gatewayapi.RouteStatus, parent gatewayapi.ParentReference, newCondition metav1.Condition) {
+	if newCondition.LastTransitionTime.IsZero() {
+		newCondition.LastTransitionTime = metav1.NewTime(time.Now())
+	}
+
+	existingParentRouteStat := findParentRouteStatus(rtStatus, parent)
+	if existingParentRouteStat == nil {
+		newStatus := gatewayapi.RouteParentStatus{
+			ParentRef:      parent,
+			ControllerName: SelfControllerName,
+			Conditions:     []metav1.Condition{newCondition},
+		}
+		rtStatus.Parents = append(rtStatus.Parents, newStatus)
+		return
+	}
+
+	meta.SetStatusCondition(&existingParentRouteStat.Conditions, newCondition)
+}
+
 func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -58,7 +88,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	logger.Info("HTTPRoute")
 
-	isAttached := false
+	doStatusUpdate := false
 	rt.Status.Parents = []gatewayapi.RouteParentStatus{}
 	for _, parent := range rt.Spec.ParentRefs {
 		gw, err := lookupParent(ctx, r, &rt, parent)
@@ -69,21 +99,17 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err != nil || !isOurGatewayClass(gwc) {
 			continue
 		}
-		isAttached = true
-		pstatus := gatewayapi.RouteParentStatus{
-			ParentRef:      parent,
-			ControllerName: SelfControllerName,
-			Conditions:     []metav1.Condition{},
-		}
-		meta.SetStatusCondition(&pstatus.Conditions, metav1.Condition{
-			Type:   string(gatewayapi.RouteConditionAccepted),
-			Status: "True",
-			Reason: string(gatewayapi.RouteReasonAccepted),
-		})
-		rt.Status.Parents = append(rt.Status.Parents, pstatus)
+		doStatusUpdate = true
+
+		setRouteStatusCondition(&rt.Status.RouteStatus, parent,
+			metav1.Condition{
+				Type:   string(gatewayapi.RouteConditionAccepted),
+				Status: "True",
+				Reason: string(gatewayapi.RouteReasonAccepted),
+			})
 	}
 
-	if isAttached {
+	if doStatusUpdate {
 		if err := r.Status().Update(ctx, &rt); err != nil {
 			logger.Error(err, "unable to update HTTPRoute status")
 			return ctrl.Result{}, err
