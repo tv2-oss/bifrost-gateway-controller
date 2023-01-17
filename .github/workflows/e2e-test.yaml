@@ -35,7 +35,7 @@ jobs:
 
       - name: Setup E2E KIND cluster
         run: |
-          make create-cluster gateway-api-upstream-get deploy-gateway-api setup-external-dns-test cluster-load-controller-image
+          make create-cluster deploy-gateway-api setup-external-dns-test cluster-load-controller-image
 
       - name: Deploy controller to cluster
         run: |
