@@ -1,0 +1,17 @@
+resources:
+- ../default
+
+patchesStrategicMerge:
+  - |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: cloud-gateway-controller-controller-manager
+      namespace: cloud-gateway-controller-system
+    spec:
+      template:
+        spec:
+          containers:
+            - name: manager
+              image: "controller:latest"
+              imagePullPolicy: "Never"

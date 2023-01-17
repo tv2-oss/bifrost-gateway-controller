@@ -29,8 +29,13 @@ deploy-istio:
 	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts istiod istiod --version 1.16.1 -n istio-system
 
 #################
-.PHONY: deploy-external-dns-test
-deploy-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
+.PHONY: setup-external-dns-test
+setup-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
+
+#################
+.PHONY: cluster-load-controller-image
+cluster-load-controller-image:
+	kind load docker-image controller:latest
 
 #################
 .PHONY: deploy-etcd
@@ -41,7 +46,7 @@ deploy-etcd:
 #################
 .PHONY: deploy-coredns
 deploy-coredns:
-	helm upgrade -i --repo https://coredns.github.io/helm coredns-test-only coredns --version 1.19.7 --values test-data/coredns-test-values.yaml
+	helm upgrade -i --repo https://coredns.github.io/helm coredns-test-only coredns --version 1.19.7 --wait --values test-data/coredns-test-values.yaml
 
 #################
 .PHONY: deploy-multitool
