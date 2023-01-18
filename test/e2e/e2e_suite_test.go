@@ -30,11 +30,15 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 var (
 	cfg       *rest.Config
 	k8sClient client.Client
+	restClient rest.Interface
 	testEnv   *envtest.Environment
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -73,6 +77,14 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+
+	gvk := schema.GroupVersionKind{
+		Group:   "",
+		Version: "v1",
+		Kind:    "Pod",
+	}
+	restClient, err = apiutil.RESTClientForGVK(gvk, false, cfg, serializer.NewCodecFactory(scheme.Scheme))
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {

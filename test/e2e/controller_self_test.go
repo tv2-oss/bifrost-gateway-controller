@@ -23,8 +23,10 @@ limitations under the License.
 package e2esuite
 
 import (
+	"bytes"
 	"context"
 	"regexp"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -32,6 +34,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
@@ -205,6 +208,14 @@ var _ = Describe("Gateway addresses", func() {
 				}
 				return true
 			}, timeout, interval).Should(BeTrue())
+
+			stdout := new(bytes.Buffer)
+			ExecCmdInPodBySelector(k8sClient, restClient, cfg, client.MatchingLabels{"app": "multitool"}, "default",
+				"dig @coredns-test-only-coredns example-foo4567.com +short",
+				nil, stdout, nil)
+
+			foundDnsLookup := strings.TrimRight(string(stdout.Bytes()), "\n")
+			Expect(gwRead.Status.Addresses[0].Value).To(Equal(foundDnsLookup))
 
 			Expect(k8sClient.Delete(ctx, rt)).To(Succeed())
 			Expect(k8sClient.Delete(ctx, gw)).To(Succeed())
