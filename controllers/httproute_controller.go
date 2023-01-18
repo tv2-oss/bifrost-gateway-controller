@@ -91,6 +91,10 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	doStatusUpdate := false
 	rt.Status.Parents = []gatewayapi.RouteParentStatus{}
 	for _, parent := range rt.Spec.ParentRefs {
+		if parent.Namespace == nil {
+			// Route parents default to same namespace as route
+			parent.Namespace = (*gatewayapi.Namespace)(&rt.ObjectMeta.Namespace)
+		}
 		gw, err := lookupParent(ctx, r, &rt, parent)
 		if err != nil {
 			continue
