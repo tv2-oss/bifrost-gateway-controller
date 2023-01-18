@@ -1,4 +1,12 @@
 #################
+.PHONY: setup-e2e-test-cluster
+setup-e2e-test-cluster: create-cluster deploy-gateway-api setup-external-dns-test
+
+#################
+.PHONY: setup-external-dns-test
+setup-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
+
+#################
 ifeq ($(GATEWAY_API_VERSION),)
 GATEWAY_API_VERSION=v0.6.0
 endif
@@ -27,10 +35,6 @@ delete-cluster:
 deploy-istio:
 	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts base base     --version 1.16.1 -n istio-system --create-namespace
 	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts istiod istiod --version 1.16.1 -n istio-system
-
-#################
-.PHONY: setup-external-dns-test
-setup-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
 
 #################
 .PHONY: cluster-load-controller-image
