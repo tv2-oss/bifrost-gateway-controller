@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -62,7 +63,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	logger.Info("Gateway")
 
-	gwc, err := lookupGatewayClass(r, ctx, g.Spec.GatewayClassName)
+	gwc, err := lookupGatewayClass(ctx, r, g.Spec.GatewayClassName)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -71,9 +72,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	cm, err := lookupGatewayClassParameters(r, ctx, gwc)
+	cm, err := lookupGatewayClassParameters(ctx, r, gwc)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("Parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
+		return ctrl.Result{}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
 
 	logger.Info("Creating Istio Gateway")

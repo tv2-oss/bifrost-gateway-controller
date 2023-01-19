@@ -22,7 +22,7 @@ func isOurGatewayClass(gwc *gatewayapi.GatewayClass) bool {
 	return gwc.Spec.ControllerName == SelfControllerName
 }
 
-func lookupGatewayClass(r Controller, ctx context.Context, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
+func lookupGatewayClass(ctx context.Context, r Controller, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
 	var gwc gatewayapi.GatewayClass
 	if err := r.GetClient().Get(ctx, types.NamespacedName{Name: string(name)}, &gwc); err != nil {
 		return nil, err
@@ -31,14 +31,14 @@ func lookupGatewayClass(r Controller, ctx context.Context, name gatewayapi.Objec
 	return &gwc, nil
 }
 
-func lookupGatewayClassParameters(r Controller, ctx context.Context, gwc *gatewayapi.GatewayClass) (*corev1.ConfigMap, error) {
+func lookupGatewayClassParameters(ctx context.Context, r Controller, gwc *gatewayapi.GatewayClass) (*corev1.ConfigMap, error) {
 	if gwc.Spec.ParametersRef == nil {
 		return nil, errors.New("GatewayClass without parameters")
 	}
 
 	// FIXME: More validation...
 	if gwc.Spec.ParametersRef.Kind != "ConfigMap" {
-		return nil, errors.New("Parameter Kind is not a ConfigMap")
+		return nil, errors.New("parameter Kind is not a ConfigMap")
 	}
 
 	var cm corev1.ConfigMap
