@@ -30,7 +30,7 @@ import (
 
 // GatewayReconciler reconciles a Gateway object
 type GatewayReconciler struct {
-	Client client.Client
+	client.Client
 	Scheme *runtime.Scheme
 }
 
@@ -89,7 +89,13 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	// TODO(user): your logic here
+	addrType := gatewayapi.IPAddressType
+	g.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
+
+	if err := r.Status().Update(ctx, &g); err != nil {
+		logger.Error(err, "unable to update Gateway status")
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }

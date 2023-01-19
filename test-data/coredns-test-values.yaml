@@ -1,0 +1,23 @@
+isClusterService: false
+servers:
+- zones:
+  - zone: .
+  port: 53
+  plugins:
+  - name: log
+  - name: errors
+  # Serves a /health endpoint on :8080, required for livenessProbe
+  - name: health
+    configBlock: |-
+      lameduck 5s
+  # Serves a /ready endpoint on :8181, required for readinessProbe
+  - name: ready
+  - name: reload
+  - name: loadbalance
+  # Addition for local test
+  - name: etcd
+    parameters: example-foo4567.com
+    configBlock: |-
+      stubzones
+      path /skydns
+      endpoint http://etcd-test-only-headless.default.svc.cluster.local:2379

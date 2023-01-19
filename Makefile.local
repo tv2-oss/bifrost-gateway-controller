@@ -29,3 +29,29 @@ deploy-istio:
 	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts istiod istiod --version 1.16.1 -n istio-system
 
 #################
+.PHONY: deploy-external-dns-test
+deploy-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
+
+#################
+.PHONY: deploy-etcd
+deploy-etcd:
+	helm upgrade -i --repo https://charts.bitnami.com/bitnami etcd-test-only etcd --version 8.6.0 --wait --set auth.rbac.create=false
+	#auth.rbac.rootPassword=someSecret
+
+#################
+.PHONY: deploy-coredns
+deploy-coredns:
+	helm upgrade -i --repo https://coredns.github.io/helm coredns-test-only coredns --version 1.19.7 --values test-data/coredns-test-values.yaml
+
+#################
+.PHONY: deploy-multitool
+deploy-multitool:
+	kubectl create deploy multitool --image praqma/network-multitool
+
+#################
+
+#################
+.PHONY: deploy-external-dns
+deploy-external-dns:
+	helm upgrade -i --repo https://kubernetes-sigs.github.io/external-dns external-dns external-dns --version 1.12.0 --values test-data/external-dns-values.yaml
+

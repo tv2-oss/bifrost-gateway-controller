@@ -8,4 +8,4 @@ spec:
   - name: prod-web
     port: 80
     protocol: HTTP
-    hostname: example.com
+    hostname: example-foo4567.com

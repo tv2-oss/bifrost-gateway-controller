@@ -1,0 +1,15 @@
+env:
+ - name: ETCD_URLS
+   value: http://etcd-test-only-headless:2379
+provider: coredns
+rbac:
+  additionalPermissions:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes"] 
+    verbs: ["get","watch","list"]
+sources:
+ - gateway-httproute
+logLevel: debug

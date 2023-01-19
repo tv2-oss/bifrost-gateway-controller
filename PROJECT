@@ -11,4 +11,8 @@ resources:
   group: gateway.networking.k8s.io
   kind: GatewayClass
   version: v1beta1
+- controller: true
+  group: gateway.networking.k8s.io
+  kind: HTTPRoute
+  version: v1beta1
 version: "3"
