@@ -1,94 +1,153 @@
-# cloud-gateway-controller
-// TODO(user): Add simple overview of use/purpose
+# Cloud Gateway Controller
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+The *cloud-gateway-controller* is an augmented Kubernetes network
+gateway-controller -- think of it as a Kubernetes ingress-controller
+that not only provides a data-path inside Kubernetes, but extends the
+data-path outside Kubernetes into the surrounding cloud
+infrastructure.
 
-## Getting Started
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
+## End-to-end Network Path
 
-### Running on the cluster
-1. Install Instances of Custom Resources:
+A typical gateway/ingress controller for Kubernetes implements a
+datapath inside Kubernetes, e.g. a Kubernetes `Deployment`,
+`HorizontalPodAutoscaler` and `Service`. The `Service` may be of type
+`LoadBalancer` which could result in a load-balancer service being
+allocated from the surrounding cloud infrastructure.
 
-```sh
-kubectl apply -f config/samples/
-```
+However, there are several other concerns that impacts the network
+datapath at the edge of the infrastructure:
 
-2. Build and push your image to the location specified by `IMG`:
-	
-```sh
-make docker-build docker-push IMG=<some-registry>/cloud-gateway-controller:tag
-```
-	
-3. Deploy the controller to the cluster with the image specified by `IMG`:
+- DNS. Ensuring that traffic are routed to our network datapath based
+  on DNS lookups.
 
-```sh
-make deploy IMG=<some-registry>/cloud-gateway-controller:tag
-```
+- TLS certificates bound to the DNS name(s) of the network datapath.
 
-### Uninstall CRDs
-To delete the CRDs from the cluster:
+- Network connectivity, e.g. should the datapath be generally exposed
+  to the internet or potentially internal subnets without public
+  connectivity.
 
-```sh
-make uninstall
-```
+- ACLs limiting access to public datapaths based on IP addresses.
 
-### Undeploy controller
-UnDeploy the controller to the cluster:
+- Adaptive and 'deep inspection' type of filtering and protection -
+  aka. 'web application firewall' solutions.
 
-```sh
-make undeploy
-```
+- Logging of network traffic.
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
+- Load-balancer type, e.g. we may want to use an 'AWS application
+  (ALB)' load balancer for some datapaths and an 'AWS API gateway' for
+  others (an AWS API gateway is a server-less solution whereas an ALB
+  is a 'running instance' type of solution with a non-zero idle-load
+  cost).
 
-### How it works
-This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
+- Multi-cluster and multi-region load balancing and traffic routing.
 
-It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/) 
-which provides a reconcile function responsible for synchronizing resources untile the desired state is reached on the cluster 
+Similarly, inside the Kubernetes cluster, we may have services that
+need a full service-mesh while others do not.
 
-### Test It Out
-1. Install the CRDs into the cluster:
+The following is two examples of network datapaths:
 
-```sh
-make install
-```
+![Example network datapath](doc/images/example-network-datapath.png)
 
-2. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
+## Using the Kubernetes Gateway API
 
-```sh
-make run
-```
+When building a platform, it is essential to provide a well-designed
+API to abstractions that are useful and manageable to users. The
+*cloud-gateway-controller* implements the [Kubernetes Gateway
+API](https://gateway-api.sigs.k8s.io/) to achieve this objective.
 
-**NOTE:** You can also run this in one step by running: `make install run`
+The [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io/) is an
+API for describing network gateways and configure routing from
+gateways to Kubernetes services. This API is fast becoming the
+standard API and is [widely
+supported](https://gateway-api.sigs.k8s.io/implementations/).
 
-### Modifying the API definitions
-If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
+**The *cloud-gateway-controller* presents the gateway API to users as
+the sole interface for network datapath definition.** This is the only
+interface users need to know and it fully supports a GitOps-based
+workflow. Users do not need to work with Terraform or generally know
+how the Gateway API is implemented by the platform.
 
-```sh
-make manifests
-```
+The Gateway API does not cover concerns such as DNS or web application
+firewall (WAF) configuration. **The *cloud-gateway-controller*
+implements concerns beyond Gateway API scope using configuration in
+`GatewayClass` resources.** E.g., a specific `GatewayClass` defines a
+specific set of WAF rules.  This is very similar to how Kubernetes
+[storage
+classes](https://kubernetes.io/docs/concepts/storage/storage-classes)
+map abstract storage claims to actual implementations.
 
-**NOTE:** Run `make --help` for more information on all potential `make` targets
+A side-effect of using the Gateway API is that the
+*cloud-gateway-controller* interoperate well with other Kubernetes
+solutions that automate networking, e.g. Canary deployments using
+[Flagger](https://flagger.app).
 
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+## The *cloud-gateway-controller* is a Controller-of-controllers
 
-## License
+The *cloud-gateway-controller* does not talk to any cloud-APIs to
+implement the datapath. Instead it creates other Kubernetes resources
+that implement the individual components - much like the Kubernetes
+Deployment controller creates Pod resources and let another
+controller implement Pod resources.
 
-Copyright 2022.
+**One can think of the *cloud-gateway-controller* as an advanced Helm
+chart or a Crossplane composition.**
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Because the *cloud-gateway-controller* implements cloud resources
+through other controllers and with resources configured through
+`GatewayClass` resources, the *cloud-gateway-controller* is
+cloud-agnostic (but `GatewayClass` definitions are not).
 
-    http://www.apache.org/licenses/LICENSE-2.0
+Similarly, the *cloud-gateway-controller* does not create datapaths
+inside Kubernetes, e.g. the *service mesh gateway* shown in the image
+above. These parts of the datapath are implemented by traditional
+gateway controllers such as Istio, Contour etc.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+The overarching purpose of the *cloud-gateway-controller* is to
+orchestrate the Kubernetes external and internal datapaths and this
+complete datapath is configured using the Gateway API. This is
+illustrated below using Crossplane for managing cloud resources and
+Istio for managing the Kubernetes-internal datapath.
 
+![Controller hierarchy](doc/images/controller-hierarchy.png)
+
+### Why Not Use e.g. Crossplane or Helm?
+
+An important objective of the *cloud-gateway-controller* is to maintain
+a Gateway API compatible interface towards users. This would not be
+possible with techniques such as Crossplane and Helm.  Also, the
+mapping from the Gateway API to e.g. a Crossplane composition is
+non-trivial, i.e. it is difficult to do with purely templating.
+
+The *cloud-gateway-controller* implements some of the same composition
+logic as e.g. Crossplane. Why did we not use Crossplane compositions,
+e.g. build a Gateway API implementation using the following hierarchy
+of services?
+
+- Cloud-gateway-controller implements facade gateway API, stamps out Crossplane claim
+- Crossplane implements claim towards a composition
+- Composition defines how low-level cloud resources should be stamped out
+- Crossplane AWS provider implements low-level resources towards cloud API
+
+While this would be feasible, there are several complicated
+dependencies between each of the above components, which increase the
+maintenance burden. The *cloud-gateway-controller* design aims at
+reducing the complexity by building on a more self-contained
+monolithic design - or at least a design with less advanced
+dependencies between components. For this reason, we use the basic,
+low-level cloud resources of e.g. Crossplane and not the higher-level
+composition functionality.
+
+## User Journeys
+
+One of the principles driving the Gateway API was to support multiple
+personas, i.e. design an API that has Kubernetes resources for each
+persona. See e.g. the following example:
+
+![Gateway API personas](doc/images/gateway-api-personas.png)
+(source: https://gateway-api.sigs.k8s.io/)
+
+In the following we describe how to use the *cloud-gateway-controller*
+as seen from the perspective of these personas.
+
+- [Basic Network Datapath for Small Team](doc/basic-datapath.md)
+- Configuring a Datapath through a GatewayClass Definition
