@@ -59,7 +59,7 @@ func findParentRouteStatus(rtStatus *gatewayapi.RouteStatus, parent gatewayapi.P
 	return nil
 }
 
-func setRouteStatusCondition(rtStatus *gatewayapi.RouteStatus, parent gatewayapi.ParentReference, newCondition metav1.Condition) {
+func setRouteStatusCondition(rtStatus *gatewayapi.RouteStatus, parent gatewayapi.ParentReference, newCondition *metav1.Condition) {
 	if newCondition.LastTransitionTime.IsZero() {
 		newCondition.LastTransitionTime = metav1.NewTime(time.Now())
 	}
@@ -69,13 +69,13 @@ func setRouteStatusCondition(rtStatus *gatewayapi.RouteStatus, parent gatewayapi
 		newStatus := gatewayapi.RouteParentStatus{
 			ParentRef:      parent,
 			ControllerName: SelfControllerName,
-			Conditions:     []metav1.Condition{newCondition},
+			Conditions:     []metav1.Condition{*newCondition},
 		}
 		rtStatus.Parents = append(rtStatus.Parents, newStatus)
 		return
 	}
 
-	meta.SetStatusCondition(&existingParentRouteStat.Conditions, newCondition)
+	meta.SetStatusCondition(&existingParentRouteStat.Conditions, *newCondition)
 }
 
 func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -95,14 +95,14 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err != nil {
 			continue
 		}
-		gwc, err := lookupGatewayClass(r, ctx, gw.Spec.GatewayClassName)
+		gwc, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
 		if err != nil || !isOurGatewayClass(gwc) {
 			continue
 		}
 		doStatusUpdate = true
 
 		setRouteStatusCondition(&rt.Status.RouteStatus, parent,
-			metav1.Condition{
+			&metav1.Condition{
 				Type:   string(gatewayapi.RouteConditionAccepted),
 				Status: "True",
 				Reason: string(gatewayapi.RouteReasonAccepted),
