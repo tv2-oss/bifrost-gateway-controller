@@ -106,14 +106,11 @@ var _ = Describe("Gateway controller", func() {
 			name := fmt.Sprintf("%s-%s", gw.ObjectMeta.Name, "istio")
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: "default"}, childGateway)
-				if err != nil {
-					return false
-				}
-				return true
+				return err == nil
 			}, timeout, interval).Should(BeTrue())
 
 			By("Setting the owner reference to enable garbage collection")
-			var t bool = true
+			t := true
 			expectedOwnerReference := v1.OwnerReference{
 				Kind:               "Gateway",
 				APIVersion:         "gateway.networking.k8s.io/v1beta1",

@@ -19,9 +19,10 @@ package controllers
 import (
 	"context"
 	"path/filepath"
+	"testing"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
-	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

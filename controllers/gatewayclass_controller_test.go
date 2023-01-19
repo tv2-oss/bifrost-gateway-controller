@@ -13,7 +13,7 @@ import (
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-const gatewayclass_manifest string = `
+const gatewayclassManifest string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
@@ -26,7 +26,7 @@ spec:
     name: cloud-gw-params
     namespace: default`
 
-const gatewayclass_manifest_invalid string = `
+const gatewayclassManifestInvalid string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
@@ -34,7 +34,7 @@ metadata:
 spec:
   controllerName: "github.com/tv2/cloud-gateway-controller"`
 
-const gatewayclass_manifest_not_our string = `
+const gatewayclassManifestNotOurs string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
@@ -73,7 +73,7 @@ var _ = Describe("GatewayClass controller", func() {
 
 		It("Should be marked as accepted", func() {
 
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest), gwcIn)
+			err := yaml.Unmarshal([]byte(gatewayclassManifest), gwcIn)
 			Expect(err).Should(Succeed())
 			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
@@ -98,7 +98,7 @@ var _ = Describe("GatewayClass controller", func() {
 	When("An invalid gatewayclass we own is created", func() {
 		It("Should be marked as invalid", func() {
 
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest_invalid), gwcIn)
+			err := yaml.Unmarshal([]byte(gatewayclassManifestInvalid), gwcIn)
 			Expect(err).Should(Succeed())
 			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
@@ -120,7 +120,7 @@ var _ = Describe("GatewayClass controller", func() {
 	When("A gatewayclass we do not own is created", func() {
 		It("Should not be marked as accepted", func() {
 
-			err := yaml.Unmarshal([]byte(gatewayclass_manifest_not_our), gwcIn)
+			err := yaml.Unmarshal([]byte(gatewayclassManifestNotOurs), gwcIn)
 			Expect(err).Should(Succeed())
 			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
