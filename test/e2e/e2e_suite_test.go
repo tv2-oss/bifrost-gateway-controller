@@ -23,25 +23,25 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 var (
-	cfg       *rest.Config
-	k8sClient client.Client
+	cfg        *rest.Config
+	k8sClient  client.Client
 	restClient rest.Interface
-	testEnv   *envtest.Environment
-	ctx       context.Context
-	cancel    context.CancelFunc
+	testEnv    *envtest.Environment
+	ctx        context.Context
+	cancel     context.CancelFunc
 )
 
 func TestE2E(t *testing.T) {

@@ -28,17 +28,16 @@ import (
 	"io"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func ExecCmdInPodBySelector(cl client.Client, restClient rest.Interface, cfg *rest.Config,
 	selector client.ListOption, namespace string,
 	command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-
 	podList := &corev1.PodList{}
 	opts := []client.ListOption{client.InNamespace(namespace), selector}
 	err := cl.List(context.Background(), podList, opts...)
@@ -56,7 +55,6 @@ func ExecCmdInPodBySelector(cl client.Client, restClient rest.Interface, cfg *re
 func ExecCmdInPod(restClient rest.Interface, cfg *rest.Config,
 	podName string, namespace string,
 	command string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-
 	execReq := restClient.
 		Post().
 		Namespace(namespace).
@@ -65,9 +63,9 @@ func ExecCmdInPod(restClient rest.Interface, cfg *rest.Config,
 		SubResource("exec").
 		VersionedParams(&corev1.PodExecOptions{
 			//Container: "container",
-			Command:   []string{"sh", "-c", command},
+			Command: []string{"sh", "-c", command},
 			//Stdin:     true,
-			Stdout:    true,
+			Stdout: true,
 			//Stderr:    true,
 		}, runtime.NewParameterCodec(scheme.Scheme))
 
@@ -76,12 +74,10 @@ func ExecCmdInPod(restClient rest.Interface, cfg *rest.Config,
 		return fmt.Errorf("error while creating remote command executor: %v", err)
 	}
 
-	err = exec.Stream(remotecommand.StreamOptions{
+	return exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
 		//Stdin:  stdin,
 		Stdout: stdout,
 		//Stderr: stderr,
-		Tty:    false,
+		Tty: false,
 	})
-
-	return nil
 }

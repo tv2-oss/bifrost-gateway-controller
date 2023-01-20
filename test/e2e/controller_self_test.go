@@ -25,6 +25,7 @@ package e2esuite
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -134,8 +135,9 @@ var _ = Describe("GatewayClass", func() {
 var _ = Describe("Gateway addresses", func() {
 
 	const (
-		timeout  = time.Second * 10
-		interval = time.Millisecond * 250
+		externalDNSTimeout = time.Second * 120
+		interval           = time.Millisecond * 250
+		timeout            = time.Second * 10
 	)
 	var (
 		gwc          *gatewayapi.GatewayClass
@@ -145,8 +147,8 @@ var _ = Describe("Gateway addresses", func() {
 	)
 
 	BeforeEach(func() {
-		ip4AddressRe, _ = regexp.Compile(`^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$`)
-		hostnameRe, _ = regexp.Compile(`^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$`)
+		ip4AddressRe = regexp.MustCompile(`^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$`)
+		hostnameRe = regexp.MustCompile(`^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$`)
 		gwc = &gatewayapi.GatewayClass{}
 		err := yaml.Unmarshal([]byte(gatewayclassManifest), gwc)
 		ctx := context.Background()
@@ -165,8 +167,8 @@ var _ = Describe("Gateway addresses", func() {
 	})
 
 	Context("When a gateway/httproute is created", func() {
-		It("They be marked as ready/accepted", func() {
-			By("Setting a condition")
+		It("The controller should accept those", func() {
+			By("Assigned an address to the Gateway")
 
 			ctx := context.Background()
 			gw := &gatewayapi.Gateway{}
@@ -191,6 +193,21 @@ var _ = Describe("Gateway addresses", func() {
 				return true
 			}, timeout, interval).Should(BeTrue())
 
+			By("Assigning status and address such that external-dns accepts and propagates the address")
+			Eventually(func() bool {
+				stdout := new(bytes.Buffer)
+				err := ExecCmdInPodBySelector(k8sClient, restClient, cfg, client.MatchingLabels{"app": "multitool"}, "default",
+					fmt.Sprintf("dig @coredns-test-only-coredns %s +short", *gw.Spec.Listeners[0].Hostname),
+					nil, stdout, nil)
+				if err != nil {
+					return false
+				}
+				foundDNSLookup := strings.TrimRight(stdout.String(), "\n")
+				// fmt.Printf("Addresses found: gateway: %s, dns: %s\n", gwRead.Status.Addresses[0].Value, foundDNSLookup)
+				return gwRead.Status.Addresses[0].Value == foundDNSLookup
+			}, externalDNSTimeout, interval).Should(BeTrue())
+
+			By("Setting a status condition on the HTTPRoute")
 			lookupKey = types.NamespacedName{Name: rt.ObjectMeta.Name, Namespace: rt.ObjectMeta.Namespace}
 			rtRead := &gatewayapi.HTTPRoute{}
 
@@ -201,21 +218,13 @@ var _ = Describe("Gateway addresses", func() {
 					len(rtRead.Status.RouteStatus.Parents[0].Conditions) != 1 ||
 					string(rtRead.Status.RouteStatus.Parents[0].ParentRef.Name) != gw.ObjectMeta.Name ||
 					string(*rtRead.Status.RouteStatus.Parents[0].ParentRef.Namespace) != gw.ObjectMeta.Namespace ||
-					//rtRead.Status.RouteStatus.Parents[0].ControllerName != "xxx"
+					// TODO: rtRead.Status.RouteStatus.Parents[0].ControllerName != "xxx"
 					rtRead.Status.RouteStatus.Parents[0].Conditions[0].Type != string(gatewayapi.RouteConditionAccepted) ||
 					rtRead.Status.RouteStatus.Parents[0].Conditions[0].Status != "True" {
 					return false
 				}
 				return true
 			}, timeout, interval).Should(BeTrue())
-
-			stdout := new(bytes.Buffer)
-			ExecCmdInPodBySelector(k8sClient, restClient, cfg, client.MatchingLabels{"app": "multitool"}, "default",
-				"dig @coredns-test-only-coredns example-foo4567.com +short",
-				nil, stdout, nil)
-
-			foundDnsLookup := strings.TrimRight(string(stdout.Bytes()), "\n")
-			Expect(gwRead.Status.Addresses[0].Value).To(Equal(foundDnsLookup))
 
 			Expect(k8sClient.Delete(ctx, rt)).To(Succeed())
 			Expect(k8sClient.Delete(ctx, gw)).To(Succeed())
