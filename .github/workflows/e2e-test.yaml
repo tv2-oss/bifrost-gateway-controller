@@ -35,7 +35,7 @@ jobs:
 
       - name: Setup E2E KIND cluster
         run: |
-          make setup-e2e-test-cluster
+          make setup-e2e-test-cluster wait-ready-external-dns-test
 
       - name: Deploy controller to cluster
         run: |

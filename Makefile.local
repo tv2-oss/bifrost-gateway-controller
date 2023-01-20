@@ -6,6 +6,13 @@ setup-e2e-test-cluster: create-cluster deploy-gateway-api setup-external-dns-tes
 .PHONY: setup-external-dns-test
 setup-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
 
+.PHONY: wait-ready-external-dns-test
+wait-ready-external-dns-test:
+	until kubectl wait pods -l app.kubernetes.io/instance=etcd-test-only --for condition=Ready --timeout=120s   ; do echo "."; sleep 1; done
+	until kubectl wait pods -l app.kubernetes.io/instance=coredns-test-only --for condition=Ready --timeout=120s; do echo "."; sleep 1; done
+	until kubectl wait pods -l app=multitool --for condition=Ready --timeout=120s                               ; do echo "."; sleep 1; done
+	until kubectl wait pods -l app.kubernetes.io/instance=external-dns --for condition=Ready --timeout=120s     ; do echo "."; sleep 1; done
+
 #################
 ifeq ($(GATEWAY_API_VERSION),)
 GATEWAY_API_VERSION=v0.6.0
@@ -44,21 +51,17 @@ cluster-load-controller-image:
 #################
 .PHONY: deploy-etcd
 deploy-etcd:
-	helm upgrade -i --repo https://charts.bitnami.com/bitnami etcd-test-only etcd --version 8.6.0 --wait --set auth.rbac.create=false
-	#auth.rbac.rootPassword=someSecret
+	helm upgrade -i --repo https://charts.bitnami.com/bitnami etcd-test-only etcd --version 8.6.0 --set auth.rbac.create=false
 
 #################
 .PHONY: deploy-coredns
 deploy-coredns:
-	helm upgrade -i --repo https://coredns.github.io/helm coredns-test-only coredns --version 1.19.7 --wait --values test-data/coredns-test-values.yaml
+	helm upgrade -i --repo https://coredns.github.io/helm coredns-test-only coredns --version 1.19.7 --values test-data/coredns-test-values.yaml
 
 #################
 .PHONY: deploy-multitool
 deploy-multitool:
 	kubectl create deploy multitool --image praqma/network-multitool
-	kubectl wait pods -l app=multitool --for condition=Ready --timeout=120s
-
-#################
 
 #################
 .PHONY: deploy-external-dns
