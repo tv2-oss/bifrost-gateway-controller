@@ -123,19 +123,28 @@ logic as e.g. Crossplane. Why did we not use Crossplane compositions,
 e.g. build a Gateway API implementation using the following hierarchy
 of services?
 
-- Cloud-gateway-controller implements facade gateway API, stamps out Crossplane claim
-- Crossplane implements claim towards a composition
-- Composition defines how low-level cloud resources should be stamped out
-- Crossplane AWS provider implements low-level resources towards cloud API
+- Cloud-gateway-controller implements facade gateway API, stamps out Crossplane claim.
+- Crossplane implements claim towards a composition.
+- Crossplane Composition defines how low-level cloud resources should be stamped out.
+- Crossplane cloud-specific provider implements low-level resources towards cloud API.
 
 While this would be feasible, there are several complicated
 dependencies between each of the above components, which increase the
 maintenance burden. The *cloud-gateway-controller* design aims at
 reducing the complexity by building on a more self-contained
-monolithic design - or at least a design with less advanced
+monolithic design - or at least a design with less non-trivial
 dependencies between components. For this reason, we use the basic,
 low-level cloud resources of e.g. Crossplane and not the higher-level
 composition functionality.
+
+Another essential argument for keeping the composition logic internal
+to the *cloud-gateway-controller* is to support operational day-2
+concerns in the controller. While the current implementation of the
+*cloud-gateway-controller* primarily is based on templates, the design
+allows for implementation of operational concerns such as code-based
+non-disruptive upgrades of gateway implementation. This will not
+always be possible with a Helm or Crossplane-composition based
+implementation.
 
 ## User Journeys
 
