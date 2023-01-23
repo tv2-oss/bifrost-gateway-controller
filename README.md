@@ -138,7 +138,7 @@ low-level cloud resources of e.g. Crossplane and not the higher-level
 composition functionality.
 
 Another essential argument for keeping the composition logic internal
-to the *cloud-gateway-controller* is to support operational day-2
+to the *cloud-gateway-controller* is to support day-2 operational
 concerns in the controller. While the current implementation of the
 *cloud-gateway-controller* primarily is based on templates, the design
 allows for implementation of operational concerns such as code-based
