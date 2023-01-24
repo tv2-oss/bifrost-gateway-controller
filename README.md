@@ -139,12 +139,15 @@ composition functionality.
 
 Another essential argument for keeping the composition logic internal
 to the *cloud-gateway-controller* is to support day-2 operational
-concerns in the controller. While the current implementation of the
-*cloud-gateway-controller* primarily is based on templates, the design
-allows for implementation of operational concerns such as code-based
-non-disruptive upgrades of gateway implementation. This will not
-always be possible with a Helm or Crossplane-composition based
-implementation.
+concerns in the controller.  When operational concerns call for
+updates that are non-trivial, e.g. where the order of operations
+become important, a template-based solution is often not
+sufficient. E.g. when we renew a TLS certificate, we want to create
+the new certificate and associate it with our infrastructure before
+discarding the old certificate.  Handling the composition internally
+in the *cloud-gateway-controller* allow us to implement such
+operational concerns with dedicated code and thus without network
+downtime.
 
 ## User Journeys
 
