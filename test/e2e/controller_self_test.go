@@ -203,7 +203,6 @@ var _ = Describe("Gateway addresses", func() {
 					return false
 				}
 				foundDNSLookup := strings.TrimRight(stdout.String(), "\n")
-				// fmt.Printf("Addresses found: gateway: %s, dns: %s\n", gwRead.Status.Addresses[0].Value, foundDNSLookup)
 				return gwRead.Status.Addresses[0].Value == foundDNSLookup
 			}, externalDNSTimeout, interval).Should(BeTrue())
 
