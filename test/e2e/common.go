@@ -45,6 +45,9 @@ func ExecCmdInPodBySelector(cl client.Client, restClient rest.Interface, cfg *re
 		return err
 	}
 
+	if len(podList.Items) != 1 {
+		return fmt.Errorf("multiple PODs found. Use more specific selector")
+	}
 	podName := podList.Items[0].ObjectMeta.Name
 
 	return ExecCmdInPod(restClient, cfg,
@@ -63,7 +66,7 @@ func ExecCmdInPod(restClient rest.Interface, cfg *rest.Config,
 		SubResource("exec").
 		VersionedParams(&corev1.PodExecOptions{
 			Command: []string{"sh", "-c", command},
-			Stdout: true,
+			Stdout:  true,
 		}, runtime.NewParameterCodec(scheme.Scheme))
 
 	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", execReq.URL())
@@ -73,6 +76,6 @@ func ExecCmdInPod(restClient rest.Interface, cfg *rest.Config,
 
 	return exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
 		Stdout: stdout,
-		Tty: false,
+		Tty:    false,
 	})
 }
