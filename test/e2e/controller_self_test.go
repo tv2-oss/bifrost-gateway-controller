@@ -98,7 +98,7 @@ var _ = Describe("GatewayClass", func() {
 		interval = time.Millisecond * 250
 	)
 
-	Context("When a gatewayclass we own is created", func() {
+	Context("When a GatewayClass we own is created", func() {
 		It("Should be marked as accepted", func() {
 			By("Setting a condition")
 			ctx := context.Background()
@@ -166,9 +166,9 @@ var _ = Describe("Gateway addresses", func() {
 		Expect(k8sClient.Delete(ctx, cm)).To(Succeed())
 	})
 
-	Context("When a gateway/httproute is created", func() {
-		It("The controller should accept those", func() {
-			By("Assigned an address to the Gateway")
+	Context("When a Gateway/HTTPRoute is created", func() {
+		It("Should be accepted by the controller", func() {
+			By("Assigning an address to the Gateway")
 
 			ctx := context.Background()
 			gw := &gatewayapi.Gateway{}
