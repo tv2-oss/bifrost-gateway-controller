@@ -62,11 +62,8 @@ func ExecCmdInPod(restClient rest.Interface, cfg *rest.Config,
 		Name(podName).
 		SubResource("exec").
 		VersionedParams(&corev1.PodExecOptions{
-			//Container: "container",
 			Command: []string{"sh", "-c", command},
-			//Stdin:     true,
 			Stdout: true,
-			//Stderr:    true,
 		}, runtime.NewParameterCodec(scheme.Scheme))
 
 	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", execReq.URL())
@@ -75,9 +72,7 @@ func ExecCmdInPod(restClient rest.Interface, cfg *rest.Config,
 	}
 
 	return exec.StreamWithContext(context.Background(), remotecommand.StreamOptions{
-		//Stdin:  stdin,
 		Stdout: stdout,
-		//Stderr: stderr,
 		Tty: false,
 	})
 }
