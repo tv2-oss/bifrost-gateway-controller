@@ -17,3 +17,20 @@ metadata:
   namespace: default
 data:
   tier2GatewayClass: istio
+  albTemplate:
+    apiVersion: elbv2.aws.crossplane.io/v1alpha1
+    kind: LoadBalancer
+    metadata:
+      name: aws-alb-test
+    spec:
+      providerConfigRef:
+        name: admin
+      forProvider:
+        name: aws-alb-test
+        region: eu-central-1
+        securityGroups:
+          - $SG_ID
+        subnetMappings:
+          - subnetID: $SUBNET1
+          - subnetID: $SUBNET2
+          - subnetID: $SUBNET3

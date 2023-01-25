@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"html/template"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -11,6 +14,10 @@ import (
 
 	selfapi "github.com/tv2/cloud-gateway-controller/pkg/api"
 )
+
+type templateValues struct {
+	gateway *gatewayapi.Gateway
+}
 
 type Controller interface {
 	GetClient() client.Client
@@ -55,4 +62,22 @@ func lookupGateway(ctx context.Context, r Controller, name gatewayapi.ObjectName
 		return nil, err
 	}
 	return &gw, nil
+}
+
+func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, configMapKey string) (*unstructured.Unstructured, error) {
+	var buffer bytes.Buffer
+	data, found := configMap.Data[configMapKey]
+
+	if !found {
+		// TODO log
+		return nil, errors.New("key not found in ConfigMap")
+	}
+
+	template, err := template.New("resourceTemplate").Parse(data)
+	if err != nil {
+		// TODO log
+		return nil, err
+	}
+
+	return nil, nil
 }
