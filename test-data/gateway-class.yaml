@@ -21,7 +21,7 @@ data:
     apiVersion: elbv2.aws.crossplane.io/v1alpha1
     kind: LoadBalancer
     metadata:
-      name: { .Gateway.Metadata.Name }-alb
+      name: {{ .Gateway.ObjectMeta.Name }}-alb
     spec:
       providerConfigRef:
         name: admin
