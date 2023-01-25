@@ -1,4 +1,19 @@
 #################
+.PHONY: setup-e2e-test-cluster
+setup-e2e-test-cluster: create-cluster deploy-gateway-api setup-external-dns-test
+
+#################
+.PHONY: setup-external-dns-test
+setup-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
+
+.PHONY: wait-ready-external-dns-test
+wait-ready-external-dns-test:
+	until kubectl wait pods -l app.kubernetes.io/instance=etcd-test-only --for condition=Ready --timeout=120s   ; do echo "."; sleep 1; done
+	until kubectl wait pods -l app.kubernetes.io/instance=coredns-test-only --for condition=Ready --timeout=120s; do echo "."; sleep 1; done
+	until kubectl wait pods -l app=multitool --for condition=Ready --timeout=120s                               ; do echo "."; sleep 1; done
+	until kubectl wait pods -l app.kubernetes.io/instance=external-dns --for condition=Ready --timeout=120s     ; do echo "."; sleep 1; done
+
+#################
 ifeq ($(GATEWAY_API_VERSION),)
 GATEWAY_API_VERSION=v0.6.0
 endif
@@ -29,14 +44,14 @@ deploy-istio:
 	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts istiod istiod --version 1.16.1 -n istio-system
 
 #################
-.PHONY: deploy-external-dns-test
-deploy-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
+.PHONY: cluster-load-controller-image
+cluster-load-controller-image:
+	kind load docker-image controller:latest
 
 #################
 .PHONY: deploy-etcd
 deploy-etcd:
-	helm upgrade -i --repo https://charts.bitnami.com/bitnami etcd-test-only etcd --version 8.6.0 --wait --set auth.rbac.create=false
-	#auth.rbac.rootPassword=someSecret
+	helm upgrade -i --repo https://charts.bitnami.com/bitnami etcd-test-only etcd --version 8.6.0 --set auth.rbac.create=false
 
 #################
 .PHONY: deploy-coredns
@@ -47,8 +62,6 @@ deploy-coredns:
 .PHONY: deploy-multitool
 deploy-multitool:
 	kubectl create deploy multitool --image praqma/network-multitool
-
-#################
 
 #################
 .PHONY: deploy-external-dns

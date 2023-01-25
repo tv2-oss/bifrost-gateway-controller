@@ -59,13 +59,17 @@ vet: ## Run go vet against code.
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
+.PHONY: e2e-test
+e2e-test: envtest
+	(cd test/e2e/ && USE_EXISTING_CLUSTER=true go test)
+
 ##@ Build
 
 BUILD_COMMIT = $(shell git describe --match="" --always --abbrev=20 --dirty)
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -ldflags="-X main.commit=$(BUILD_COMMIT)" -o bin/manager main.go
+	HEAD_SHA=$(shell git describe --match="" --always --abbrev=7 --dirty) goreleaser build --single-target --rm-dist --snapshot --output $(PWD)/cloud-gateway-controller
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -116,11 +120,11 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	$(KUSTOMIZE) build config/kind | kubectl apply -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/kind | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Build Dependencies
 
