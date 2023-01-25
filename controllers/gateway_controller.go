@@ -79,17 +79,17 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
 
-	logger.Info("Creating Istio Gateway")
-	newGW := BuildGatewayResource(&g, cm)
+	// logger.Info("Creating Istio Gateway")
+	// newGW := BuildGatewayResource(&g, cm)
 
-	if err := ctrl.SetControllerReference(&g, newGW, r.Scheme); err != nil {
-		return ctrl.Result{}, err
-	}
+	// if err := ctrl.SetControllerReference(&g, newGW, r.Scheme); err != nil {
+	// 	return ctrl.Result{}, err
+	// }
 
-	if err := r.Client.Create(ctx, newGW); err != nil {
-		logger.Error(err, "Unable to create gateway")
-		return ctrl.Result{}, err
-	}
+	// if err := r.Client.Create(ctx, newGW); err != nil {
+	// 	logger.Error(err, "Unable to create gateway")
+	// 	return ctrl.Result{}, err
+	// }
 
 	addrType := gatewayapi.IPAddressType
 	g.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
@@ -106,7 +106,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	unstruct, err := renderTemplate(&g, cm, "albTemplate")
-	return ctrl.Result{}, fmt.Errorf("Error: %+v", unstruct)
+	return ctrl.Result{}, fmt.Errorf("Error: %q %+v", err, unstruct)
 
 	//return ctrl.Result{}, nil
 }

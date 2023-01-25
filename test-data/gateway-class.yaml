@@ -17,11 +17,11 @@ metadata:
   namespace: default
 data:
   tier2GatewayClass: istio
-  albTemplate:
+  albTemplate: |
     apiVersion: elbv2.aws.crossplane.io/v1alpha1
     kind: LoadBalancer
     metadata:
-      name: aws-alb-test
+      name: { .Gateway.Metadata.Name }-alb
     spec:
       providerConfigRef:
         name: admin
