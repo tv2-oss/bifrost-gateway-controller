@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"gopkg.in/yaml.v2"
 	"html/template"
 	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -84,6 +85,12 @@ func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, c
 	}
 
 	rawResource := map[string]any{}
+	err = yaml.Unmarshal(buffer.Bytes(), &rawResource)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	unstruct := unstructured.Unstructured{Object: rawResource}
+
+	return &unstruct, nil
 }

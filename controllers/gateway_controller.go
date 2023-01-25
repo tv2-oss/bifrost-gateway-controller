@@ -105,7 +105,10 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{}, nil
+	unstruct, err := renderTemplate(&g, cm, "albTemplate")
+	return ctrl.Result{}, fmt.Errorf("Error: %+v", unstruct)
+
+	//return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
