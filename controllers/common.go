@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"html/template"
+	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	corev1 "k8s.io/api/core/v1"
@@ -16,7 +17,7 @@ import (
 )
 
 type templateValues struct {
-	gateway *gatewayapi.Gateway
+	Gateway *gatewayapi.Gateway
 }
 
 type Controller interface {
@@ -66,18 +67,23 @@ func lookupGateway(ctx context.Context, r Controller, name gatewayapi.ObjectName
 
 func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, configMapKey string) (*unstructured.Unstructured, error) {
 	var buffer bytes.Buffer
-	data, found := configMap.Data[configMapKey]
+	templateData, found := configMap.Data[configMapKey]
 
 	if !found {
-		// TODO log
 		return nil, errors.New("key not found in ConfigMap")
 	}
 
-	template, err := template.New("resourceTemplate").Parse(data)
+	template, err := template.New("resourceTemplate").Parse(templateData)
 	if err != nil {
-		// TODO log
 		return nil, err
 	}
+
+	err = template.Execute(io.Writer(&buffer), &templateValues{gwParent})
+	if err != nil {
+		return nil, err
+	}
+
+	rawResource := map[string]any{}
 
 	return nil, nil
 }
