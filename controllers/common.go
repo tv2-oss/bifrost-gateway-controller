@@ -8,7 +8,10 @@ import (
 	"html/template"
 	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -24,6 +27,8 @@ type templateValues struct {
 
 type Controller interface {
 	GetClient() client.Client
+	DynamicClient() dynamic.Interface
+	Scheme() *runtime.Scheme
 }
 
 func isOurGatewayClass(gwc *gatewayapi.GatewayClass) bool {
@@ -67,7 +72,7 @@ func lookupGateway(ctx context.Context, r Controller, name gatewayapi.ObjectName
 	return &gw, nil
 }
 
-func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, configMapKey string) (*unstructured.Unstructured, error) {
+func parseTemplate(r Controller, gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, configMapKey string) (*unstructured.Unstructured, error) {
 	var buffer bytes.Buffer
 	templateData, found := configMap.Data[configMapKey]
 
@@ -75,12 +80,12 @@ func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, c
 		return nil, errors.New("key not found in ConfigMap")
 	}
 
-	template, err := template.New("resourceTemplate").Parse(templateData)
+	tmpl, err := template.New("resourceTemplate").Parse(templateData)
 	if err != nil {
 		return nil, err
 	}
 
-	err = template.Execute(io.Writer(&buffer), &templateValues{gwParent})
+	err = tmpl.Execute(io.Writer(&buffer), &templateValues{gwParent})
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +96,13 @@ func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, c
 		return nil, err
 	}
 
-	return &unstructured.Unstructured{Object: rawResource}, nil
+	unstruct := &unstructured.Unstructured{Object: rawResource}
+
+	if err := ctrl.SetControllerReference(gwParent, unstruct, r.Scheme()); err != nil {
+		return nil, err
+	}
+
+	return unstruct, nil
 }
 
 // TODO This function needs explanation
@@ -119,4 +130,6 @@ func unstructuredToGVR(r Controller, u *unstructured.Unstructured) (*schema.Grou
 	}, nil
 }
 
-func parseTemplate(ctx context.Context, r Controller, gwParent *gateway.Gateway, configMap *corev1.ConfigMap, configMapKey string) (, error)
+func patchUnstructured(ctx context.Context, r Controller, unstructured *unstructured.Unstructured, namespace string) error {
+	return nil
+}

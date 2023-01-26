@@ -105,7 +105,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	unstruct, err := renderTemplate(&g, cm, "albTemplate")
+	unstruct, err := parseTemplate(&g, cm, "albTemplate")
 
 	return ctrl.Result{}, nil
 }
