@@ -22,12 +22,14 @@ Deploy the KIND cluster and add gateway-API with:
 make create-cluster deploy-gateway-api
 ```
 
-Deploy Istio control-plane, Contour and external-dns+local CoreDNS with:
+Deploy Istio control-plane, Contour and external-dns+local CoreDNS and
+cert-manager with:
 
 ```
 make deploy-istio
 make deploy-contour deploy-contour-provisioner
 make setup-external-dns-test
+make deploy-cert-manager
 ```
 
 TODO: Maybe add waiting here to ensure dependencies are running...
