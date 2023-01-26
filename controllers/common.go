@@ -91,9 +91,7 @@ func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, c
 		return nil, err
 	}
 
-	unstruct := unstructured.Unstructured{Object: rawResource}
-
-	return &unstruct, nil
+	return &unstructured.Unstructured{Object: rawResource}, nil
 }
 
 // TODO This function needs explanation
@@ -120,3 +118,5 @@ func unstructuredToGVR(r Controller, u *unstructured.Unstructured) (*schema.Grou
 		Resource: mapping.Resource.Resource,
 	}, nil
 }
+
+func parseTemplate(ctx context.Context, r Controller, gwParent *gateway.Gateway, configMap *corev1.ConfigMap, configMapKey string) (, error)
