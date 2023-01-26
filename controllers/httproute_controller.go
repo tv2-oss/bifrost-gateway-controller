@@ -27,6 +27,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	selfapi "github.com/tv2/cloud-gateway-controller/pkg/api"
 )
 
 type HTTPRouteReconciler struct {
@@ -52,7 +54,7 @@ func lookupParent(ctx context.Context, r Controller, rt *gatewayapi.HTTPRoute, p
 func findParentRouteStatus(rtStatus *gatewayapi.RouteStatus, parent gatewayapi.ParentReference) *gatewayapi.RouteParentStatus {
 	for i := range rtStatus.Parents {
 		pStat := &rtStatus.Parents[i]
-		if pStat.ParentRef == parent && pStat.ControllerName == SelfControllerName {
+		if pStat.ParentRef == parent && pStat.ControllerName == selfapi.SelfControllerName {
 			return pStat
 		}
 	}
@@ -68,7 +70,7 @@ func setRouteStatusCondition(rtStatus *gatewayapi.RouteStatus, parent gatewayapi
 	if existingParentRouteStat == nil {
 		newStatus := gatewayapi.RouteParentStatus{
 			ParentRef:      parent,
-			ControllerName: SelfControllerName,
+			ControllerName: selfapi.SelfControllerName,
 			Conditions:     []metav1.Condition{*newCondition},
 		}
 		rtStatus.Parents = append(rtStatus.Parents, newStatus)

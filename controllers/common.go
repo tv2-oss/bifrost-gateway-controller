@@ -8,10 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
-)
 
-const (
-	SelfControllerName gatewayapi.GatewayController = "github.com/tv2/cloud-gateway-controller"
+	selfapi "github.com/tv2/cloud-gateway-controller/pkg/api"
 )
 
 type Controller interface {
@@ -19,7 +17,7 @@ type Controller interface {
 }
 
 func isOurGatewayClass(gwc *gatewayapi.GatewayClass) bool {
-	return gwc.Spec.ControllerName == SelfControllerName
+	return gwc.Spec.ControllerName == selfapi.SelfControllerName
 }
 
 func lookupGatewayClass(ctx context.Context, r Controller, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
