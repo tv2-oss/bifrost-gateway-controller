@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"gopkg.in/yaml.v2"
 	"html/template"
 	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -94,4 +94,8 @@ func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, c
 	unstruct := unstructured.Unstructured{Object: rawResource}
 
 	return &unstruct, nil
+}
+
+func unstructuredToGVR(r Controller, u *unstructured.Unstructured) (*schema.GroupVersionResource, error) {
+	gv, err := schema.ParseGroupVersion(u.GetAPIVersion())
 }
