@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"html/template"
 	"io"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -131,5 +132,18 @@ func unstructuredToGVR(r Controller, u *unstructured.Unstructured) (*schema.Grou
 }
 
 func patchUnstructured(ctx context.Context, r Controller, unstructured *unstructured.Unstructured, namespace string) error {
+	gvr, err := unstructuredToGVR(r, unstructured)
+
+	if err != nil {
+		return fmt.Errorf("unable to convert unstructured to GVR %w", err)
+	}
+
+	jsonData, err := json.Marshal(unstructured.Object)
+	if err != nil {
+		return fmt.Errorf("unable to marshal unstructured to json %w", err)
+	}
+
+	r.DynamicClient().Resource(*gvr)
+
 	return nil
 }
