@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"io"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -143,7 +144,13 @@ func patchUnstructured(ctx context.Context, r Controller, unstructured *unstruct
 		return fmt.Errorf("unable to marshal unstructured to json %w", err)
 	}
 
-	r.DynamicClient().Resource(*gvr)
+	dynamicClient := r.DynamicClient().Resource(*gvr).Namespace(namespace)
+	t := true
 
-	return nil
+	_, err = dynamicClient.Patch(ctx, unstructured.GetName(), types.ApplyPatchType, jsonData, metav1.PatchOptions{
+		Force:        &t,
+		FieldManager: string(SelfControllerName),
+	})
+
+	return err
 }
