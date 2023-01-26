@@ -96,6 +96,27 @@ func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, c
 	return &unstruct, nil
 }
 
+// TODO This function needs explanation
 func unstructuredToGVR(r Controller, u *unstructured.Unstructured) (*schema.GroupVersionResource, error) {
+	// TODO: Why parse GroupVersion?
 	gv, err := schema.ParseGroupVersion(u.GetAPIVersion())
+	if err != nil {
+		return nil, err
+	}
+
+	gk := schema.GroupKind{
+		Group: gv.Group,
+		Kind:  u.GetKind(),
+	}
+
+	mapping, err := r.GetClient().RESTMapper().RESTMapping(gk, gv.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &schema.GroupVersionResource{
+		Group:    gv.Group,
+		Version:  gv.Version,
+		Resource: mapping.Resource.Resource,
+	}, nil
 }
