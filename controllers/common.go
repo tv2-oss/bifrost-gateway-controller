@@ -84,7 +84,6 @@ func renderTemplate(gwParent *gatewayapi.Gateway, configMap *corev1.ConfigMap, c
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("xxxxxxx buffer: %s\n", buffer.String())
 
 	rawResource := map[string]any{}
 	err = yaml.Unmarshal(buffer.Bytes(), &rawResource)
