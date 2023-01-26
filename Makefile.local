@@ -73,3 +73,13 @@ deploy-multitool:
 deploy-external-dns:
 	helm upgrade -i --repo https://kubernetes-sigs.github.io/external-dns external-dns external-dns --version 1.12.0 --values test-data/external-dns-values.yaml
 
+#################
+.PHONY: deploy-contour
+deploy-contour:
+	helm upgrade -i --repo https://charts.bitnami.com/bitnami contour contour -n projectcontour --create-namespace
+
+# To allow contour to provision from gateway resources
+.PHONY: deploy-contour-provisioner
+deploy-contour-provisioner:
+	kubectl apply -f https://projectcontour.io/quickstart/contour-gateway-provisioner.yaml
+	kubectl apply -f test-data/contour-gatewayclass.yaml

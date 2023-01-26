@@ -6,7 +6,10 @@ that not only provides a data-path inside Kubernetes, but extends the
 data-path outside Kubernetes into the surrounding cloud
 infrastructure.
 
-## End-to-end Network Path
+- [Getting Started using a KIND Cluster](doc/getting-started.md)
+- [User Journeys](#user-journeys)
+
+## Creating an End-to-end Network Datapath
 
 A typical gateway/ingress controller for Kubernetes implements a
 datapath inside Kubernetes, e.g. a Kubernetes `Deployment`,
