@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"k8s.io/client-go/dynamic"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -33,7 +34,8 @@ import (
 // GatewayReconciler reconciles a Gateway object
 type GatewayReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	DynamicClient dynamic.Interface
+	Scheme        *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
@@ -42,6 +44,14 @@ type GatewayReconciler struct {
 
 func (r *GatewayReconciler) GetClient() client.Client {
 	return r.Client
+}
+
+func (r *GatewayReconciler) GetDynamicClient() dynamic.Interface {
+	return r.DynamicClient
+}
+
+func (r *GatewayReconciler) GetScheme() *runtime.Scheme {
+	return r.Scheme
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to

@@ -29,8 +29,8 @@ type templateValues struct {
 
 type Controller interface {
 	GetClient() client.Client
-	DynamicClient() dynamic.Interface
-	Scheme() *runtime.Scheme
+	GetDynamicClient() dynamic.Interface
+	GetScheme() *runtime.Scheme
 }
 
 func isOurGatewayClass(gwc *gatewayapi.GatewayClass) bool {
