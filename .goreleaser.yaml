@@ -31,7 +31,7 @@ release:
     ## Container Images
     - `ghcr.io/{{ .Env.REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .Version }}`
   extra_files:
-    - glob: config/manager/*
+    - glob: config/release/*
 
 dockers:
   - goarch: amd64

@@ -125,6 +125,10 @@ jobs:
           echo -n "HEAD_SHA=" >>${GITHUB_ENV}
           git rev-parse --short $GITHUB_SHA >>${GITHUB_ENV}
 
+      - name: Build release manifests
+        run: |
+          make manifest-build
+
       - name: Make release
         uses: goreleaser/goreleaser-action@v4
         with:
