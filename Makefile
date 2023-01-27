@@ -75,6 +75,13 @@ build: generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
+.PHONY: manifest-build
+manifest-build:
+	mkdir config/release
+	# Currently we have no CRDs
+	#$(KUSTOMIZE) build config/crd -o config/release/crds.yaml
+	$(KUSTOMIZE) build config/default -o config/release/install.yaml
+
 # If you wish built the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
