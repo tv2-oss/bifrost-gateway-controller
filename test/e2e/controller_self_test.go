@@ -37,6 +37,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	cgwctlapi "github.com/tv2/cloud-gateway-controller/pkg/api"
 )
 
 const gatewayclassManifest string = `
@@ -217,7 +219,7 @@ var _ = Describe("Gateway addresses", func() {
 					len(rtRead.Status.RouteStatus.Parents[0].Conditions) != 1 ||
 					string(rtRead.Status.RouteStatus.Parents[0].ParentRef.Name) != gw.ObjectMeta.Name ||
 					string(*rtRead.Status.RouteStatus.Parents[0].ParentRef.Namespace) != gw.ObjectMeta.Namespace ||
-					// TODO: rtRead.Status.RouteStatus.Parents[0].ControllerName != "xxx"
+					rtRead.Status.RouteStatus.Parents[0].ControllerName != cgwctlapi.SelfControllerName ||
 					rtRead.Status.RouteStatus.Parents[0].Conditions[0].Type != string(gatewayapi.RouteConditionAccepted) ||
 					rtRead.Status.RouteStatus.Parents[0].Conditions[0].Status != "True" {
 					return false
