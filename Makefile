@@ -63,11 +63,17 @@ test: manifests generate fmt vet envtest ## Run tests.
 e2e-test: envtest
 	(cd test/e2e/ && USE_EXISTING_CLUSTER=true go test)
 
+## Runs conformance tests against cluster with controller deployed. Flag `-test.v' can be used to increase logging
+
 .PHONY: conformance-test
-conformance-test:  ## Runs conformance test against cluster with controller deployed
+conformance-test: ## Only 'core' suite
 	kubectl apply -f test-data/gateway-class.yaml
-	# Full suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
-	(cd test/conformance/gateway-api/ && go test -test.v -gateway-class=default -supported-features=ReferenceGrant,TLSRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPResponseHeaderModification,RouteDestinationPortMatching,GatewayClassObservedGenerationBump,HTTPRoutePortRedirect,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite)
+	(cd test/conformance/gateway-api/ && go test -gateway-class=default)
+
+.PHONY: conformance-test-full
+conformance-test-full: ## Full suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
+	kubectl apply -f test-data/gateway-class.yaml
+	(cd test/conformance/gateway-api/ && go test -gateway-class=default -supported-features=ReferenceGrant,TLSRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPResponseHeaderModification,RouteDestinationPortMatching,GatewayClassObservedGenerationBump,HTTPRoutePortRedirect,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite)
 
 ##@ Build
 
