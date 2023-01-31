@@ -66,7 +66,7 @@ e2e-test: envtest
 ## Runs conformance tests against cluster with controller deployed. Flag `-test.v' can be used to increase logging
 
 .PHONY: conformance-test
-conformance-test: ## Only 'core' suite
+conformance-test: ## Only 'core' suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
 	kubectl apply -f test-data/gateway-class.yaml
 	(cd test/conformance/gateway-api/ && go test -gateway-class=default)
 
