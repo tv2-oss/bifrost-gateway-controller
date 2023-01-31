@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -91,6 +93,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	addrType := gatewayapi.IPAddressType
 	g.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
+
+	meta.SetStatusCondition(&g.Status.Conditions, metav1.Condition{
+		Type:               string(gatewayapi.GatewayConditionAccepted),
+		Status:             "True",
+		Reason:             string(gatewayapi.GatewayReasonAccepted),
+		ObservedGeneration: g.ObjectMeta.Generation})
 
 	if err := r.Status().Update(ctx, &g); err != nil {
 		logger.Error(err, "unable to update Gateway status")
