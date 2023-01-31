@@ -44,9 +44,7 @@ func TestConformance(t *testing.T) {
 		SupportedFeatures:    supportedFeatures,
 	})
 	cSuite.Setup(t)
-	tt := []suite.ConformanceTest{tests.ConformanceTests[10]}
-	cSuite.Run(t, tt)
-	//cSuite.Run(t, tests.ConformanceTests)
+	cSuite.Run(t, tests.ConformanceTests)
 }
 
 // parseSupportedFeatures parses flag arguments and converts the string to
