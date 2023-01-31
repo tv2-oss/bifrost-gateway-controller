@@ -31,6 +31,7 @@ deploy-gateway-api:
 #################
 .PHONY: create-cluster
 create-cluster:
+	cat test-data/kind-config.yaml_tpl | k8s_ver=1.25.3 envsubst > test-data/kind-config.yaml
 	kind create cluster --config test-data/kind-config.yaml
 
 .PHONY: delete-cluster
