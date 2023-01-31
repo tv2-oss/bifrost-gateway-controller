@@ -36,13 +36,17 @@ TODO: Maybe add waiting here to ensure dependencies are running...
 
 ## Deploy cloud-gateway-controller
 
-There are two alternative ways to deploy the controller:
+There are three alternative ways to deploy the controller:
 
 ### Deploy with Helm (recommended)
 
 TODO: We do not yet have a Helm chart
 
-### Deploy from Local-build and YAML Artifacts (recommended for development)
+### Deploy from Local-build and YAML Artifacts (recommended for end-to-end tests)
+
+Deploying the controller using the generated manifests will
+additionally test these, hence this is recommended for end-to-end
+testing:
 
 ```
 make build docker-build             # Build controller+container
@@ -50,13 +54,25 @@ make cluster-load-controller-image  # Load container into KIND
 make deploy                         # Deploy from YAML manifests
 ```
 
+### Run Controller Locally (recommended for development of the controller)
+
+Running the controller locally is useful during development of the
+controller:
+
+```
+make run
+```
+
 ### Deploy GatewayClass for KIND Datapath
 
-```
-kubectl apply -f test-data/getting-started/gatewayclass-kind-internal.yaml
-```
+**WIP** TODO: We do not yet have above GatewayClass definition,
+i.e. the following `GatewayClass` includes a 'hack' to simulate the
+creation of the load balancer from the cloud infrastructure through an
+explicit `Ingress` resource.
 
-TODO: We do not yet have above GatewayClass definition
+```
+kubectl apply -f test-data/gatewayclass-kind-internal.yaml
+```
 
 ## Create Datapath and Deploy Test Applications
 
@@ -108,9 +124,9 @@ As a 'store' developer we deploy the v1 and v2 versions of the 'foo-store'
 application and associated routing into the `foo-store` namespace:
 
 ```
-kubectl -n foo-store apply -f test-data/getting-started/foo-store-httproute.yaml
 kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v1.yaml
 kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v2.yaml
+kubectl -n foo-store apply -f test-data/getting-started/foo-store-httproute.yaml
 ```
 
 ### Observations

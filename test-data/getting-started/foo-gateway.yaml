@@ -4,7 +4,7 @@ metadata:
   name: foo-gateway
   namespace: foo-infra
 spec:
-  gatewayClassName: cloud-gw
+  gatewayClassName: kind-internal
   listeners:
   - name: web
     port: 80

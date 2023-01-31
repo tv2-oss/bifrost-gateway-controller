@@ -1,0 +1,43 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: kind-internal
+spec:
+  controllerName: "github.com/tv2/cloud-gateway-controller"
+  parametersRef:
+    group: v1
+    kind: ConfigMap
+    name: kind-internal-gateway-class
+    namespace: default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kind-internal-gateway-class
+  namespace: default
+data:
+  tier2GatewayClass: istio
+---
+# HACK - this should be rendered as part of the gateway
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: foo-gateway
+  namespace: foo-infra
+spec:
+  ingressClassName: contour
+  tls:
+  - hosts:
+    - foo.example.com
+    secretName: foo-gateway-tls
+  rules:
+  - host: foo.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: foo-gateway-istio
+            port:
+              number: 80
