@@ -1,6 +1,7 @@
 package conformance_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -16,16 +17,26 @@ import (
 )
 
 func TestConformance(t *testing.T) {
+	if os.Getenv("USE_EXISTING_CLUSTER") != "true" {
+		t.Skipf("Skipping conformance tests - requires an external cluster")
+	}
+
 	cfg, err := config.GetConfig()
 	if err != nil {
 		t.Fatalf("Error loading Kubernetes config: %v", err)
 	}
-	client, err := client.New(cfg, client.Options{})
+	cl, err := client.New(cfg, client.Options{})
 	if err != nil {
 		t.Fatalf("Error initializing Kubernetes client: %v", err)
 	}
-	v1alpha2.AddToScheme(client.Scheme())
-	v1beta1.AddToScheme(client.Scheme())
+	err = v1alpha2.AddToScheme(cl.Scheme())
+	if err != nil {
+		t.Fatalf("Error adding api v1alpha2: %v", err)
+	}
+	err = v1beta1.AddToScheme(cl.Scheme())
+	if err != nil {
+		t.Fatalf("Error adding api v1beta1: %v", err)
+	}
 
 	supportedFeatures := parseSupportedFeatures(*flags.SupportedFeatures)
 	exemptFeatures := parseSupportedFeatures(*flags.ExemptFeatures)
@@ -37,7 +48,7 @@ func TestConformance(t *testing.T) {
 		*flags.GatewayClassName, *flags.CleanupBaseResources, *flags.ShowDebug, *flags.SupportedFeatures, *flags.ExemptFeatures, len(tests.ConformanceTests))
 
 	cSuite := suite.New(suite.Options{
-		Client:               client,
+		Client:               cl,
 		GatewayClassName:     *flags.GatewayClassName,
 		Debug:                *flags.ShowDebug,
 		CleanupBaseResources: *flags.CleanupBaseResources,

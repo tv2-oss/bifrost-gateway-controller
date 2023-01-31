@@ -68,7 +68,7 @@ e2e-test: envtest
 .PHONY: conformance-test
 conformance-test: ## Only 'core' suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
 	kubectl apply -f test-data/gateway-class.yaml
-	(cd test/conformance/gateway-api/ && go test -gateway-class=default)
+	(cd test/conformance/gateway-api/ && USE_EXISTING_CLUSTER=true go test -gateway-class=default)
 
 .PHONY: conformance-test-full
 conformance-test-full: ## Full suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
