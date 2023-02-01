@@ -98,8 +98,15 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// FIXME check kind of parent ref is Gateway and missing parentRef. Accepts more than one parent ref
 	pref := prefs[0]
 
+	// Spec says: 'When unspecified, this refers to the local namespace of the Route.'
+	var ns string
+	if pref.Namespace == nil {
+		ns = rt.ObjectMeta.Namespace
+	} else {
+		ns = string(*pref.Namespace)
+	}
 	gw := &gatewayapi.Gateway{}
-	if err := r.Get(ctx, types.NamespacedName{Name: string(pref.Name), Namespace: string(*pref.Namespace)}, gw); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: string(pref.Name), Namespace: ns}, gw); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	logger.Info("reconcile", "gateway", gw)
