@@ -157,3 +157,9 @@ certificate:
 curl --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/site
 curl --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/store
 ```
+
+## Cleanup
+
+```
+make delete-cluster
+```
