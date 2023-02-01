@@ -32,8 +32,6 @@ make setup-external-dns-test
 make deploy-cert-manager
 ```
 
-TODO: Maybe add waiting here to ensure dependencies are running...
-
 ## Deploy cloud-gateway-controller
 
 There are three alternative ways to deploy the controller as dscribed
@@ -92,7 +90,7 @@ To watch the progress and resources created, it can be convenient to watch for
 resources with the following command:
 
 ```
-watch kubectl get gateway,httproute,ingress,certificate,secret,po,gatewayclass -A
+watch kubectl get gateway,httproute,ingress,certificate,po,gatewayclass -A
 ```
 
 ### Cluster Operator/SRE

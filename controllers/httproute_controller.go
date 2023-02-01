@@ -99,8 +99,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	pref := prefs[0]
 
 	gw := &gatewayapi.Gateway{}
-	err := r.Get(ctx, types.NamespacedName{Name: string(pref.Name), Namespace: string(*pref.Namespace)}, gw)
-	if err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: string(pref.Name), Namespace: string(*pref.Namespace)}, gw); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	logger.Info("reconcile", "gateway", gw)
@@ -120,14 +119,12 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Create HTTPRoute resource
-	rtOut, err := r.constructHTTPRoute(&rt, cm)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	rtOut := r.constructHTTPRoute(&rt, cm)
 
 	logger.Info("create httproute", "rtOut", rtOut)
 
-	if err := ctrl.SetControllerReference(&rt, rtOut, r.Scheme); err != nil {
+	err = ctrl.SetControllerReference(&rt, rtOut, r.Scheme)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -135,7 +132,8 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	err = r.Get(ctx, types.NamespacedName{Name: rtOut.Name, Namespace: rtOut.Namespace}, rtFound)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("create gateway")
-		if err := r.Create(ctx, rtOut); err != nil {
+		err = r.Create(ctx, rtOut)
+		if err != nil {
 			return ctrl.Result{}, err
 		}
 	} else if err == nil {
@@ -157,8 +155,8 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err != nil {
 			continue
 		}
-		gwc, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
-		if err != nil || !isOurGatewayClass(gwc) {
+		gwcRef, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
+		if err != nil || !isOurGatewayClass(gwcRef) {
 			continue
 		}
 		doStatusUpdate = true
@@ -187,7 +185,7 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *HTTPRouteReconciler) constructHTTPRoute(rtIn *gatewayapi.HTTPRoute, configmap *corev1.ConfigMap) (*gatewayapi.HTTPRoute, error) {
+func (r *HTTPRouteReconciler) constructHTTPRoute(rtIn *gatewayapi.HTTPRoute, configmap *corev1.ConfigMap) *gatewayapi.HTTPRoute {
 	name := fmt.Sprintf("%s-%s", rtIn.ObjectMeta.Name, configmap.Data["tier2GatewayClass"])
 	rtOut := rtIn.DeepCopy()
 	rtOut.ResourceVersion = ""
@@ -195,5 +193,5 @@ func (r *HTTPRouteReconciler) constructHTTPRoute(rtIn *gatewayapi.HTTPRoute, con
 	// FIXME, should follow pattern in gateway-controller and remap parents of type gateway similarly
 	rtOut.Spec.CommonRouteSpec.ParentRefs[0].Name = "foo-gateway-istio"
 
-	return rtOut, nil
+	return rtOut
 }
