@@ -36,7 +36,8 @@ TODO: Maybe add waiting here to ensure dependencies are running...
 
 ## Deploy cloud-gateway-controller
 
-There are three alternative ways to deploy the controller:
+There are three alternative ways to deploy the controller as dscribed
+by the following sections.
 
 ### Deploy with Helm (recommended)
 
@@ -71,6 +72,7 @@ creation of the load balancer from the cloud infrastructure through an
 explicit `Ingress` resource.
 
 ```
+kubectl apply -f test-data/getting-started/foo-namespaces.yaml  # HACK!
 kubectl apply -f test-data/gatewayclass-kind-internal.yaml
 ```
 
