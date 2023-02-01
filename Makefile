@@ -63,6 +63,18 @@ test: manifests generate fmt vet envtest ## Run tests.
 e2e-test: envtest
 	(cd test/e2e/ && USE_EXISTING_CLUSTER=true go test)
 
+## Runs conformance tests against cluster with controller deployed. Flag `-test.v' can be used to increase logging
+
+.PHONY: conformance-test
+conformance-test: ## Only 'core' suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
+	kubectl apply -f test-data/gateway-class.yaml
+	(cd test/conformance/gateway-api/ && USE_EXISTING_CLUSTER=true go test -gateway-class=default)
+
+.PHONY: conformance-test-full
+conformance-test-full: ## Full suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
+	kubectl apply -f test-data/gateway-class.yaml
+	(cd test/conformance/gateway-api/ && go test -gateway-class=default -supported-features=ReferenceGrant,TLSRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPResponseHeaderModification,RouteDestinationPortMatching,GatewayClassObservedGenerationBump,HTTPRoutePortRedirect,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite)
+
 ##@ Build
 
 BUILD_COMMIT = $(shell git describe --match="" --always --abbrev=20 --dirty)

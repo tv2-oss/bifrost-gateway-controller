@@ -68,14 +68,16 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if valid {
 		log.Info("Accepted", "GatewayClass", req.Name)
 		meta.SetStatusCondition(&gwc.Status.Conditions, metav1.Condition{
-			Type:   string(gateway.GatewayClassConditionStatusAccepted),
-			Status: "True",
-			Reason: string(gateway.GatewayClassReasonAccepted)})
+			Type:               string(gateway.GatewayClassConditionStatusAccepted),
+			Status:             "True",
+			Reason:             string(gateway.GatewayClassReasonAccepted),
+			ObservedGeneration: gwc.ObjectMeta.Generation})
 	} else {
 		meta.SetStatusCondition(&gwc.Status.Conditions, metav1.Condition{
-			Type:   string(gateway.GatewayClassConditionStatusAccepted),
-			Status: "False",
-			Reason: string(gateway.GatewayClassReasonInvalidParameters)})
+			Type:               string(gateway.GatewayClassConditionStatusAccepted),
+			Status:             "False",
+			Reason:             string(gateway.GatewayClassReasonInvalidParameters),
+			ObservedGeneration: gwc.ObjectMeta.Generation})
 	}
 
 	err = r.Client.Status().Update(ctx, gwc)
