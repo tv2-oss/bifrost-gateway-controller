@@ -177,4 +177,4 @@ the controller - particularly as a developer.
 - Docker, with buildx
 - KubeBuilder and associated tooling
 - [KIND](https://kind.sigs.k8s.io)
-- `kubectl`, `kustomize`, `make`
+- `kubectl`, `kustomize`, `make`, `helm`
