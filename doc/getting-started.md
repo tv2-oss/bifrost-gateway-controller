@@ -34,7 +34,7 @@ make deploy-cert-manager
 
 ## Deploy cloud-gateway-controller
 
-There are three alternative ways to deploy the controller as dscribed
+There are three alternative ways to deploy the controller as described
 by the following sections.
 
 ### Deploy with Helm (recommended)
@@ -96,7 +96,7 @@ watch kubectl get gateway,httproute,ingress,certificate,po,gatewayclass -A
 ### Cluster Operator/SRE
 
 The cluster operator persona creates namespaces (and RBAC etc, but
-that out out-of-scope for this guide):
+that is out out-of-scope for this guide):
 
 ```
 kubectl apply -f test-data/getting-started/foo-namespaces.yaml
