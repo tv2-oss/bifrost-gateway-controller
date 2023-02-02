@@ -40,6 +40,7 @@ jobs:
       - name: Deploy controller to cluster
         run: |
           make cluster-load-controller-image deploy
+          until kubectl -ncloud-gateway-controller-system wait pods -lcontrol-plane=controller-manager --for condition=Ready --timeout=120s   ; do echo "."; sleep 1; done
 
       - name: Run E2E test suite
         run: |
