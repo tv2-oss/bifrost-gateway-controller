@@ -49,6 +49,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	log := logger.FromContext(ctx)
 
 	var valid = true
+	var errWhyInvalid error
 
 	gwc, err := lookupGatewayClass(ctx, r, gateway.ObjectName(req.Name))
 	if err != nil {
@@ -62,7 +63,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	_, err = lookupGatewayClassParameters(ctx, r, gwc)
 	if err != nil {
 		valid = false
-		log.Error(err, "Parameters for GatewayClass not found", "gatewayClassName", gwc.ObjectMeta.Name)
+		errWhyInvalid = fmt.Errorf("parameters for GatewayClass %q not found", gwc.ObjectMeta.Name)
 	}
 
 	if valid {
@@ -85,6 +86,9 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, fmt.Errorf("failed to update GatewayClass status condition: %w", err)
 	}
 
+	if !valid {
+		return ctrl.Result{}, errWhyInvalid
+	}
 	return ctrl.Result{}, nil
 }
 

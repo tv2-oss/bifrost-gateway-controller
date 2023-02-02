@@ -110,6 +110,9 @@ var _ = Describe("GatewayClass", func() {
 			Expect(err).To(Succeed())
 			Expect(k8sClient.Create(ctx, gwc)).To(Succeed())
 
+			// We deliberately sleep here to make the controller initially see the GatewayClass without its corresponding parameters
+			time.Sleep(5 * time.Second)
+
 			cm := &corev1.ConfigMap{}
 			Expect(yaml.Unmarshal([]byte(gwClassConfigMapManifest), cm)).To(Succeed())
 			Expect(k8sClient.Create(ctx, cm)).To(Succeed())

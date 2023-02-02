@@ -6,7 +6,10 @@ that not only provides a data-path inside Kubernetes, but extends the
 data-path outside Kubernetes into the surrounding cloud
 infrastructure.
 
-## End-to-end Network Path
+- [Getting Started using a KIND Cluster](doc/getting-started.md)
+- [User Journeys](#user-journeys)
+
+## Creating an End-to-end Network Datapath
 
 A typical gateway/ingress controller for Kubernetes implements a
 datapath inside Kubernetes, e.g. a Kubernetes `Deployment`,
@@ -163,3 +166,15 @@ as seen from the perspective of these personas.
 
 - [Basic Network Datapath for Small Team](doc/basic-datapath.md)
 - Configuring a Datapath through a GatewayClass Definition
+
+## Prerequisites
+
+The following is some of the prerequistites needed to build and run
+the controller - particularly as a developer.
+
+- Go (see [`go.mod`](go.mod) for version)
+- [GoReleaser](https://github.com/goreleaser/goreleaser)
+- Docker, with buildx
+- KubeBuilder and associated tooling
+- [KIND](https://kind.sigs.k8s.io)
+- `kubectl`, `kustomize`, `make`, `helm`

@@ -18,11 +18,15 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -90,6 +94,63 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	logger.Info("HTTPRoute")
 
+	prefs := rt.Spec.CommonRouteSpec.ParentRefs
+	// FIXME check kind of parent ref is Gateway and missing parentRef. Accepts more than one parent ref
+	pref := prefs[0]
+
+	// Spec says: 'When unspecified, this refers to the local namespace of the Route.'
+	var ns string
+	if pref.Namespace == nil {
+		ns = rt.ObjectMeta.Namespace
+	} else {
+		ns = string(*pref.Namespace)
+	}
+	gw := &gatewayapi.Gateway{}
+	if err := r.Get(ctx, types.NamespacedName{Name: string(pref.Name), Namespace: ns}, gw); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	logger.Info("reconcile", "gateway", gw)
+
+	gwc, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if !isOurGatewayClass(gwc) {
+		return ctrl.Result{}, nil
+	}
+
+	cm, err := lookupGatewayClassParameters(ctx, r, gwc)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
+	}
+
+	// Create HTTPRoute resource
+	rtOut := r.constructHTTPRoute(&rt, cm)
+
+	logger.Info("create httproute", "rtOut", rtOut)
+
+	err = ctrl.SetControllerReference(&rt, rtOut, r.Scheme)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	rtFound := &gatewayapi.HTTPRoute{}
+	err = r.Get(ctx, types.NamespacedName{Name: rtOut.Name, Namespace: rtOut.Namespace}, rtFound)
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info("create gateway")
+		err = r.Create(ctx, rtOut)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else if err == nil {
+		rtFound.Spec = rtOut.Spec
+		logger.Info("update httproute", "rt", rtFound)
+		if err := r.Update(ctx, rtFound); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
 	doStatusUpdate := false
 	rt.Status.Parents = []gatewayapi.RouteParentStatus{}
 	for _, parent := range rt.Spec.ParentRefs {
@@ -101,8 +162,8 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err != nil {
 			continue
 		}
-		gwc, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
-		if err != nil || !isOurGatewayClass(gwc) {
+		gwcRef, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
+		if err != nil || !isOurGatewayClass(gwcRef) {
 			continue
 		}
 		doStatusUpdate = true
@@ -129,4 +190,15 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayapi.HTTPRoute{}).
 		Complete(r)
+}
+
+func (r *HTTPRouteReconciler) constructHTTPRoute(rtIn *gatewayapi.HTTPRoute, configmap *corev1.ConfigMap) *gatewayapi.HTTPRoute {
+	name := fmt.Sprintf("%s-%s", rtIn.ObjectMeta.Name, configmap.Data["tier2GatewayClass"])
+	rtOut := rtIn.DeepCopy()
+	rtOut.ResourceVersion = ""
+	rtOut.ObjectMeta.Name = name
+	// FIXME, should follow pattern in gateway-controller and remap parents of type gateway similarly
+	rtOut.Spec.CommonRouteSpec.ParentRefs[0].Name = "foo-gateway-istio"
+
+	return rtOut
 }

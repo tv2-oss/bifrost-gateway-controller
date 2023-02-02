@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: foo-site
+  name: foo-site
+  namespace: foo-site
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: foo-site
+  template:
+    metadata:
+      labels:
+        app: foo-site
+    spec:
+      containers:
+      - image: hashicorp/http-echo:0.2.3
+        name: foo-site
+        args:
+        - "-text=Welcome-to-foo-site"
+        - "-listen=:80"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: foo-site
+  name: foo-site
+  namespace: foo-site
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: foo-site

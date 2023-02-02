@@ -1,0 +1,22 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: foo-store
+  namespace: foo-store
+spec:
+  parentRefs:
+  - kind: Gateway
+    name: foo-gateway
+    namespace: foo-infra
+  rules:
+  - backendRefs:
+    - name: foo-store-v1
+      port: 80
+      weight: 90
+    - name: foo-store-v2
+      port: 80
+      weight: 10
+    matches:
+    - path:
+        type: PathPrefix
+        value: /store
