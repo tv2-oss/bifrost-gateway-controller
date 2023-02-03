@@ -14,10 +14,13 @@ such as TLS certificates.
 In the figure below, an example is shown, where the `Gateway` resource
 does not specify hostnames, but the three `HTTPRoute`s that reference
 the `Gateway` do. The `Gateway` does not allow `HTTPRoute`s from
-namespace `ns3` hence this `HTTPRoute` will be ignored. The
+namespace `ns3` hence this `HTTPRoute` must be ignored. The
 `HTTPRoute`s from `ns1` and `ns2` are allowed by the `Gateway` so
 collectively the data path will allow only the two domains associated
-with those routes.
+with those routes and only where the host name on the `Gateway`
+listeners [intersect (see gateway API
+spec)](https://gateway-api.sigs.k8s.io/references/spec/#gateway.networking.k8s.io%2fv1beta1.Listener)
+with the `HTTPRoute` hostname(s).
 
 The *cloud-gateway-controller* will normalize the 'defining resources'
 such that it can (depending on the actual data path definition
