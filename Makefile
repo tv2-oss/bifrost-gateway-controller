@@ -63,6 +63,11 @@ test: manifests generate fmt vet envtest ## Run tests.
 e2e-test: envtest
 	(cd test/e2e/ && USE_EXISTING_CLUSTER=true go test)
 
+.PHONY: unit-test
+unit-test:
+	kubectl apply -f test-data/gateway-class.yaml
+	(cd test/unit && USE_EXISTING_CLUSTER=true go test -test.v -gateway-class=default)
+
 ## Runs conformance tests against cluster with controller deployed. Flag `-test.v' can be used to increase logging
 
 .PHONY: conformance-test

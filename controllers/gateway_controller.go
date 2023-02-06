@@ -94,9 +94,29 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	addrType := gatewayapi.IPAddressType
 	g.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
 
+	var lStatus []gatewayapi.ListenerStatus
+	for _, listener := range g.Spec.Listeners {
+		logger.Info("listener", "l", listener)
+		status := gatewayapi.ListenerStatus{
+			Name: listener.Name,
+			SupportedKinds: []gatewayapi.RouteGroupKind{{
+				Group: (*gatewayapi.Group)(&gatewayapi.GroupVersion.Group),
+				Kind:  gatewayapi.Kind("HTTPRoute"),
+			}},
+			AttachedRoutes: 0,
+		}
+		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
+			Type:               string(gatewayapi.ListenerConditionAccepted),
+			Status:             metav1.ConditionTrue,
+			Reason:             string(gatewayapi.ListenerReasonAccepted),
+			ObservedGeneration: g.ObjectMeta.Generation})
+		lStatus = append(lStatus, status)
+	}
+	g.Status.Listeners = lStatus
+
 	meta.SetStatusCondition(&g.Status.Conditions, metav1.Condition{
 		Type:               string(gatewayapi.GatewayConditionAccepted),
-		Status:             "True",
+		Status:             metav1.ConditionTrue,
 		Reason:             string(gatewayapi.GatewayReasonAccepted),
 		ObservedGeneration: g.ObjectMeta.Generation})
 
