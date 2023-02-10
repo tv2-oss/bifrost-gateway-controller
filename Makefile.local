@@ -101,3 +101,19 @@ create-ca-cert:
 ca-cert-secret-create:
 	kubectl create ns cert-manager
 	kubectl -n cert-manager create secret tls ca-key-pair --cert=foo-example-com.crt --key=foo-example-com.key
+
+#################
+.PHONY: deploy-aws-load-balancer-controller-crds
+deploy-aws-load-balancer-controller-crds:
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.4.5/helm/aws-load-balancer-controller/crds/crds.yaml
+
+#################
+.PHONY: deploy-crossplane
+deploy-crossplane:
+	helm upgrade -i --repo https://charts.crossplane.io/stable crossplane crossplane --version v1.11.0 -n crossplane-system --create-namespace
+
+.PHONY: deploy-crossplane-aws-provider
+deploy-crossplane-aws-provider:
+	kubectl apply -f test-data/crossplane-aws-provider.yaml
+	kubectl wait "providers.pkg.crossplane.io/provider-aws" --for=condition=Installed --timeout=180s
+	kubectl wait "providers.pkg.crossplane.io/provider-aws" --for=condition=Healthy --timeout=180s

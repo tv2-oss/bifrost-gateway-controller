@@ -86,10 +86,10 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	if err := r.Client.Create(ctx, newGW); err != nil {
-		logger.Error(err, "Unable to create gateway")
-		return ctrl.Result{}, err
-	}
+	//if err := r.Client.Create(ctx, newGW); err != nil {
+	//	logger.Error(err, "Unable to create gateway")
+	//	return ctrl.Result{}, err
+	//}
 
 	addrType := gatewayapi.IPAddressType
 	g.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
