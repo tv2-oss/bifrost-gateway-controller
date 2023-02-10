@@ -19,12 +19,12 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"k8s.io/client-go/dynamic"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -33,43 +33,48 @@ import (
 
 // GatewayReconciler reconciles a Gateway object
 type GatewayReconciler struct {
-	client.Client
-	DynamicClient dynamic.Interface
-	Scheme        *runtime.Scheme
+	client    client.Client
+	dynClient dynamic.Interface
+	scheme    *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways/finalizers,verbs=update
 
-func (r *GatewayReconciler) GetClient() client.Client {
-	return r.Client
+func (r *GatewayReconciler) Client() client.Client {
+	return r.client
 }
 
-func (r *GatewayReconciler) GetDynamicClient() dynamic.Interface {
-	return r.DynamicClient
+func (r *GatewayReconciler) Scheme() *runtime.Scheme {
+	return r.scheme
 }
 
-func (r *GatewayReconciler) GetScheme() *runtime.Scheme {
-	return r.Scheme
+func (r *GatewayReconciler) DynamicClient() dynamic.Interface {
+	return r.dynClient
 }
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Gateway object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+func NewGatewayController(mgr ctrl.Manager) *GatewayReconciler {
+	r := &GatewayReconciler{
+		client:    mgr.GetClient(),
+		scheme:    mgr.GetScheme(),
+		dynClient: dynamic.NewForConfigOrDie(ctrl.GetConfigOrDie()),
+	}
+	return r
+}
+
+func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&gatewayapi.Gateway{}).
+		Complete(r)
+}
+
 func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconcile")
 
 	var g gatewayapi.Gateway
-	if err := r.Client.Get(ctx, req.NamespacedName, &g); err != nil {
-		logger.Error(err, "Unable to fetch Gateway")
+	if err := r.Client().Get(ctx, req.NamespacedName, &g); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -77,7 +82,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	gwc, err := lookupGatewayClass(ctx, r, g.Spec.GatewayClassName)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	if !isOurGatewayClass(gwc) {
@@ -89,17 +94,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
 
-	// logger.Info("Creating Istio Gateway")
-	// newGW := BuildGatewayResource(&g, cm)
-
-	// if err := ctrl.SetControllerReference(&g, newGW, r.Scheme); err != nil {
-	// 	return ctrl.Result{}, err
-	// }
-
-	// if err := r.Client.Create(ctx, newGW); err != nil {
-	// 	logger.Error(err, "Unable to create gateway")
-	// 	return ctrl.Result{}, err
-	// }
+	if err := applyTemplates(ctx, r, &g, cm); err != nil {
+		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
+	}
 
 	addrType := gatewayapi.IPAddressType
 	g.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
@@ -110,36 +107,28 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		Reason:             string(gatewayapi.GatewayReasonAccepted),
 		ObservedGeneration: g.ObjectMeta.Generation})
 
-	if err := r.Status().Update(ctx, &g); err != nil {
+	if err := r.Client().Status().Update(ctx, &g); err != nil {
 		logger.Error(err, "unable to update Gateway status")
 		return ctrl.Result{}, err
 	}
 
-	unstruct, err := parseTemplate(&g, cm, "albTemplate")
-
 	return ctrl.Result{}, nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayapi.Gateway{}).
-		Complete(r)
-}
+func applyTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, configmap *corev1.ConfigMap) error {
+	for tmplKey, tmpl := range configmap.Data {
+		u, err := template2Unstructured(gwParent, tmpl)
+		if err != nil {
+			return fmt.Errorf("cannot render template %q: %w", tmplKey, err)
+		}
 
-func BuildGatewayResource(gateway *gatewayapi.Gateway, cm *corev1.ConfigMap) *gatewayapi.Gateway {
-	gatewayClassName := gatewayapi.ObjectName(cm.Data["tier2GatewayClass"])
-	name := fmt.Sprintf("%s-%s", gateway.ObjectMeta.Name, gatewayClassName)
-	gw := gateway.DeepCopy()
-	gw.ResourceVersion = ""
-	gw.ObjectMeta.Name = name
-	gw.Spec.GatewayClassName = gatewayClassName
+		if err := ctrl.SetControllerReference(gwParent, u, r.Scheme()); err != nil {
+			return fmt.Errorf("cannot set owner for resource created from template %q: %w", tmplKey, err)
+		}
 
-	if gw.ObjectMeta.Annotations == nil {
-		gw.ObjectMeta.Annotations = map[string]string{}
+		if err := patchUnstructured(ctx, r, u, gwParent.ObjectMeta.Namespace); err != nil {
+			return fmt.Errorf("cannot apply template %q: %w", tmplKey, err)
+		}
 	}
-
-	gw.ObjectMeta.Annotations["networking.istio.io/service-type"] = "ClusterIP"
-
-	return gw
+	return nil
 }

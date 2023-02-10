@@ -26,13 +26,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logger "sigs.k8s.io/controller-runtime/pkg/log"
-	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 // GatewayClassReconciler reconciles a GatewayClass object
 type GatewayClassReconciler struct {
-	Client client.Client
-	Scheme *runtime.Scheme
+	client client.Client
+	scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses,verbs=get;list;watch;create;update;patch;delete
@@ -41,8 +41,27 @@ type GatewayClassReconciler struct {
 
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch
 
-func (r *GatewayClassReconciler) GetClient() client.Client {
-	return r.Client
+func (r *GatewayClassReconciler) Client() client.Client {
+	return r.client
+}
+
+func (r *GatewayClassReconciler) Scheme() *runtime.Scheme {
+	return r.scheme
+}
+
+func NewGatewayClassController(mgr ctrl.Manager) *GatewayClassReconciler {
+	r := &GatewayClassReconciler{
+		client: mgr.GetClient(),
+		scheme: mgr.GetScheme(),
+		//dynClient: dynamic.NewForConfigOrDie(ctrl.GetConfigOrDie()),
+	}
+	return r
+}
+
+func (r *GatewayClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&gatewayapi.GatewayClass{}).
+		Complete(r)
 }
 
 func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -51,7 +70,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	var valid = true
 	var errWhyInvalid error
 
-	gwc, err := lookupGatewayClass(ctx, r, gateway.ObjectName(req.Name))
+	gwc, err := lookupGatewayClass(ctx, r, gatewayapi.ObjectName(req.Name))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -69,19 +88,19 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if valid {
 		log.Info("Accepted", "GatewayClass", req.Name)
 		meta.SetStatusCondition(&gwc.Status.Conditions, metav1.Condition{
-			Type:               string(gateway.GatewayClassConditionStatusAccepted),
+			Type:               string(gatewayapi.GatewayClassConditionStatusAccepted),
 			Status:             "True",
-			Reason:             string(gateway.GatewayClassReasonAccepted),
+			Reason:             string(gatewayapi.GatewayClassReasonAccepted),
 			ObservedGeneration: gwc.ObjectMeta.Generation})
 	} else {
 		meta.SetStatusCondition(&gwc.Status.Conditions, metav1.Condition{
-			Type:               string(gateway.GatewayClassConditionStatusAccepted),
+			Type:               string(gatewayapi.GatewayClassConditionStatusAccepted),
 			Status:             "False",
-			Reason:             string(gateway.GatewayClassReasonInvalidParameters),
+			Reason:             string(gatewayapi.GatewayClassReasonInvalidParameters),
 			ObservedGeneration: gwc.ObjectMeta.Generation})
 	}
 
-	err = r.Client.Status().Update(ctx, gwc)
+	err = r.Client().Status().Update(ctx, gwc)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update GatewayClass status condition: %w", err)
 	}
@@ -90,10 +109,4 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, errWhyInvalid
 	}
 	return ctrl.Result{}, nil
-}
-
-func (r *GatewayClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&gateway.GatewayClass{}).
-		Complete(r)
 }

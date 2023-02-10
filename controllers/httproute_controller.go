@@ -36,19 +36,38 @@ import (
 )
 
 type HTTPRouteReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+	client client.Client
+	scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes/finalizers,verbs=update
 
-func (r *HTTPRouteReconciler) GetClient() client.Client {
-	return r.Client
+func (r *HTTPRouteReconciler) Client() client.Client {
+	return r.client
 }
 
-func lookupParent(ctx context.Context, r Controller, rt *gatewayapi.HTTPRoute, p gatewayapi.ParentReference) (*gatewayapi.Gateway, error) {
+func (r *HTTPRouteReconciler) Scheme() *runtime.Scheme {
+	return r.scheme
+}
+
+func NewHTTPRouteController(mgr ctrl.Manager) *HTTPRouteReconciler {
+	r := &HTTPRouteReconciler{
+		client: mgr.GetClient(),
+		scheme: mgr.GetScheme(),
+		//dynClient: dynamic.NewForConfigOrDie(ctrl.GetConfigOrDie()),
+	}
+	return r
+}
+
+func (r *HTTPRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&gatewayapi.HTTPRoute{}).
+		Complete(r)
+}
+
+func lookupParent(ctx context.Context, r ControllerClient, rt *gatewayapi.HTTPRoute, p gatewayapi.ParentReference) (*gatewayapi.Gateway, error) {
 	if p.Namespace == nil {
 		return lookupGateway(ctx, r, p.Name, rt.ObjectMeta.Namespace)
 	}
@@ -88,7 +107,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	logger := log.FromContext(ctx)
 
 	var rt gatewayapi.HTTPRoute
-	if err := r.Client.Get(ctx, req.NamespacedName, &rt); err != nil {
+	if err := r.Client().Get(ctx, req.NamespacedName, &rt); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -106,7 +125,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		ns = string(*pref.Namespace)
 	}
 	gw := &gatewayapi.Gateway{}
-	if err := r.Get(ctx, types.NamespacedName{Name: string(pref.Name), Namespace: ns}, gw); err != nil {
+	if err := r.Client().Get(ctx, types.NamespacedName{Name: string(pref.Name), Namespace: ns}, gw); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	logger.Info("reconcile", "gateway", gw)
@@ -130,23 +149,23 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	logger.Info("create httproute", "rtOut", rtOut)
 
-	err = ctrl.SetControllerReference(&rt, rtOut, r.Scheme)
+	err = ctrl.SetControllerReference(&rt, rtOut, r.Scheme())
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	rtFound := &gatewayapi.HTTPRoute{}
-	err = r.Get(ctx, types.NamespacedName{Name: rtOut.Name, Namespace: rtOut.Namespace}, rtFound)
+	err = r.Client().Get(ctx, types.NamespacedName{Name: rtOut.Name, Namespace: rtOut.Namespace}, rtFound)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("create gateway")
-		err = r.Create(ctx, rtOut)
+		err = r.Client().Create(ctx, rtOut)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 	} else if err == nil {
 		rtFound.Spec = rtOut.Spec
 		logger.Info("update httproute", "rt", rtFound)
-		if err := r.Update(ctx, rtFound); err != nil {
+		if err := r.Client().Update(ctx, rtFound); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -177,19 +196,13 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if doStatusUpdate {
-		if err := r.Status().Update(ctx, &rt); err != nil {
+		if err := r.Client().Status().Update(ctx, &rt); err != nil {
 			logger.Error(err, "unable to update HTTPRoute status")
 			return ctrl.Result{}, err
 		}
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func (r *HTTPRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&gatewayapi.HTTPRoute{}).
-		Complete(r)
 }
 
 func (r *HTTPRouteReconciler) constructHTTPRoute(rtIn *gatewayapi.HTTPRoute, configmap *corev1.ConfigMap) *gatewayapi.HTTPRoute {

@@ -16,21 +16,48 @@ metadata:
   name: default-gateway-class
   namespace: default
 data:
-  tier2GatewayClass: istio
-  albTemplate: |
-    apiVersion: elbv2.aws.crossplane.io/v1alpha1
-    kind: LoadBalancer
-    metadata:
-      name: {{ .Gateway.ObjectMeta.Name }}-alb
-    spec:
-      providerConfigRef:
-        name: admin
-      forProvider:
-        name: aws-alb-test
-        region: eu-central-1
-        securityGroups:
-          - $SG_ID
-        subnetMappings:
-          - subnetID: $SUBNET1
-          - subnetID: $SUBNET2
-          - subnetID: $SUBNET3
+  ##gatewayTemplate: |
+    istio: |
+      apiVersion: gateway.networking.k8s.io/v1beta1
+      kind: Gateway
+      metadata:
+        name: foo-gateway-istio
+        namespace: default
+        annotations:
+          networking.istio.io/service-type: ClusterIP
+      spec:
+        gatewayClassName: istio
+        listeners:
+        - name: web
+          port: 80
+          protocol: HTTP
+          hostname: "foo.example.com"
+          allowedRoutes:
+            namespaces:
+              from: Selector
+              selector:
+                matchLabels:
+                  allowGateway: foo
+    alb: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: foo-gateway
+        namespace: default
+      spec:
+        ingressClassName: contour
+        tls:
+        - hosts:
+          - foo.example.com
+          secretName: foo-gateway-tls
+        rules:
+        - host: foo.example.com
+          http:
+            paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: foo-gateway-istio
+                  port:
+                    number: 80

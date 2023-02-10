@@ -79,14 +79,6 @@ var _ = Describe("Gateway controller", func() {
 		Expect(k8sClient.Delete(ctx, cm)).Should(Succeed())
 	})
 
-	When("Building Gateway resource from input Gateway", func() {
-		It("Should return a new Gateway", func() {
-			gateway := &gateway.Gateway{}
-			gwOut := BuildGatewayResource(gateway, cm)
-			Expect(gwOut).NotTo(BeNil())
-		})
-	})
-
 	When("Reconciling a parent Gateway", func() {
 		var childGateway, gw *gateway.Gateway
 
