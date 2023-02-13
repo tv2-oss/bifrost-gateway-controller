@@ -206,7 +206,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 func (r *HTTPRouteReconciler) constructHTTPRoute(rtIn *gatewayapi.HTTPRoute, configmap *corev1.ConfigMap) *gatewayapi.HTTPRoute {
-	name := fmt.Sprintf("%s-%s", rtIn.ObjectMeta.Name, configmap.Data["tier2GatewayClass"])
+	name := fmt.Sprintf("%s-istio", rtIn.ObjectMeta.Name)
 	rtOut := rtIn.DeepCopy()
 	rtOut.ResourceVersion = ""
 	rtOut.ObjectMeta.Name = name

@@ -183,9 +183,10 @@ var _ = Describe("GatewayClass", func() {
 var _ = Describe("Gateway addresses", func() {
 
 	const (
-		externalDNSTimeout = time.Second * 120
-		interval           = time.Millisecond * 250
-		timeout            = time.Second * 10
+		externalDNSTimeout   = time.Second * 120
+		interval             = time.Millisecond * 250
+		timeout              = time.Second * 10
+		fixmeExtendedTimeout = time.Second * 20  // This should go away when the normalization refactring is implemented
 	)
 	var (
 		gwc          *gatewayapi.GatewayClass
@@ -240,7 +241,7 @@ var _ = Describe("Gateway addresses", func() {
 					return false
 				}
 				return true
-			}, timeout, interval).Should(BeTrue())
+			}, fixmeExtendedTimeout, interval).Should(BeTrue())
 
 			By("Assigning status and address such that external-dns accepts and propagates the address")
 			Eventually(func() bool {

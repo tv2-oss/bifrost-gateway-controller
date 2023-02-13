@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -31,6 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
+
+// Used to requeue when a resource is missing a dependency
+var dependencyMissingRequeuePeriod = 5 * time.Second
 
 // GatewayReconciler reconciles a Gateway object
 type GatewayReconciler struct {
@@ -83,7 +87,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	gwc, err := lookupGatewayClass(ctx, r, g.Spec.GatewayClassName)
 	if err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, client.IgnoreNotFound(err)
 	}
 
 	if !isOurGatewayClass(gwc) {
@@ -92,7 +96,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	cm, err := lookupGatewayClassParameters(ctx, r, gwc)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
+		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
 
 	if err := applyTemplates(ctx, r, &g, cm); err != nil {
