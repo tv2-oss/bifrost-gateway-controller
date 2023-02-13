@@ -138,11 +138,6 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	//cm, err := lookupGatewayClassParameters(ctx, r, gwc)
-	//if err != nil {
-	//	return ctrl.Result{}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
-	//}
-
 	// Create HTTPRoute resource
 	rtOut := r.constructHTTPRoute(&rt)
 
