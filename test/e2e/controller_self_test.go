@@ -186,7 +186,7 @@ var _ = Describe("Gateway addresses", func() {
 		externalDNSTimeout   = time.Second * 120
 		interval             = time.Millisecond * 250
 		timeout              = time.Second * 10
-		fixmeExtendedTimeout = time.Second * 20  // This should go away when the normalization refactring is implemented
+		fixmeExtendedTimeout = time.Second * 20 // This should go away when the normalization refactring is implemented
 	)
 	var (
 		gwc          *gatewayapi.GatewayClass

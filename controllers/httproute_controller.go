@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -139,13 +138,13 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	cm, err := lookupGatewayClassParameters(ctx, r, gwc)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
-	}
+	//cm, err := lookupGatewayClassParameters(ctx, r, gwc)
+	//if err != nil {
+	//	return ctrl.Result{}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
+	//}
 
 	// Create HTTPRoute resource
-	rtOut := r.constructHTTPRoute(&rt, cm)
+	rtOut := r.constructHTTPRoute(&rt)
 
 	logger.Info("create httproute", "rtOut", rtOut)
 
@@ -205,7 +204,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-func (r *HTTPRouteReconciler) constructHTTPRoute(rtIn *gatewayapi.HTTPRoute, configmap *corev1.ConfigMap) *gatewayapi.HTTPRoute {
+func (r *HTTPRouteReconciler) constructHTTPRoute(rtIn *gatewayapi.HTTPRoute) *gatewayapi.HTTPRoute {
 	name := fmt.Sprintf("%s-istio", rtIn.ObjectMeta.Name)
 	rtOut := rtIn.DeepCopy()
 	rtOut.ResourceVersion = ""
