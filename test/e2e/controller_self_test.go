@@ -61,7 +61,50 @@ metadata:
   name: cloud-gw-params
   namespace: default
 data:
-  tier2GatewayClass: istio`
+    istio: |
+      apiVersion: gateway.networking.k8s.io/v1beta1
+      kind: Gateway
+      metadata:
+        name: {{ .Gateway.ObjectMeta.Name }}-istio
+        namespace: {{ .Gateway.ObjectMeta.Namespace }}
+        annotations:
+          networking.istio.io/service-type: ClusterIP
+      spec:
+        gatewayClassName: istio
+        listeners:
+        {{- range .Gateway.Spec.Listeners }}
+        - name: {{ .Name }}
+          port: {{ .Port }}
+          protocol: {{ .Protocol }}
+          hostname: {{ .Hostname }}
+        {{- end }}
+    alb: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: {{ .Gateway.ObjectMeta.Name }}
+        namespace: {{ .Gateway.ObjectMeta.Namespace }}
+      spec:
+        ingressClassName: contour
+        tls:
+        - hosts:
+          {{- range .Gateway.Spec.Listeners }}
+          - {{ .Hostname }}
+          {{- end }}
+          secretName: {{ .Gateway.ObjectMeta.Name }}-tls
+        rules:
+        {{- range .Gateway.Spec.Listeners }}
+        - host: {{ .Hostname }}
+          http:
+            paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: {{ $.Gateway.ObjectMeta.Name }}-istio
+                  port:
+                    number: 80
+        {{- end }}`
 
 // example.com does resolve to an IP address so it is not ideal for testing
 const gatewayManifest string = `
