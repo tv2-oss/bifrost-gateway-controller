@@ -69,7 +69,8 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 	setupLog.Info("cloud-gateway-controller", "version", version, "build-date", date, "commit", commit)
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	config := ctrl.GetConfigOrDie()
+	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
@@ -93,7 +94,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	gwctrl := controllers.NewGatewayController(mgr)
+	gwctrl := controllers.NewGatewayController(mgr, config)
 	if err = gwctrl.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Gateway")
 		os.Exit(1)

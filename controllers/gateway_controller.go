@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -54,11 +55,11 @@ func (r *GatewayReconciler) DynamicClient() dynamic.Interface {
 	return r.dynClient
 }
 
-func NewGatewayController(mgr ctrl.Manager) *GatewayReconciler {
+func NewGatewayController(mgr ctrl.Manager, config *rest.Config) *GatewayReconciler {
 	r := &GatewayReconciler{
 		client:    mgr.GetClient(),
 		scheme:    mgr.GetScheme(),
-		dynClient: dynamic.NewForConfigOrDie(ctrl.GetConfigOrDie()),
+		dynClient: dynamic.NewForConfigOrDie(config),
 	}
 	return r
 }
@@ -115,9 +116,16 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
+type gatewayTemplateValues struct {
+	Gateway *gatewayapi.Gateway
+}
+
 func applyTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, configmap *corev1.ConfigMap) error {
+	templateValues := gatewayTemplateValues{
+		Gateway: gwParent,
+	}
 	for tmplKey, tmpl := range configmap.Data {
-		u, err := template2Unstructured(gwParent, tmpl)
+		u, err := template2Unstructured(tmpl, &templateValues)
 		if err != nil {
 			return fmt.Errorf("cannot render template %q: %w", tmplKey, err)
 		}

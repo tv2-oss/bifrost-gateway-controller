@@ -84,7 +84,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	gwctrl := NewGatewayController(k8sManager)
+	gwctrl := NewGatewayController(k8sManager, cfg)
 	err = gwctrl.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

@@ -49,7 +49,23 @@ metadata:
   name: default-gateway-class
   namespace: default
 data:
-  tier2GatewayClass: istio`
+    istio: |
+      apiVersion: gateway.networking.k8s.io/v1beta1
+      kind: Gateway
+      metadata:
+        name: {{ .Gateway.ObjectMeta.Name }}-istio
+        namespace: {{ .Gateway.ObjectMeta.Namespace }}
+        annotations:
+          networking.istio.io/service-type: ClusterIP
+      spec:
+        gatewayClassName: istio
+        listeners:
+        {{- range .Gateway.Spec.Listeners }}
+        - name: {{ .Name }}
+          port: {{ .Port }}
+          protocol: {{ .Protocol }}
+          hostname: {{ .Hostname }}
+        {{- end }}`
 
 var _ = Describe("Gateway controller", func() {
 

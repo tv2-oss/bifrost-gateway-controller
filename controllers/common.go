@@ -23,10 +23,6 @@ import (
 	selfapi "github.com/tv2/cloud-gateway-controller/pkg/api"
 )
 
-type templateValues struct {
-	Gateway *gatewayapi.Gateway
-}
-
 type ControllerClient interface {
 	Client() client.Client
 	Scheme() *runtime.Scheme
@@ -78,14 +74,14 @@ func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.Obje
 	return &gw, nil
 }
 
-func template2Unstructured(gwParent *gatewayapi.Gateway, templateData string) (*unstructured.Unstructured, error) {
+func template2Unstructured(templateData string, templateValues any) (*unstructured.Unstructured, error) {
 	var buffer bytes.Buffer
 	tmpl, err := template.New("resourceTemplate").Parse(templateData)
 	if err != nil {
 		return nil, err
 	}
 
-	err = tmpl.Execute(io.Writer(&buffer), &templateValues{gwParent})
+	err = tmpl.Execute(io.Writer(&buffer), templateValues)
 	if err != nil {
 		return nil, err
 	}

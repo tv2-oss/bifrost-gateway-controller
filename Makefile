@@ -59,6 +59,10 @@ vet: ## Run go vet against code.
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
+.PHONY: test-ginkgo
+test-ginkgo: manifests generate fmt vet envtest ## Run tests using ginkgo.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" ginkgo -vv ./... -coverprofile cover.out
+
 .PHONY: e2e-test
 e2e-test: envtest
 	(cd test/e2e/ && USE_EXISTING_CLUSTER=true go test)
