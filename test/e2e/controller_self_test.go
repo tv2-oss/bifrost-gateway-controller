@@ -189,6 +189,7 @@ var _ = Describe("Gateway addresses", func() {
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, lookupKey, gwRead)
+				GinkgoT().Logf("gwRead: %+v", gwRead)
 				if err != nil ||
 					len(gwRead.Status.Addresses) != 1 ||
 					(*gwRead.Status.Addresses[0].Type == gatewayapi.IPAddressType && !ip4AddressRe.MatchString(gwRead.Status.Addresses[0].Value)) ||
