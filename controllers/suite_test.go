@@ -84,16 +84,16 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&GatewayReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
+	gwctrl := NewGatewayController(k8sManager, cfg)
+	err = gwctrl.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&GatewayClassReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
+	gwcctrl := NewGatewayClassController(k8sManager)
+	err = gwcctrl.SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	httprtctrl := NewHTTPRouteController(k8sManager)
+	err = httprtctrl.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

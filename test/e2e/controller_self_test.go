@@ -61,7 +61,50 @@ metadata:
   name: cloud-gw-params
   namespace: default
 data:
-  tier2GatewayClass: istio`
+    istio: |
+      apiVersion: gateway.networking.k8s.io/v1beta1
+      kind: Gateway
+      metadata:
+        name: {{ .Gateway.ObjectMeta.Name }}-istio
+        namespace: {{ .Gateway.ObjectMeta.Namespace }}
+        annotations:
+          networking.istio.io/service-type: ClusterIP
+      spec:
+        gatewayClassName: istio
+        listeners:
+        {{- range .Gateway.Spec.Listeners }}
+        - name: {{ .Name }}
+          port: {{ .Port }}
+          protocol: {{ .Protocol }}
+          hostname: {{ .Hostname }}
+        {{- end }}
+    alb: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: {{ .Gateway.ObjectMeta.Name }}
+        namespace: {{ .Gateway.ObjectMeta.Namespace }}
+      spec:
+        ingressClassName: contour
+        tls:
+        - hosts:
+          {{- range .Gateway.Spec.Listeners }}
+          - {{ .Hostname }}
+          {{- end }}
+          secretName: {{ .Gateway.ObjectMeta.Name }}-tls
+        rules:
+        {{- range .Gateway.Spec.Listeners }}
+        - host: {{ .Hostname }}
+          http:
+            paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: {{ $.Gateway.ObjectMeta.Name }}-istio
+                  port:
+                    number: 80
+        {{- end }}`
 
 // example.com does resolve to an IP address so it is not ideal for testing
 const gatewayManifest string = `
@@ -140,9 +183,10 @@ var _ = Describe("GatewayClass", func() {
 var _ = Describe("Gateway addresses", func() {
 
 	const (
-		externalDNSTimeout = time.Second * 120
-		interval           = time.Millisecond * 250
-		timeout            = time.Second * 10
+		externalDNSTimeout   = time.Second * 120
+		interval             = time.Millisecond * 250
+		timeout              = time.Second * 10
+		fixmeExtendedTimeout = time.Second * 20 // This should go away when the normalization refactring is implemented
 	)
 	var (
 		gwc          *gatewayapi.GatewayClass
@@ -189,6 +233,7 @@ var _ = Describe("Gateway addresses", func() {
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, lookupKey, gwRead)
+				GinkgoT().Logf("gwRead: %+v", gwRead)
 				if err != nil ||
 					len(gwRead.Status.Addresses) != 1 ||
 					(*gwRead.Status.Addresses[0].Type == gatewayapi.IPAddressType && !ip4AddressRe.MatchString(gwRead.Status.Addresses[0].Value)) ||
@@ -196,7 +241,7 @@ var _ = Describe("Gateway addresses", func() {
 					return false
 				}
 				return true
-			}, timeout, interval).Should(BeTrue())
+			}, fixmeExtendedTimeout, interval).Should(BeTrue())
 
 			By("Assigning status and address such that external-dns accepts and propagates the address")
 			Eventually(func() bool {
