@@ -7,6 +7,8 @@ data-path outside Kubernetes into the surrounding cloud
 infrastructure.
 
 - [Getting Started using a KIND Cluster](doc/getting-started.md)
+- [Example GatewayClass Definitions](doc/example-gatewayclasses.md)
+- [Creating GatewayClass Definitions](doc/creating-gatewayclass-definitions.md)
 - [User Journeys](#user-journeys)
 
 ## Creating an End-to-end Network Datapath
@@ -165,7 +167,6 @@ In the following we describe how to use the *cloud-gateway-controller*
 as seen from the perspective of these personas.
 
 - [Basic Network Datapath for Small Team](doc/basic-datapath.md)
-- Configuring a Datapath through a GatewayClass Definition
 
 ## Prerequisites
 
