@@ -121,13 +121,18 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
+// Parameters used to render Gateway templates
 type gatewayTemplateValues struct {
+	// Parent Gateway
 	Gateway *gatewayapi.Gateway
+	// Union of all hostnames across all listeners and attached HTTPRoutes
+	Hostnames []string
 }
 
 func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *cgcapi.GatewayClassParameters) error {
 	templateValues := gatewayTemplateValues{
-		Gateway: gwParent,
+		Gateway:   gwParent,
+		Hostnames: []string{string(*gwParent.Spec.Listeners[0].Hostname)}, // FIXME: this will be implemented as part of the normalization initiative
 	}
 	for tmplKey, tmpl := range params.Spec.GatewayTemplate.ResourceTemplates {
 		u, err := template2Unstructured(tmpl, &templateValues)

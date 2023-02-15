@@ -14,6 +14,8 @@ kind: GatewayClassParameters
 metadata:
   name: default-gateway-class
 spec:
+
+  # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
     resourceTemplates:
       istioShadowGw: |
@@ -55,6 +57,37 @@ spec:
                     port:
                       number: 80
           {{- end }}
+      tlsCertificate: |
+        apiVersion: cert-manager.io/v1
+        kind: Certificate
+        metadata:
+          name: {{ .Gateway.ObjectMeta.Name }}-cert
+          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+        spec:
+          secretName: {{ .Gateway.ObjectMeta.Name }}-tls
+          duration: 2160h # 90d
+          renewBefore: 360h # 15d
+          subject:
+            organizations:
+              - acme-example-corp
+          isCA: false
+          privateKey:
+            algorithm: RSA
+            encoding: PKCS1
+            size: 2048
+          usages:
+            - server auth
+            - client auth
+          dnsNames:
+            {{- range .Hostnames }}
+            - {{ . }}
+            {{- end }}
+          issuerRef:
+            name: ca-issuer
+            kind: ClusterIssuer
+            group: cert-manager.io
+
+  # The following are templates used to 'implement' a 'parent' HTTPRoute
   httpRouteTemplate:
     resourceTemplates:
       shadowHttproute: |
@@ -72,32 +105,3 @@ spec:
           {{ end }}
           rules:
           {{ toYaml .HTTPRoute.Spec.Rules | nindent 4 }}
-
-
-# ---
-# apiVersion: cert-manager.io/v1
-# kind: Certificate
-# metadata:
-#   name: foo-gateway-cert
-#   namespace: foo-infra
-# spec:
-#   secretName: foo-gateway-tls
-#   duration: 2160h # 90d
-#   renewBefore: 360h # 15d
-#   subject:
-#     organizations:
-#       - acme-example-corp
-#   isCA: false
-#   privateKey:
-#     algorithm: RSA
-#     encoding: PKCS1
-#     size: 2048
-#   usages:
-#     - server auth
-#     - client auth
-#   dnsNames:
-#     - foo.example.com
-#   issuerRef:
-#     name: ca-issuer
-#     kind: ClusterIssuer
-#     group: cert-manager.io

@@ -189,7 +189,9 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
+// Parameters used to render HTTPRoute templates
 type httprouteTemplateValues struct {
+	// Parent HTTPRoute
 	HTTPRoute *gatewayapi.HTTPRoute
 }
 
