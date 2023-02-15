@@ -1,14 +1,10 @@
 package controllers
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
-	"io"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
 	selfapi "github.com/tv2/cloud-gateway-controller/pkg/api"
 )
 
@@ -46,24 +43,22 @@ func lookupGatewayClass(ctx context.Context, r ControllerClient, name gatewayapi
 	return &gwc, nil
 }
 
-func lookupGatewayClassParameters(ctx context.Context, r ControllerClient, gwc *gatewayapi.GatewayClass) (*corev1.ConfigMap, error) {
+func lookupGatewayClassParameters(ctx context.Context, r ControllerClient, gwc *gatewayapi.GatewayClass) (*cgcapi.GatewayClassParameters, error) {
 	if gwc.Spec.ParametersRef == nil {
 		return nil, errors.New("GatewayClass without parameters")
 	}
 
 	// FIXME: More validation...
-	if gwc.Spec.ParametersRef.Kind != "ConfigMap" {
-		return nil, errors.New("parameter Kind is not a ConfigMap")
+	if gwc.Spec.ParametersRef.Kind != "GatewayClassParameters" {
+		return nil, errors.New("parameter Kind is not a GatewayClassParameters")
 	}
 
-	var cm corev1.ConfigMap
-	if err := r.Client().Get(ctx, types.NamespacedName{Name: gwc.Spec.ParametersRef.Name, Namespace: string(*gwc.Spec.ParametersRef.Namespace)}, &cm); err != nil {
+	var gcp cgcapi.GatewayClassParameters
+	if err := r.Client().Get(ctx, types.NamespacedName{Name: gwc.Spec.ParametersRef.Name}, &gcp); err != nil {
 		return nil, err
 	}
 
-	// FIXME: Validate ConfigMap
-
-	return &cm, nil
+	return &gcp, nil
 }
 
 func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.ObjectName, namespace string) (*gatewayapi.Gateway, error) {
@@ -75,19 +70,13 @@ func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.Obje
 }
 
 func template2Unstructured(templateData string, templateValues any) (*unstructured.Unstructured, error) {
-	var buffer bytes.Buffer
-	tmpl, err := template.New("resourceTemplate").Parse(templateData)
-	if err != nil {
-		return nil, err
-	}
-
-	err = tmpl.Execute(io.Writer(&buffer), templateValues)
+	renderBuffer, err := templateRender(templateData, templateValues)
 	if err != nil {
 		return nil, err
 	}
 
 	rawResource := map[string]any{}
-	err = yaml.Unmarshal(buffer.Bytes(), &rawResource)
+	err = yaml.Unmarshal(renderBuffer.Bytes(), &rawResource)
 	if err != nil {
 		return nil, err
 	}

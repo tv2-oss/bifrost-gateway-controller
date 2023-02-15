@@ -92,7 +92,7 @@ var _ = BeforeSuite(func() {
 	err = gwcctrl.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	httprtctrl := NewHTTPRouteController(k8sManager)
+	httprtctrl := NewHTTPRouteController(k8sManager, cfg)
 	err = httprtctrl.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

@@ -21,22 +21,25 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
 	selfapi "github.com/tv2/cloud-gateway-controller/pkg/api"
 )
 
 type HTTPRouteReconciler struct {
-	client client.Client
-	scheme *runtime.Scheme
+	client    client.Client
+	scheme    *runtime.Scheme
+	dynClient dynamic.Interface
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
@@ -51,11 +54,15 @@ func (r *HTTPRouteReconciler) Scheme() *runtime.Scheme {
 	return r.scheme
 }
 
-func NewHTTPRouteController(mgr ctrl.Manager) *HTTPRouteReconciler {
+func (r *HTTPRouteReconciler) DynamicClient() dynamic.Interface {
+	return r.dynClient
+}
+
+func NewHTTPRouteController(mgr ctrl.Manager, config *rest.Config) *HTTPRouteReconciler {
 	r := &HTTPRouteReconciler{
-		client: mgr.GetClient(),
-		scheme: mgr.GetScheme(),
-		//dynClient: dynamic.NewForConfigOrDie(ctrl.GetConfigOrDie()),
+		client:    mgr.GetClient(),
+		scheme:    mgr.GetScheme(),
+		dynClient: dynamic.NewForConfigOrDie(config),
 	}
 	return r
 }
@@ -138,30 +145,13 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
-	// Create HTTPRoute resource
-	rtOut := r.constructHTTPRoute(&rt)
-
-	logger.Info("create httproute", "rtOut", rtOut)
-
-	err = ctrl.SetControllerReference(&rt, rtOut, r.Scheme())
+	gcp, err := lookupGatewayClassParameters(ctx, r, gwc)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
 
-	rtFound := &gatewayapi.HTTPRoute{}
-	err = r.Client().Get(ctx, types.NamespacedName{Name: rtOut.Name, Namespace: rtOut.Namespace}, rtFound)
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info("create gateway")
-		err = r.Client().Create(ctx, rtOut)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-	} else if err == nil {
-		rtFound.Spec = rtOut.Spec
-		logger.Info("update httproute", "rt", rtFound)
-		if err := r.Client().Update(ctx, rtFound); err != nil {
-			return ctrl.Result{}, err
-		}
+	if err := applyHTTPRouteTemplates(ctx, r, &rt, gcp); err != nil {
+		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 	}
 
 	doStatusUpdate := false
@@ -199,13 +189,27 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-func (r *HTTPRouteReconciler) constructHTTPRoute(rtIn *gatewayapi.HTTPRoute) *gatewayapi.HTTPRoute {
-	name := fmt.Sprintf("%s-istio", rtIn.ObjectMeta.Name)
-	rtOut := rtIn.DeepCopy()
-	rtOut.ResourceVersion = ""
-	rtOut.ObjectMeta.Name = name
-	// FIXME, should follow pattern in gateway-controller and remap parents of type gateway similarly
-	rtOut.Spec.CommonRouteSpec.ParentRefs[0].Name = "foo-gateway-istio"
+type httprouteTemplateValues struct {
+	HTTPRoute *gatewayapi.HTTPRoute
+}
 
-	return rtOut
+func applyHTTPRouteTemplates(ctx context.Context, r ControllerDynClient, rtParent *gatewayapi.HTTPRoute, params *cgcapi.GatewayClassParameters) error {
+	templateValues := httprouteTemplateValues{
+		HTTPRoute: rtParent,
+	}
+	for tmplKey, tmpl := range params.Spec.HTTPRouteTemplate.ResourceTemplates {
+		u, err := template2Unstructured(tmpl, &templateValues)
+		if err != nil {
+			return fmt.Errorf("cannot render template %q: %w", tmplKey, err)
+		}
+
+		if err := ctrl.SetControllerReference(rtParent, u, r.Scheme()); err != nil {
+			return fmt.Errorf("cannot set owner for resource created from template %q: %w", tmplKey, err)
+		}
+
+		if err := patchUnstructured(ctx, r, u, rtParent.ObjectMeta.Namespace); err != nil {
+			return fmt.Errorf("cannot apply template %q: %w", tmplKey, err)
+		}
+	}
+	return nil
 }

@@ -59,18 +59,13 @@ Running the controller locally is useful during development of the
 controller:
 
 ```
+make install   # Install CRDs
 make run
 ```
 
 ### Deploy GatewayClass for KIND Datapath
 
-**WIP** TODO: We do not yet have above GatewayClass definition,
-i.e. the following `GatewayClass` includes a 'hack' to simulate the
-creation of the load balancer from the cloud infrastructure through an
-explicit `Ingress` resource.
-
 ```
-kubectl apply -f test-data/getting-started/foo-namespaces.yaml  # HACK!
 kubectl apply -f test-data/gatewayclass-kind-internal.yaml
 ```
 
