@@ -1,5 +1,6 @@
 layout:
 - go.kubebuilder.io/v4-alpha
+multigroup: true
 projectName: cloud-gateway-controller
 repo: github.com/tv2/cloud-gateway-controller
 resources:
@@ -15,4 +16,11 @@ resources:
   group: gateway.networking.k8s.io
   kind: HTTPRoute
   version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  group: cgc.tv2.dk
+  kind: GatewayClassParameters
+  path: github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1
+  version: v1alpha1
 version: "3"

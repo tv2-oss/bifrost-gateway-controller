@@ -6,65 +6,98 @@ spec:
   controllerName: "github.com/tv2/cloud-gateway-controller"
   parametersRef:
     group: v1
-    kind: ConfigMap
-    name: kind-internal-gateway-class
-    namespace: default
+    kind: GatewayClassParameters
+    name: default-gateway-class
 ---
-apiVersion: v1
-kind: ConfigMap
+apiVersion: cgc.tv2.dk/v1alpha1
+kind: GatewayClassParameters
 metadata:
-  name: kind-internal-gateway-class
-  namespace: default
-data:
-  tier2GatewayClass: istio
----
-# HACK - this should be rendered as part of the gateway
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: foo-gateway
-  namespace: foo-infra
+  name: default-gateway-class
 spec:
-  ingressClassName: contour
-  tls:
-  - hosts:
-    - foo.example.com
-    secretName: foo-gateway-tls
-  rules:
-  - host: foo.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: foo-gateway-istio
-            port:
-              number: 80
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: foo-gateway-cert
-  namespace: foo-infra
-spec:
-  secretName: foo-gateway-tls
-  duration: 2160h # 90d
-  renewBefore: 360h # 15d
-  subject:
-    organizations:
-      - acme-example-corp
-  isCA: false
-  privateKey:
-    algorithm: RSA
-    encoding: PKCS1
-    size: 2048
-  usages:
-    - server auth
-    - client auth
-  dnsNames:
-    - foo.example.com
-  issuerRef:
-    name: ca-issuer
-    kind: ClusterIssuer
-    group: cert-manager.io
+  gatewayTemplate:
+    resourceTemplates:
+      istioShadowGw: |
+        apiVersion: gateway.networking.k8s.io/v1beta1
+        kind: Gateway
+        metadata:
+          name: {{ .Gateway.ObjectMeta.Name }}-istio
+          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+          annotations:
+            networking.istio.io/service-type: ClusterIP
+        spec:
+          gatewayClassName: istio
+          listeners:
+            {{- toYaml .Gateway.Spec.Listeners | nindent 6 }}
+      loadBalancer: |
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: {{ .Gateway.ObjectMeta.Name }}
+          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+        spec:
+          ingressClassName: contour
+          tls:
+          - hosts:
+            {{- range .Gateway.Spec.Listeners }}
+            - {{ .Hostname }}
+            {{- end }}
+            secretName: {{ .Gateway.ObjectMeta.Name }}-tls
+          rules:
+          {{- range .Gateway.Spec.Listeners }}
+          - host: {{ .Hostname }}
+            http:
+              paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: {{ $.Gateway.ObjectMeta.Name }}-istio
+                    port:
+                      number: 80
+          {{- end }}
+  httpRouteTemplate:
+    resourceTemplates:
+      shadowHttproute: |
+        apiVersion: gateway.networking.k8s.io/v1beta1
+        kind: HTTPRoute
+        metadata:
+          name: {{ .HTTPRoute.ObjectMeta.Name }}-istio
+          namespace: {{ .HTTPRoute.ObjectMeta.Namespace }}
+        spec:
+          parentRefs:
+          {{ range .HTTPRoute.Spec.ParentRefs }}
+          - kind: {{ .Kind }}
+            name: {{ .Name }}-istio
+            namespace: {{ .Namespace }}
+          {{ end }}
+          rules:
+          {{ toYaml .HTTPRoute.Spec.Rules | nindent 4 }}
+
+
+# ---
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: foo-gateway-cert
+#   namespace: foo-infra
+# spec:
+#   secretName: foo-gateway-tls
+#   duration: 2160h # 90d
+#   renewBefore: 360h # 15d
+#   subject:
+#     organizations:
+#       - acme-example-corp
+#   isCA: false
+#   privateKey:
+#     algorithm: RSA
+#     encoding: PKCS1
+#     size: 2048
+#   usages:
+#     - server auth
+#     - client auth
+#   dnsNames:
+#     - foo.example.com
+#   issuerRef:
+#     name: ca-issuer
+#     kind: ClusterIssuer
+#     group: cert-manager.io
