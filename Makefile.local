@@ -128,7 +128,7 @@ setup-getting-started-usecase:
 
 .PHONY: tryout-getting-started-usecase
 tryout-getting-started-usecase:
-	curl --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site
-	curl --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/store
-	curl --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/site
-	curl --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/store
+	curl -s --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site                                | grep Welcome-to-foo-site
+	curl -s --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/site | grep Welcome-to-foo-site
+	curl -s --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/store                               | grep -e 'Welcome-to-foo-store-v[12]'
+	curl -s --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/store| grep -e 'Welcome-to-foo-store-v[12]'
