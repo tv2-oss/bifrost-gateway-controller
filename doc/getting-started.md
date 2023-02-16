@@ -49,6 +49,7 @@ testing:
 
 ```
 make build docker-build             # Build controller+container
+make install                        # Install CRDs
 make cluster-load-controller-image  # Load container into KIND
 make deploy                         # Deploy from YAML manifests
 ```

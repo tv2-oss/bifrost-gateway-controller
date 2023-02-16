@@ -39,7 +39,7 @@ jobs:
 
       - name: Deploy controller to cluster
         run: |
-          make install make cluster-load-controller-image deploy
+          make install cluster-load-controller-image deploy
           # Wait for controller to be ready - this allows for short and concise test timeouts
           until kubectl -ncloud-gateway-controller-system wait pods -lcontrol-plane=controller-manager --for condition=Ready --timeout=120s   ; do echo "."; sleep 1; done
 
