@@ -126,6 +126,10 @@ setup-getting-started-usecase:
 	kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v2.yaml
 	kubectl -n foo-store apply -f test-data/getting-started/foo-store-httproute.yaml
 
+.PHONY: wait-ready-getting-started-usecase
+wait-ready-getting-started-usecase:
+	bash -c 'iter=0; while ! curl -s --connect-timeout 1 --resolve foo.example.com:80:128.0.0.1 http://foo.example.com/site; do let iter=iter+1; echo "Wait iteration $$iter"; if [ "$$iter" == "10" ]; then break; fi; sleep 1; done'
+
 .PHONY: tryout-getting-started-usecase
 tryout-getting-started-usecase:
 	curl -s --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site                                | grep Welcome-to-foo-site

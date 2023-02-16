@@ -35,4 +35,4 @@ jobs:
 
       - name: Verify getting-started usecase
         run: |
-          make tryout-getting-started-usecase
+          make wait-ready-getting-started-usecase  tryout-getting-started-usecase
