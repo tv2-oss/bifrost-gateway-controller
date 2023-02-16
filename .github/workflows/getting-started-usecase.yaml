@@ -1,4 +1,4 @@
-name: E2E-test
+name: Getting-started-usecase
 
 on:
   pull_request:
