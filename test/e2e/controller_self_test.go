@@ -126,9 +126,9 @@ spec:
 var _ = Describe("GatewayClass", func() {
 
 	const (
-		timeout  = time.Second * 10
-		interval = time.Millisecond * 250
 		fixmeExtendedTimeout = time.Second * 20 // This should go away when the normalization refactoring is implemented
+		interval             = time.Millisecond * 250
+		timeout              = time.Second * 10
 	)
 
 	Context("When a GatewayClass we own is created", func() {
@@ -190,12 +190,11 @@ var _ = Describe("Gateway addresses", func() {
 
 		gwc := &gatewayapi.GatewayClass{}
 		err := yaml.Unmarshal([]byte(gatewayclassManifest), gwc)
-		ctx := context.Background()
+		ctx = context.Background()
 		Expect(err).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc)).To(Succeed())
 
 		DeferCleanup(func() {
-			ctx := context.Background()
 			Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
 			Expect(k8sClient.Delete(ctx, gcp)).To(Succeed())
 		})
@@ -205,7 +204,6 @@ var _ = Describe("Gateway addresses", func() {
 		It("Should be accepted by the controller", func() {
 			By("Assigning an address to the Gateway")
 
-			ctx := context.Background()
 			gw := &gatewayapi.Gateway{}
 			Expect(yaml.Unmarshal([]byte(gatewayManifest), gw)).To(Succeed())
 			Expect(k8sClient.Create(ctx, gw)).To(Succeed())
