@@ -5,7 +5,7 @@ metadata:
 spec:
   controllerName: "github.com/tv2/cloud-gateway-controller"
   parametersRef:
-    group: v1
+    group: v1alpha1
     kind: GatewayClassParameters
     name: default-gateway-class
 ---
@@ -101,7 +101,9 @@ spec:
           {{ range .HTTPRoute.Spec.ParentRefs }}
           - kind: {{ .Kind }}
             name: {{ .Name }}-istio
+            {{ if .Namespace }}
             namespace: {{ .Namespace }}
+            {{ end }}
           {{ end }}
           rules:
           {{ toYaml .HTTPRoute.Spec.Rules | nindent 4 }}
