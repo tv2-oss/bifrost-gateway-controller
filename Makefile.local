@@ -92,10 +92,10 @@ deploy-cert-manager: create-ca-cert ca-cert-secret-create
 
 .PHONY: create-ca-cert
 create-ca-cert:
-	docker run --rm -u $(shell id -u):$(shell id -u) -v $(shell pwd):/apps -w /apps nginx openssl req -x509 -nodes -subj '/C=DK/ST=ACMEprov/L=ACMEloc/O=ACMEcompany/OU=ACMEorg/CN=foo.example.com' -nodes -days 365 -newkey rsa:2048 -keyout foo-example-com.key -out foo-example-com.crt
+	scripts/openssl.sh req -x509 -nodes -subj '/C=DK/ST=ACMEprov/L=ACMEloc/O=ACMEcompany/OU=ACMEorg/CN=foo.example.com' -nodes -days 365 -newkey rsa:2048 -keyout foo-example-com.key -out foo-example-com.crt
 	chmod 644 foo-example-com.crt
 	chmod 600 foo-example-com.key
-	openssl x509 -in foo-example-com.crt -text -noout
+	scripts/openssl.sh x509 -in foo-example-com.crt -text -noout
 
 .PHONY: ca-cert-secret-create
 ca-cert-secret-create:
@@ -129,11 +129,11 @@ setup-getting-started-usecase:
 
 .PHONY: wait-ready-getting-started-usecase
 wait-ready-getting-started-usecase:
-	bash -c 'iter=0; while ! curl -s --connect-timeout 1 --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site; do let iter=iter+1; echo "Wait iteration $$iter"; if [ "$$iter" == "10" ]; then break; fi; sleep 1; done'
+	scripts/waitfor.sh scripts/curl.sh -s --connect-timeout 1 --fail --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site
 
 .PHONY: tryout-getting-started-usecase
 tryout-getting-started-usecase:
-	curl -s --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site                                | grep Welcome-to-foo-site
-	curl -s --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/site | grep Welcome-to-foo-site
-	curl -s --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/store                               | grep -e 'Welcome-to-foo-store-v[12]'
-	curl -s --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/store| grep -e 'Welcome-to-foo-store-v[12]'
+	scripts/curl.sh -s --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site                                | grep Welcome-to-foo-site
+	scripts/curl.sh -s --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/site | grep Welcome-to-foo-site
+	scripts/curl.sh -s --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/store                               | grep -e 'Welcome-to-foo-store-v[12]'
+	scripts/curl.sh -s --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/store| grep -e 'Welcome-to-foo-store-v[12]'
