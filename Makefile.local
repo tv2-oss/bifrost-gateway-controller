@@ -112,8 +112,7 @@ setup-getting-started-usecase:
 	make setup-external-dns-test
 	make deploy-cert-manager
 	# Using 'Deploy from Local-build and YAML Artifacts' method
-	# The 'GOOS=linux GOARCH=amd64' ensures this also works on non-Linux/x86, e.g. Mac/Colima
-	GOOS=linux GOARCH=amd64 make build
+	make build
 	make docker-build
 	make cluster-load-controller-image
 	make deploy
