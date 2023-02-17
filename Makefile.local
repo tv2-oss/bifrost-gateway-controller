@@ -112,9 +112,11 @@ setup-getting-started-usecase:
 	make setup-external-dns-test
 	make deploy-cert-manager
 	# Using 'Deploy from Local-build and YAML Artifacts' method
-	make build docker-build             # Build controller+container
-	make cluster-load-controller-image  # Load container into KIND
-	make deploy                         # Deploy from YAML manifests
+	# The 'GOOS=linux GOARCH=amd64' ensures this also works on non-Linux/x86, e.g. Mac/Colima
+	GOOS=linux GOARCH=amd64 make build
+	make docker-build
+	make cluster-load-controller-image
+	make deploy
 	kubectl apply -f test-data/gatewayclass-kind-internal.yaml
 	# The actual usecase
 	kubectl apply -f test-data/getting-started/foo-namespaces.yaml
