@@ -92,7 +92,7 @@ deploy-cert-manager: create-ca-cert ca-cert-secret-create
 
 .PHONY: create-ca-cert
 create-ca-cert:
-	docker run -ti --rm -u $(shell id -u):$(shell id -u) -v $(shell pwd):/apps -w /apps nginx openssl req -x509 -nodes -subj '/C=DK/ST=ACMEprov/L=ACMEloc/O=ACMEcompany/OU=ACMEorg/CN=foo.example.com' -nodes -days 365 -newkey rsa:2048 -keyout foo-example-com.key -out foo-example-com.crt
+	docker run --rm -u $(shell id -u):$(shell id -u) -v $(shell pwd):/apps -w /apps nginx openssl req -x509 -nodes -subj '/C=DK/ST=ACMEprov/L=ACMEloc/O=ACMEcompany/OU=ACMEorg/CN=foo.example.com' -nodes -days 365 -newkey rsa:2048 -keyout foo-example-com.key -out foo-example-com.crt
 	chmod 644 foo-example-com.crt
 	chmod 600 foo-example-com.key
 	openssl x509 -in foo-example-com.crt -text -noout
