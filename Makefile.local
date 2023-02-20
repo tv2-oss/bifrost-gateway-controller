@@ -36,11 +36,11 @@ deploy-gateway-api:
 .PHONY: create-cluster
 create-cluster:
 	cat test-data/kind-config.yaml_tpl | k8s_ver=1.25.3 envsubst > test-data/kind-config.yaml
-	kind create cluster --config test-data/kind-config.yaml
+	kind create cluster --name kind-cgc-dev-cluster --config test-data/kind-config.yaml
 
 .PHONY: delete-cluster
 delete-cluster:
-	kind delete cluster
+	kind delete cluster --name kind-cgc-dev-cluster
 
 #################
 .PHONY: deploy-istio
@@ -51,7 +51,7 @@ deploy-istio:
 #################
 .PHONY: cluster-load-controller-image
 cluster-load-controller-image:
-	kind load docker-image controller:latest
+	kind load docker-image controller:latest --name kind-cgc-dev-cluster
 
 #################
 .PHONY: deploy-etcd
