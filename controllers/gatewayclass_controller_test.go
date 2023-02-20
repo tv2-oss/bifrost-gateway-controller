@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	corev1 "k8s.io/api/core/v1"
+	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -21,10 +21,9 @@ metadata:
 spec:
   controllerName: "github.com/tv2/cloud-gateway-controller"
   parametersRef:
-    group: v1
-    kind: ConfigMap
-    name: cloud-gw-params
-    namespace: default`
+    group: v1alpha1
+    kind: GatewayClassParameters
+    name: default-gateway-class`
 
 const gatewayclassManifestInvalid string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -42,14 +41,43 @@ metadata:
 spec:
   controllerName: "github.com/acme/cloud-gateway-controller"`
 
-const gwClassConfigMapManifest string = `
-apiVersion: v1
-kind: ConfigMap
+const gwClassParametersManifest string = `
+apiVersion: cgc.tv2.dk/v1alpha1
+kind: GatewayClassParameters
 metadata:
-  name: cloud-gw-params
-  namespace: default
-data:
-  tier2GatewayClass: istio`
+  name: default-gateway-class
+spec:
+  gatewayTemplate:
+    resourceTemplates:
+      istioShadowGw: |
+        apiVersion: gateway.networking.k8s.io/v1beta1
+        kind: Gateway
+        metadata:
+          name: {{ .Gateway.ObjectMeta.Name }}-istio
+          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+          annotations:
+            networking.istio.io/service-type: ClusterIP
+        spec:
+          gatewayClassName: istio
+          listeners:
+            {{- toYaml .Gateway.Spec.Listeners | nindent 6 }}
+  httpRouteTemplate:
+    resourceTemplates:
+      shadowHttproute: |
+        apiVersion: gateway.networking.k8s.io/v1beta1
+        kind: HTTPRoute
+        metadata:
+          name: {{ .HTTPRoute.ObjectMeta.Name }}-istio
+          namespace: {{ .HTTPRoute.ObjectMeta.Namespace }}
+        spec:
+          parentRefs:
+          {{ range .HTTPRoute.Spec.ParentRefs }}
+          - kind: {{ .Kind }}
+            name: {{ .Name }}-istio
+            namespace: {{ .Namespace }}
+          {{ end }}
+          rules:
+          {{ toYaml .HTTPRoute.Spec.Rules | nindent 4 }}`
 
 var _ = Describe("GatewayClass controller", func() {
 
@@ -60,6 +88,7 @@ var _ = Describe("GatewayClass controller", func() {
 
 	var (
 		gwcIn, gwc *gateway.GatewayClass
+		gcp        *cgcapi.GatewayClassParameters
 		ctx        context.Context
 	)
 
@@ -67,6 +96,7 @@ var _ = Describe("GatewayClass controller", func() {
 		ctx = context.Background()
 		gwcIn = &gateway.GatewayClass{}
 		gwc = &gateway.GatewayClass{}
+		gcp = &cgcapi.GatewayClassParameters{}
 	})
 
 	When("A gatewayclass we own is created", func() {
@@ -77,9 +107,8 @@ var _ = Describe("GatewayClass controller", func() {
 			Expect(err).Should(Succeed())
 			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
-			cm := &corev1.ConfigMap{}
-			Expect(yaml.Unmarshal([]byte(gwClassConfigMapManifest), cm)).To(Succeed())
-			Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
+			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gcp)).To(Succeed())
+			Expect(k8sClient.Create(ctx, gcp)).Should(Succeed())
 
 			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
 
@@ -92,6 +121,9 @@ var _ = Describe("GatewayClass controller", func() {
 				}
 				return true
 			}, timeout, interval).Should(BeTrue())
+
+			Expect(k8sClient.Delete(ctx, gwcIn)).Should(Succeed())
+			Expect(k8sClient.Delete(ctx, gcp)).Should(Succeed())
 		})
 	})
 
@@ -114,6 +146,8 @@ var _ = Describe("GatewayClass controller", func() {
 				}
 				return true
 			}, timeout, interval).Should(BeTrue())
+
+			Expect(k8sClient.Delete(ctx, gwcIn)).Should(Succeed())
 		})
 	})
 
@@ -134,6 +168,8 @@ var _ = Describe("GatewayClass controller", func() {
 				}
 				return true
 			}, timeout, interval).Should(BeTrue())
+
+			Expect(k8sClient.Delete(ctx, gwcIn)).Should(Succeed())
 		})
 	})
 })

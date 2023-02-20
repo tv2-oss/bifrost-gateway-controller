@@ -32,12 +32,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
 	cgwctlapi "github.com/tv2/cloud-gateway-controller/pkg/api"
 )
 
@@ -49,62 +49,49 @@ metadata:
 spec:
   controllerName: "github.com/tv2/cloud-gateway-controller"
   parametersRef:
-    group: v1
-    kind: ConfigMap
-    name: cloud-gw-params
-    namespace: default`
+    group: v1alpha1
+    kind: GatewayClassParameters
+    name: default-gateway-class`
 
-const gwClassConfigMapManifest string = `
-apiVersion: v1
-kind: ConfigMap
+const gwClassParametersManifest string = `
+apiVersion: cgc.tv2.dk/v1alpha1
+kind: GatewayClassParameters
 metadata:
-  name: cloud-gw-params
-  namespace: default
-data:
-    istio: |
-      apiVersion: gateway.networking.k8s.io/v1beta1
-      kind: Gateway
-      metadata:
-        name: {{ .Gateway.ObjectMeta.Name }}-istio
-        namespace: {{ .Gateway.ObjectMeta.Namespace }}
-        annotations:
-          networking.istio.io/service-type: ClusterIP
-      spec:
-        gatewayClassName: istio
-        listeners:
-        {{- range .Gateway.Spec.Listeners }}
-        - name: {{ .Name }}
-          port: {{ .Port }}
-          protocol: {{ .Protocol }}
-          hostname: {{ .Hostname }}
-        {{- end }}
-    alb: |
-      apiVersion: networking.k8s.io/v1
-      kind: Ingress
-      metadata:
-        name: {{ .Gateway.ObjectMeta.Name }}
-        namespace: {{ .Gateway.ObjectMeta.Namespace }}
-      spec:
-        ingressClassName: contour
-        tls:
-        - hosts:
-          {{- range .Gateway.Spec.Listeners }}
-          - {{ .Hostname }}
-          {{- end }}
-          secretName: {{ .Gateway.ObjectMeta.Name }}-tls
-        rules:
-        {{- range .Gateway.Spec.Listeners }}
-        - host: {{ .Hostname }}
-          http:
-            paths:
-            - path: /
-              pathType: Prefix
-              backend:
-                service:
-                  name: {{ $.Gateway.ObjectMeta.Name }}-istio
-                  port:
-                    number: 80
-        {{- end }}`
+  name: default-gateway-class
+spec:
+  gatewayTemplate:
+    resourceTemplates:
+      istioShadowGw: |
+        apiVersion: gateway.networking.k8s.io/v1beta1
+        kind: Gateway
+        metadata:
+          name: {{ .Gateway.ObjectMeta.Name }}-istio
+          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+          annotations:
+            networking.istio.io/service-type: ClusterIP
+        spec:
+          gatewayClassName: istio
+          listeners:
+            {{- toYaml .Gateway.Spec.Listeners | nindent 6 }}
+  httpRouteTemplate:
+    resourceTemplates:
+      shadowHttproute: |
+        apiVersion: gateway.networking.k8s.io/v1beta1
+        kind: HTTPRoute
+        metadata:
+          name: {{ .HTTPRoute.ObjectMeta.Name }}-istio
+          namespace: {{ .HTTPRoute.ObjectMeta.Namespace }}
+        spec:
+          parentRefs:
+          {{ range .HTTPRoute.Spec.ParentRefs }}
+          - kind: {{ .Kind }}
+            name: {{ .Name }}-istio
+            {{ if .Namespace }}
+            namespace: {{ .Namespace }}
+            {{ end }}
+          {{ end }}
+          rules:
+          {{ toYaml .HTTPRoute.Spec.Rules | nindent 4 }}`
 
 // example.com does resolve to an IP address so it is not ideal for testing
 const gatewayManifest string = `
@@ -139,8 +126,9 @@ spec:
 var _ = Describe("GatewayClass", func() {
 
 	const (
-		timeout  = time.Second * 10
-		interval = time.Millisecond * 250
+		fixmeExtendedTimeout = time.Second * 20 // This should go away when the normalization refactoring is implemented
+		interval             = time.Millisecond * 250
+		timeout              = time.Second * 10
 	)
 
 	Context("When a GatewayClass we own is created", func() {
@@ -156,9 +144,9 @@ var _ = Describe("GatewayClass", func() {
 			// We deliberately sleep here to make the controller initially see the GatewayClass without its corresponding parameters
 			time.Sleep(5 * time.Second)
 
-			cm := &corev1.ConfigMap{}
-			Expect(yaml.Unmarshal([]byte(gwClassConfigMapManifest), cm)).To(Succeed())
-			Expect(k8sClient.Create(ctx, cm)).To(Succeed())
+			gcp := &cgcapi.GatewayClassParameters{}
+			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gcp)).To(Succeed())
+			Expect(k8sClient.Create(ctx, gcp)).Should(Succeed())
 
 			lookupKey := types.NamespacedName{Name: gwc.ObjectMeta.Name, Namespace: ""}
 			gwcRead := &gatewayapi.GatewayClass{}
@@ -172,9 +160,9 @@ var _ = Describe("GatewayClass", func() {
 					return false
 				}
 				return true
-			}, timeout, interval).Should(BeTrue())
+			}, fixmeExtendedTimeout, interval).Should(BeTrue())
 
-			Expect(k8sClient.Delete(ctx, cm)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, gcp)).To(Succeed())
 			Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
 		})
 	})
@@ -186,11 +174,9 @@ var _ = Describe("Gateway addresses", func() {
 		externalDNSTimeout   = time.Second * 120
 		interval             = time.Millisecond * 250
 		timeout              = time.Second * 10
-		fixmeExtendedTimeout = time.Second * 20 // This should go away when the normalization refactring is implemented
+		fixmeExtendedTimeout = time.Second * 20 // This should go away when the normalization refactoring is implemented
 	)
 	var (
-		gwc          *gatewayapi.GatewayClass
-		cm           *corev1.ConfigMap
 		ip4AddressRe *regexp.Regexp
 		hostnameRe   *regexp.Regexp
 	)
@@ -198,28 +184,26 @@ var _ = Describe("Gateway addresses", func() {
 	BeforeEach(func() {
 		ip4AddressRe = regexp.MustCompile(`^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$`)
 		hostnameRe = regexp.MustCompile(`^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$`)
-		gwc = &gatewayapi.GatewayClass{}
+		gcp := &cgcapi.GatewayClassParameters{}
+		Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gcp)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gcp)).Should(Succeed())
+
+		gwc := &gatewayapi.GatewayClass{}
 		err := yaml.Unmarshal([]byte(gatewayclassManifest), gwc)
-		ctx := context.Background()
+		ctx = context.Background()
 		Expect(err).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc)).To(Succeed())
 
-		cm = &corev1.ConfigMap{}
-		Expect(yaml.Unmarshal([]byte(gwClassConfigMapManifest), cm)).To(Succeed())
-		Expect(k8sClient.Create(ctx, cm)).To(Succeed())
-	})
-
-	AfterEach(func() {
-		ctx := context.Background()
-		Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
-		Expect(k8sClient.Delete(ctx, cm)).To(Succeed())
+		DeferCleanup(func() {
+			Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, gcp)).To(Succeed())
+		})
 	})
 
 	Context("When a Gateway/HTTPRoute is created", func() {
 		It("Should be accepted by the controller", func() {
 			By("Assigning an address to the Gateway")
 
-			ctx := context.Background()
 			gw := &gatewayapi.Gateway{}
 			Expect(yaml.Unmarshal([]byte(gatewayManifest), gw)).To(Succeed())
 			Expect(k8sClient.Create(ctx, gw)).To(Succeed())
@@ -253,6 +237,7 @@ var _ = Describe("Gateway addresses", func() {
 					return false
 				}
 				foundDNSLookup := strings.TrimRight(stdout.String(), "\n")
+				GinkgoT().Logf("foundDNSLookup: %s, gateway has %s", foundDNSLookup, gwRead.Status.Addresses[0].Value)
 				return gwRead.Status.Addresses[0].Value == foundDNSLookup
 			}, externalDNSTimeout, interval).Should(BeTrue())
 

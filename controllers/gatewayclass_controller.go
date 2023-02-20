@@ -35,11 +35,13 @@ type GatewayClassReconciler struct {
 	scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses,verbs=get;list;watch
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/finalizers,verbs=update
 
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch
+//+kubebuilder:rbac:groups=cgc.tv2.dk,resources=gatewayclassparameters,verbs=get;list;watch
+//+kubebuilder:rbac:groups=cgc.tv2.dk,resources=gatewayclassparameters/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=cgc.tv2.dk,resources=gatewayclassparameters/finalizers,verbs=update
 
 func (r *GatewayClassReconciler) Client() client.Client {
 	return r.client
@@ -106,7 +108,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	if !valid {
-		return ctrl.Result{}, errWhyInvalid
+		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, errWhyInvalid
 	}
 	return ctrl.Result{}, nil
 }

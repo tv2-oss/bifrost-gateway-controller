@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -61,7 +62,7 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases"), filepath.Join("..", "upstream-gateway-api", "crds")},
-		ErrorIfCRDPathMissing: false,
+		ErrorIfCRDPathMissing: true,
 	}
 
 	var err error
@@ -71,6 +72,9 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	err = gateway.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = cgcapi.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
@@ -92,7 +96,7 @@ var _ = BeforeSuite(func() {
 	err = gwcctrl.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	httprtctrl := NewHTTPRouteController(k8sManager)
+	httprtctrl := NewHTTPRouteController(k8sManager, cfg)
 	err = httprtctrl.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

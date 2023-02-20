@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
 )
 
 // Used to requeue when a resource is missing a dependency
@@ -39,8 +40,8 @@ var dependencyMissingRequeuePeriod = 5 * time.Second
 // GatewayReconciler reconciles a Gateway object
 type GatewayReconciler struct {
 	client    client.Client
-	dynClient dynamic.Interface
 	scheme    *runtime.Scheme
+	dynClient dynamic.Interface
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
@@ -94,12 +95,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	cm, err := lookupGatewayClassParameters(ctx, r, gwc)
+	gcp, err := lookupGatewayClassParameters(ctx, r, gwc)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
 
-	if err := applyTemplates(ctx, r, &g, cm); err != nil {
+	if err := applyGatewayTemplates(ctx, r, &g, gcp); err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 	}
 
@@ -120,15 +121,20 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
+// Parameters used to render Gateway templates
 type gatewayTemplateValues struct {
+	// Parent Gateway
 	Gateway *gatewayapi.Gateway
+	// Union of all hostnames across all listeners and attached HTTPRoutes
+	Hostnames []string
 }
 
-func applyTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, configmap *corev1.ConfigMap) error {
+func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *cgcapi.GatewayClassParameters) error {
 	templateValues := gatewayTemplateValues{
-		Gateway: gwParent,
+		Gateway:   gwParent,
+		Hostnames: []string{string(*gwParent.Spec.Listeners[0].Hostname)}, // FIXME: this will be implemented as part of the normalization initiative
 	}
-	for tmplKey, tmpl := range configmap.Data {
+	for tmplKey, tmpl := range params.Spec.GatewayTemplate.ResourceTemplates {
 		u, err := template2Unstructured(tmpl, &templateValues)
 		if err != nil {
 			return fmt.Errorf("cannot render template %q: %w", tmplKey, err)

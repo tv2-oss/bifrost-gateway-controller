@@ -1,0 +1,38 @@
+name: Getting-started-usecase
+
+on:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Install KIND
+        uses: helm/kind-action@v1.3.0
+        with:
+          install_only: true
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          version: latest
+          install-only: true
+
+      - name: Setup getting-started usecase
+        run: |
+          make setup-getting-started-usecase
+
+      - name: Verify getting-started usecase
+        run: |
+          make wait-ready-getting-started-usecase  tryout-getting-started-usecase

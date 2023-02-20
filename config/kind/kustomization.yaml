@@ -22,6 +22,18 @@ patchesStrategicMerge:
       name: manager-role
     rules:
     - apiGroups:
+      - cert-manager.io
+      resources:
+      - certificates
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+    - apiGroups:
       - networking.k8s.io
       resources:
       - ingresses
@@ -34,24 +46,34 @@ patchesStrategicMerge:
       - update
       - watch
     - apiGroups:
-      - ""
+      - cgc.tv2.dk
       resources:
-      - configmaps
+      - gatewayclassparameters
       verbs:
       - get
       - list
       - watch
     - apiGroups:
+      - cgc.tv2.dk
+      resources:
+      - gatewayclassparameters/finalizers
+      verbs:
+      - update
+    - apiGroups:
+      - cgc.tv2.dk
+      resources:
+      - gatewayclassparameters/status
+      verbs:
+      - get
+      - patch
+      - update
+    - apiGroups:
       - gateway.networking.k8s.io
       resources:
       - gatewayclasses
       verbs:
-      - create
-      - delete
       - get
       - list
-      - patch
-      - update
       - watch
     - apiGroups:
       - gateway.networking.k8s.io

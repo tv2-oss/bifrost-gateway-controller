@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
+	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -22,10 +22,9 @@ metadata:
 spec:
   controllerName: "github.com/tv2/cloud-gateway-controller"
   parametersRef:
-    group: v1
-    kind: ConfigMap
-    name: default-gateway-class
-    namespace: default`
+    group: v1alpha1
+    kind: GatewayClassParameters
+    name: default-gateway-class`
 
 const gatewayManifest string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -42,30 +41,43 @@ spec:
     hostname: example.com
 `
 
-const configMapManifest string = `
-apiVersion: v1
-kind: ConfigMap
+const gatewayClassParametersManifest string = `
+apiVersion: cgc.tv2.dk/v1alpha1
+kind: GatewayClassParameters
 metadata:
   name: default-gateway-class
-  namespace: default
-data:
-    istio: |
-      apiVersion: gateway.networking.k8s.io/v1beta1
-      kind: Gateway
-      metadata:
-        name: {{ .Gateway.ObjectMeta.Name }}-istio
-        namespace: {{ .Gateway.ObjectMeta.Namespace }}
-        annotations:
-          networking.istio.io/service-type: ClusterIP
-      spec:
-        gatewayClassName: istio
-        listeners:
-        {{- range .Gateway.Spec.Listeners }}
-        - name: {{ .Name }}
-          port: {{ .Port }}
-          protocol: {{ .Protocol }}
-          hostname: {{ .Hostname }}
-        {{- end }}`
+spec:
+  gatewayTemplate:
+    resourceTemplates:
+      istioShadowGw: |
+        apiVersion: gateway.networking.k8s.io/v1beta1
+        kind: Gateway
+        metadata:
+          name: {{ .Gateway.ObjectMeta.Name }}-istio
+          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+          annotations:
+            networking.istio.io/service-type: ClusterIP
+        spec:
+          gatewayClassName: istio
+          listeners:
+            {{- toYaml .Gateway.Spec.Listeners | nindent 6 }}
+  httpRouteTemplate:
+    resourceTemplates:
+      shadowHttproute: |
+        apiVersion: gateway.networking.k8s.io/v1beta1
+        kind: HTTPRoute
+        metadata:
+          name: {{ .HTTPRoute.ObjectMeta.Name }}-istio
+          namespace: {{ .HTTPRoute.ObjectMeta.Namespace }}
+        spec:
+          parentRefs:
+          {{ range .HTTPRoute.Spec.ParentRefs }}
+          - kind: {{ .Kind }}
+            name: {{ .Name }}-istio
+            namespace: {{ .Namespace }}
+          {{ end }}
+          rules:
+          {{ toYaml .HTTPRoute.Spec.Rules | nindent 4 }}`
 
 var _ = Describe("Gateway controller", func() {
 
@@ -76,23 +88,23 @@ var _ = Describe("Gateway controller", func() {
 
 	var (
 		gwc *gateway.GatewayClass
-		cm  *corev1.ConfigMap
+		gcp *cgcapi.GatewayClassParameters
 		ctx context.Context
 	)
 
 	BeforeEach(func() {
 		gwc = &gateway.GatewayClass{}
-		cm = &corev1.ConfigMap{}
+		gcp = &cgcapi.GatewayClassParameters{}
 		ctx = context.Background()
 		Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
-		Expect(yaml.Unmarshal([]byte(configMapManifest), cm)).To(Succeed())
-		Expect(k8sClient.Create(ctx, cm)).Should(Succeed())
+		Expect(yaml.Unmarshal([]byte(gatewayClassParametersManifest), gcp)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gcp)).Should(Succeed())
 	})
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
-		Expect(k8sClient.Delete(ctx, cm)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, gcp)).Should(Succeed())
 	})
 
 	When("Reconciling a parent Gateway", func() {
