@@ -1,0 +1,23 @@
+# This file contains the base resources that most conformance tests will rely
+# on. The three namespaces must be created as the gateway API conformance test
+# framework hardcodes waiting for resources to be ready in these.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway-conformance-infra
+  labels:
+    gateway-conformance: infra
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway-conformance-app-backend
+  labels:
+    gateway-conformance: backend
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway-conformance-web-backend
+  labels:
+    gateway-conformance: backend
