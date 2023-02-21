@@ -251,7 +251,8 @@ var _ = Describe("Gateway addresses", func() {
 					len(rtRead.Status.RouteStatus.Parents) != 1 ||
 					len(rtRead.Status.RouteStatus.Parents[0].Conditions) != 1 ||
 					string(rtRead.Status.RouteStatus.Parents[0].ParentRef.Name) != gw.ObjectMeta.Name ||
-					string(*rtRead.Status.RouteStatus.Parents[0].ParentRef.Namespace) != gw.ObjectMeta.Namespace ||
+					// Namespace is optional, if defined it must match HTTPRoute namespace
+					(rtRead.Status.RouteStatus.Parents[0].ParentRef.Namespace != nil && string(*rtRead.Status.RouteStatus.Parents[0].ParentRef.Namespace) != gw.ObjectMeta.Namespace) ||
 					rtRead.Status.RouteStatus.Parents[0].ControllerName != cgwctlapi.SelfControllerName ||
 					rtRead.Status.RouteStatus.Parents[0].Conditions[0].Type != string(gatewayapi.RouteConditionAccepted) ||
 					rtRead.Status.RouteStatus.Parents[0].Conditions[0].Status != "True" {
