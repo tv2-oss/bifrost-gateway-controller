@@ -79,7 +79,7 @@ spec:
             - server auth
             - client auth
           dnsNames:
-            {{- range .Hostnames }}
+            {{- range .HostnamesUnion }}
             - {{ . | quote }}
             {{- end }}
           issuerRef:
