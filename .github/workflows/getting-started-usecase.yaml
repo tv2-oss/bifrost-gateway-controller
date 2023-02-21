@@ -31,7 +31,7 @@ jobs:
 
       - name: Setup getting-started usecase
         run: |
-          make setup-getting-started-usecase
+          make setup-getting-started
 
       - name: Verify getting-started usecase
         run: |
