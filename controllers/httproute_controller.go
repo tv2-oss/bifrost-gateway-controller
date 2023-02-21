@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -40,6 +39,15 @@ type HTTPRouteReconciler struct {
 	client    client.Client
 	scheme    *runtime.Scheme
 	dynClient dynamic.Interface
+}
+
+// Parameters used to render HTTPRoute templates
+type httprouteTemplateValues struct {
+	// Parent HTTPRoute
+	HTTPRoute *gatewayapi.HTTPRoute
+
+	// Parent Gateway references. Only Gateways implemented by will be included
+	ParentRef *gatewayapi.Gateway
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
@@ -73,6 +81,28 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+// Compare values referenced by pointers. Both a and b must be pointers to the same type
+func derefCmp[T comparable](a, b *T) bool {
+	if (a != nil && b == nil) || (a == nil && b != nil) {
+		return false // Different since one has nil pointer while other has non-nil
+	}
+	if a != nil && b != nil && (*a != *b) {
+		return false // Actual value is different
+	}
+	return true
+}
+
+// Compare parentRefs, return true if same parent is referenced
+func parentRefCmp(a, b gatewayapi.ParentReference) bool {
+	// Group, Kind and Namespace, SectionName and Port are pointers and optional (may be nil)
+	if !derefCmp(a.Group, b.Group) || !derefCmp(a.Kind, b.Kind) || !derefCmp(a.Namespace, b.Namespace) ||
+		!derefCmp(a.SectionName, b.SectionName) || !derefCmp(a.Port, b.Port) {
+		return false
+	}
+	return a.Name == b.Name
+}
+
+// Lookup Gateway from parentRef
 func lookupParent(ctx context.Context, r ControllerClient, rt *gatewayapi.HTTPRoute, p gatewayapi.ParentReference) (*gatewayapi.Gateway, error) {
 	if p.Namespace == nil {
 		return lookupGateway(ctx, r, p.Name, rt.ObjectMeta.Namespace)
@@ -80,16 +110,18 @@ func lookupParent(ctx context.Context, r ControllerClient, rt *gatewayapi.HTTPRo
 	return lookupGateway(ctx, r, p.Name, string(*p.Namespace))
 }
 
+// Find statuscondition for a specific parentRef
 func findParentRouteStatus(rtStatus *gatewayapi.RouteStatus, parent gatewayapi.ParentReference) *gatewayapi.RouteParentStatus {
 	for i := range rtStatus.Parents {
 		pStat := &rtStatus.Parents[i]
-		if pStat.ParentRef == parent && pStat.ControllerName == selfapi.SelfControllerName {
+		if parentRefCmp(pStat.ParentRef, parent) && pStat.ControllerName == selfapi.SelfControllerName {
 			return pStat
 		}
 	}
 	return nil
 }
 
+// Set status condition for a specific parentRef
 func setRouteStatusCondition(rtStatus *gatewayapi.RouteStatus, parent gatewayapi.ParentReference, newCondition *metav1.Condition) {
 	if newCondition.LastTransitionTime.IsZero() {
 		newCondition.LastTransitionTime = metav1.NewTime(time.Now())
@@ -112,6 +144,8 @@ func setRouteStatusCondition(rtStatus *gatewayapi.RouteStatus, parent gatewayapi
 func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
+	var doStatusUpdate = false
+	var requeue = false
 	var rt gatewayapi.HTTPRoute
 	if err := r.Client().Get(ctx, req.NamespacedName, &rt); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -119,58 +153,61 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	logger.Info("HTTPRoute")
 
-	prefs := rt.Spec.CommonRouteSpec.ParentRefs
-	// FIXME check kind of parent ref is Gateway and missing parentRef. Accepts more than one parent ref
-	pref := prefs[0]
-
-	// Spec says: 'When unspecified, this refers to the local namespace of the Route.'
-	var ns string
-	if pref.Namespace == nil {
-		ns = rt.ObjectMeta.Namespace
-	} else {
-		ns = string(*pref.Namespace)
-	}
-	gw := &gatewayapi.Gateway{}
-	if err := r.Client().Get(ctx, types.NamespacedName{Name: string(pref.Name), Namespace: ns}, gw); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-	logger.Info("reconcile", "gateway", gw)
-
-	gwc, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
-	if err != nil {
-		return ctrl.Result{}, err
+	templateValues := httprouteTemplateValues{
+		HTTPRoute: &rt,
 	}
 
-	if !isOurGatewayClass(gwc) {
-		return ctrl.Result{}, nil
+	// Prepare for setting status in parentRef loop
+	if rt.Status.Parents == nil {
+		rt.Status.Parents = []gatewayapi.RouteParentStatus{}
 	}
 
-	gcp, err := lookupGatewayClassParameters(ctx, r, gwc)
-	if err != nil {
-		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
-	}
-
-	if err := applyHTTPRouteTemplates(ctx, r, &rt, gcp); err != nil {
-		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
-	}
-
-	doStatusUpdate := false
-	rt.Status.Parents = []gatewayapi.RouteParentStatus{}
+	// Loop through Gateway parents, render HTTPRoute using templates defined by associated GatewayClassParameters
 	for _, parent := range rt.Spec.ParentRefs {
-		if parent.Namespace == nil {
-			// Route parents default to same namespace as route
-			parent.Namespace = (*gatewayapi.Namespace)(&rt.ObjectMeta.Namespace)
+		if *parent.Kind != gatewayapi.Kind("Gateway") {
+			continue
 		}
+
 		gw, err := lookupParent(ctx, r, &rt, parent)
 		if err != nil {
+			logger.Info("gateway for httproute not found", "httproute", rt.Name, "parent", parent)
+			requeue = true
 			continue
 		}
-		gwcRef, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
-		if err != nil || !isOurGatewayClass(gwcRef) {
-			continue
-		}
-		doStatusUpdate = true
 
+		// FIXME check route matches gateway hostname,
+		// listener sectionname, port etc. From this a list of
+		// listeners should be matched and we should validate
+		// that listener allows route to attach
+
+		gwc, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
+		if err != nil {
+			logger.Info("gatewayClass not found", "gatewayclass", gw.Spec.GatewayClassName)
+			requeue = true
+			continue
+		}
+		if !isOurGatewayClass(gwc) {
+			continue
+		}
+
+		gcp, err := lookupGatewayClassParameters(ctx, r, gwc)
+		if err != nil {
+			logger.Info("parameters for GatewayClass not found", "gatewayclass", gwc)
+			requeue = true
+			continue
+		}
+
+		templateValues.ParentRef = gw
+		if err := applyHTTPRouteTemplates(ctx, r, &rt, gcp, &templateValues); err != nil {
+			logger.Info("unable to apply templates")
+			requeue = true
+			continue
+		}
+
+		// FIXME errors in templating and status of sub-resources in general should set status conditions
+
+		// Update status for current parent Gateway
+		doStatusUpdate = true
 		setRouteStatusCondition(&rt.Status.RouteStatus, parent,
 			&metav1.Condition{
 				Type:   string(gatewayapi.RouteConditionAccepted),
@@ -186,19 +223,14 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
+	if requeue {
+		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, nil
+	}
 	return ctrl.Result{}, nil
 }
 
-// Parameters used to render HTTPRoute templates
-type httprouteTemplateValues struct {
-	// Parent HTTPRoute
-	HTTPRoute *gatewayapi.HTTPRoute
-}
-
-func applyHTTPRouteTemplates(ctx context.Context, r ControllerDynClient, rtParent *gatewayapi.HTTPRoute, params *cgcapi.GatewayClassParameters) error {
-	templateValues := httprouteTemplateValues{
-		HTTPRoute: rtParent,
-	}
+func applyHTTPRouteTemplates(ctx context.Context, r ControllerDynClient, rtParent *gatewayapi.HTTPRoute,
+	params *cgcapi.GatewayClassParameters, templateValues *httprouteTemplateValues) error {
 	for tmplKey, tmpl := range params.Spec.HTTPRouteTemplate.ResourceTemplates {
 		u, err := template2Unstructured(tmpl, &templateValues)
 		if err != nil {
