@@ -48,10 +48,11 @@ type GatewayReconciler struct {
 type gatewayTemplateValues struct {
 	// Parent Gateway
 	Gateway *gatewayapi.Gateway
-	// Union of all hostnames across all listeners and attached HTTPRoutes
-	HostnamesUnion []string
-	// Intersection of all hostnames across all listeners and attached HTTPRoutes
-	HostnamesIntersection []string
+
+	// Union and intersection of all hostnames across all
+	// listeners and attached HTTPRoutes. Particularly useful for
+	// certificates since these are not port specific.
+	HostnamesUnion, HostnamesIntersection []string
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
@@ -189,8 +190,7 @@ func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent 
 // HTTPRoute with 'foo.example.com'. We may want to create a TLS
 // certificate using '*.example.com' (union) and not 'foo.example.com'
 // (intersection). Calculating both allows template authors to choose.
-func combineHostnames(gw *gatewayapi.Gateway, rtList []gatewayapi.HTTPRoute) ([]string, []string) {
-	var union, isect []string
+func combineHostnames(gw *gatewayapi.Gateway, rtList []*gatewayapi.HTTPRoute) (union, isect []string) {
 	for _, l := range gw.Spec.Listeners {
 		if l.Hostname != nil {
 			union = append(union, string(*l.Hostname))
@@ -207,8 +207,8 @@ func combineHostnames(gw *gatewayapi.Gateway, rtList []gatewayapi.HTTPRoute) ([]
 }
 
 // Match HTTPRoutes against Gateway listeners, return valid HTTPRoute matches
-func filterHTTPRoutesForGateway(gw *gatewayapi.Gateway, rtList []gatewayapi.HTTPRoute) []gatewayapi.HTTPRoute {
-	rtOut := make([]gatewayapi.HTTPRoute, 0, len(rtList))
+func filterHTTPRoutesForGateway(gw *gatewayapi.Gateway, rtList []*gatewayapi.HTTPRoute) []*gatewayapi.HTTPRoute {
+	rtOut := make([]*gatewayapi.HTTPRoute, 0, len(rtList))
 	for _, rt := range rtList {
 		for _, pRef := range rt.Spec.ParentRefs {
 			if (pRef.Group != nil && *pRef.Group != gatewayapi.Group(gatewayapi.GroupName)) ||
@@ -221,9 +221,9 @@ func filterHTTPRoutesForGateway(gw *gatewayapi.Gateway, rtList []gatewayapi.HTTP
 				continue
 			}
 			// FIXME: Also include SectionName and Port in match
-			//for _, l := range gw.Spec.Listeners {
-			//	if xxx
-			//}
+			// for _, l := range gw.Spec.Listeners {
+			// 	if xxx
+			// }
 			rtOut = append(rtOut, rt)
 		}
 	}
@@ -231,11 +231,17 @@ func filterHTTPRoutesForGateway(gw *gatewayapi.Gateway, rtList []gatewayapi.HTTP
 }
 
 // Lookup all HTTPRoutes
-func lookupHTTPRoutes(ctx context.Context, r ControllerClient) ([]gatewayapi.HTTPRoute, error) {
+func lookupHTTPRoutes(ctx context.Context, r ControllerClient) ([]*gatewayapi.HTTPRoute, error) {
 	var rtList gatewayapi.HTTPRouteList
 
 	if err := r.Client().List(ctx, &rtList); err != nil {
 		return nil, err
 	}
-	return rtList.Items, nil
+
+	// Return pointer slice
+	rtOut := make([]*gatewayapi.HTTPRoute, 0, len(rtList.Items))
+	for idx := range rtList.Items {
+		rtOut = append(rtOut, &rtList.Items[idx])
+	}
+	return rtOut, nil
 }

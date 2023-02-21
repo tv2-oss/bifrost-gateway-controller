@@ -88,7 +88,30 @@ in `GatewayClassParameters`.
 
 ### Variables Available to `Gateway` Templates
 
-TBD.
+The following structure is passed when rendering `HTTPRoute` templates:
+
+```go
+// Parameters used to render Gateway templates
+type gatewayTemplateValues struct {
+	// Parent Gateway
+	Gateway *gatewayapi.Gateway
+
+	// Union and intersection of all hostnames across all
+	// listeners and attached HTTPRoutes. Particularly useful for
+	// certificates since these are not port specific.
+	HostnamesUnion, HostnamesIntersection []string
+}
+```
+
+The `Gateway` field of the structure above holds the parent
+`Gateway` and fields can be referenced in the template using
+Go-struct field names as shown in the excerpt below:
+
+```yaml
+  metadata:
+    name: {{ .Gateway.ObjectMeta.Name }}-child
+    namespace: {{ .Gateway.ObjectMeta.Namespace }}
+```
 
 ### Variables Available to `HTTPRoute` Templates
 
@@ -106,14 +129,7 @@ type httprouteTemplateValues struct {
 
 The `HTTPRoute` field of the structure above holds the parent
 `HTTPRoute` and fields can be referenced in the template using
-Go-struct field names as shown in the excerpt below:
-
-```yaml
-...
-metadata:
-  name: {{ .HTTPRoute.ObjectMeta.Name }}
-  namespace: {{ .HTTPRoute.ObjectMeta.Namespace }}
-```
+Go-struct field names.
 
 Note, that if the `HTTPRoute` is attached to multiple `Gateway`s
 (which may be using different `GatewayClassParameters`), rendering of
