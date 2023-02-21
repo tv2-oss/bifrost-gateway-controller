@@ -18,11 +18,11 @@ spec:
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
     resourceTemplates:
-      istioShadowGw: |
+      childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: Gateway
         metadata:
-          name: {{ .Gateway.ObjectMeta.Name }}-istio
+          name: {{ .Gateway.ObjectMeta.Name }}-child
           namespace: {{ .Gateway.ObjectMeta.Namespace }}
           annotations:
             networking.istio.io/service-type: ClusterIP
@@ -53,7 +53,7 @@ spec:
                 pathType: Prefix
                 backend:
                   service:
-                    name: {{ $.Gateway.ObjectMeta.Name }}-istio
+                    name: {{ $.Gateway.ObjectMeta.Name }}-child
                     port:
                       number: 80
           {{- end }}
@@ -80,7 +80,7 @@ spec:
             - client auth
           dnsNames:
             {{- range .Hostnames }}
-            - {{ . }}
+            - {{ . | quote }}
             {{- end }}
           issuerRef:
             name: ca-issuer
@@ -94,13 +94,13 @@ spec:
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: HTTPRoute
         metadata:
-          name: {{ .HTTPRoute.ObjectMeta.Name }}-istio
+          name: {{ .HTTPRoute.ObjectMeta.Name }}-child
           namespace: {{ .HTTPRoute.ObjectMeta.Namespace }}
         spec:
           parentRefs:
           {{ range .HTTPRoute.Spec.ParentRefs }}
           - kind: {{ .Kind }}
-            name: {{ .Name }}-istio
+            name: {{ .Name }}-child
             {{ if .Namespace }}
             namespace: {{ .Namespace }}
             {{ end }}
