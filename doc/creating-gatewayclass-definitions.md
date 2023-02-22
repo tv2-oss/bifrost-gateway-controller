@@ -94,7 +94,7 @@ The following structure is passed when rendering `HTTPRoute` templates:
 // Parameters used to render Gateway templates
 type gatewayTemplateValues struct {
 	// Parent Gateway
-	Gateway *gatewayapi.Gateway
+	Gateway *map[string]any
 
 	// List of all hostnames across all listeners and attached
 	// HTTPRoutes. These lists of hostnames are particularly
@@ -111,14 +111,14 @@ type gatewayTemplateHostnameValues struct {
 }
 ```
 
-The `Gateway` field of the structure above holds the parent
-`Gateway` and fields can be referenced in the template using
-Go-struct field names as shown in the excerpt below:
+The `Gateway` field of the structure above holds the parent `Gateway`
+and fields can be referenced in the template as shown in the excerpt
+below:
 
 ```yaml
   metadata:
-    name: {{ .Gateway.ObjectMeta.Name }}-child
-    namespace: {{ .Gateway.ObjectMeta.Namespace }}
+    name: {{ .Gateway.metadata.name }}-child
+    namespace: {{ .Gateway.metadata.namespace }}
 ```
 
 ### Variables Available to `HTTPRoute` Templates
@@ -128,16 +128,15 @@ The following structure is passed when rendering `HTTPRoute` templates:
 ```go
 type httprouteTemplateValues struct {
 	// Parent HTTPRoute
-	HTTPRoute *gatewayapi.HTTPRoute
+	HTTPRoute map[string]any
 
-	// Parent Gateway references. Only Gateways implemented by will be included
-	ParentRef *gatewayapi.Gateway
+	// Parent Gateway references. Only Gateways managed by this controller by will be included
+	ParentRef map[string]any
 }
 ```
 
 The `HTTPRoute` field of the structure above holds the parent
-`HTTPRoute` and fields can be referenced in the template using
-Go-struct field names.
+`HTTPRoute` and fields can be referenced in the templates.
 
 Note, that if the `HTTPRoute` is attached to multiple `Gateway`s
 (which may be using different `GatewayClassParameters`), rendering of

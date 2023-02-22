@@ -22,38 +22,38 @@ spec:
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: Gateway
         metadata:
-          name: {{ .Gateway.ObjectMeta.Name }}-child
-          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+          name: {{ .Gateway.metadata.name }}-child
+          namespace: {{ .Gateway.metadata.namespace }}
           annotations:
             networking.istio.io/service-type: ClusterIP
         spec:
           gatewayClassName: istio
           listeners:
-            {{- toYaml .Gateway.Spec.Listeners | nindent 6 }}
+            {{- toYaml .Gateway.spec.listeners | nindent 6 }}
       loadBalancer: |
         apiVersion: networking.k8s.io/v1
         kind: Ingress
         metadata:
-          name: {{ .Gateway.ObjectMeta.Name }}
-          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+          name: {{ .Gateway.metadata.name }}
+          namespace: {{ .Gateway.metadata.namespace }}
         spec:
           ingressClassName: contour
           tls:
           - hosts:
-            {{- range .Gateway.Spec.Listeners }}
-            - {{ .Hostname }}
+            {{- range .Gateway.spec.listeners }}
+            - {{ .hostname | quote }}
             {{- end }}
-            secretName: {{ .Gateway.ObjectMeta.Name }}-tls
+            secretName: {{ .Gateway.metadata.name }}-tls
           rules:
-          {{- range .Gateway.Spec.Listeners }}
-          - host: {{ .Hostname }}
+          {{- range .Gateway.spec.listeners }}
+          - host: {{ .hostname | quote }}
             http:
               paths:
               - path: /
                 pathType: Prefix
                 backend:
                   service:
-                    name: {{ $.Gateway.ObjectMeta.Name }}-child
+                    name: {{ $.Gateway.metadata.name }}-child
                     port:
                       number: 80
           {{- end }}
@@ -61,10 +61,10 @@ spec:
         apiVersion: cert-manager.io/v1
         kind: Certificate
         metadata:
-          name: {{ .Gateway.ObjectMeta.Name }}-cert
-          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+          name: {{ .Gateway.metadata.name }}-cert
+          namespace: {{ .Gateway.metadata.namespace }}
         spec:
-          secretName: {{ .Gateway.ObjectMeta.Name }}-tls
+          secretName: {{ .Gateway.metadata.name }}-tls
           duration: 2160h # 90d
           renewBefore: 360h # 15d
           subject:
@@ -94,16 +94,16 @@ spec:
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: HTTPRoute
         metadata:
-          name: {{ .HTTPRoute.ObjectMeta.Name }}-child
-          namespace: {{ .HTTPRoute.ObjectMeta.Namespace }}
+          name: {{ .HTTPRoute.metadata.name }}-child
+          namespace: {{ .HTTPRoute.metadata.namespace }}
         spec:
           parentRefs:
-          {{ range .HTTPRoute.Spec.ParentRefs }}
-          - kind: {{ .Kind }}
-            name: {{ .Name }}-child
-            {{ if .Namespace }}
-            namespace: {{ .Namespace }}
+          {{ range .HTTPRoute.spec.parentRefs }}
+          - kind: {{ .kind }}
+            name: {{ .name }}-child
+            {{ if .namespace }}
+            namespace: {{ .namespace }}
             {{ end }}
           {{ end }}
           rules:
-          {{ toYaml .HTTPRoute.Spec.Rules | nindent 4 }}
+          {{ toYaml .HTTPRoute.spec.rules | nindent 4 }}
