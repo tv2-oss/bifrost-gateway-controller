@@ -96,10 +96,18 @@ type gatewayTemplateValues struct {
 	// Parent Gateway
 	Gateway *gatewayapi.Gateway
 
+	// List of all hostnames across all listeners and attached
+	// HTTPRoutes. These lists of hostnames are particularly
+	// useful for TLS certificates which are not port specific.
+	Hostnames gatewayTemplateHostnameValues
+}
+
+type gatewayTemplateHostnameValues struct {
 	// Union and intersection of all hostnames across all
-	// listeners and attached HTTPRoutes. Particularly useful for
-	// certificates since these are not port specific.
-	HostnamesUnion, HostnamesIntersection []string
+	// listeners and attached HTTPRoutes (with duplicates
+	// removed). Intersection holds all hostnames from Union with
+	// duplicates covered by wildcards removed.
+	Union, Intersection []string
 }
 ```
 

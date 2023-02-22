@@ -19,11 +19,13 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -44,15 +46,24 @@ type GatewayReconciler struct {
 	dynClient dynamic.Interface
 }
 
+// Helper struct for hostnames in gatewayTemplateValues struct
+type gatewayTemplateHostnameValues struct {
+	// Union and intersection of all hostnames across all
+	// listeners and attached HTTPRoutes (with duplicates
+	// removed). Intersection holds all hostnames from Union with
+	// duplicates covered by wildcards removed.
+	Union, Intersection []string
+}
+
 // Parameters used to render Gateway templates
 type gatewayTemplateValues struct {
 	// Parent Gateway
 	Gateway *gatewayapi.Gateway
 
-	// Union and intersection of all hostnames across all
-	// listeners and attached HTTPRoutes. Particularly useful for
-	// certificates since these are not port specific.
-	HostnamesUnion, HostnamesIntersection []string
+	// List of all hostnames across all listeners and attached
+	// HTTPRoutes. These lists of hostnames are particularly
+	// useful for TLS certificates which are not port specific.
+	Hostnames gatewayTemplateHostnameValues
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
@@ -119,9 +130,11 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	union, isect := combineHostnames(&g, gwRoutes)
 
 	templateValues := gatewayTemplateValues{
-		Gateway:               &g,
-		HostnamesUnion:        union,
-		HostnamesIntersection: isect,
+		Gateway: &g,
+		Hostnames: gatewayTemplateHostnameValues{
+			Union:        union,
+			Intersection: isect,
+		},
 	}
 
 	if err := applyGatewayTemplates(ctx, r, &g, gcp, templateValues); err != nil {
@@ -189,20 +202,46 @@ func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent 
 // changes. I.e. imagine a Gateway with hostname '*.example.com' and a
 // HTTPRoute with 'foo.example.com'. We may want to create a TLS
 // certificate using '*.example.com' (union) and not 'foo.example.com'
-// (intersection). Calculating both allows template authors to choose.
+// (intersection). Calculating both allows template authors to choose
+// which to use.
 func combineHostnames(gw *gatewayapi.Gateway, rtList []*gatewayapi.HTTPRoute) (union, isect []string) {
+	wildcards := sets.New[string]() // Wildcard hostnames without '*.' prefix
+	hostnames := sets.New[string]() // Non-wildcard hostnames
+
+	// Add 'hostname' to either 'wildcards' or 'hostnames' depending on presence of '*.' prefix
+	addHostname := func(hostname string) {
+		if strings.HasPrefix(hostname, "*.") {
+			domain := strings.TrimPrefix(hostname, "*.")
+			if !wildcards.Has(domain) {
+				wildcards = sets.Insert(wildcards, domain)
+			}
+		} else if !hostnames.Has(hostname) {
+			hostnames = sets.Insert(hostnames, hostname)
+		}
+	}
+
 	for _, l := range gw.Spec.Listeners {
 		if l.Hostname != nil {
-			union = append(union, string(*l.Hostname))
+			addHostname(string(*l.Hostname))
 		}
 	}
 	for _, rt := range rtList {
 		for _, rtHostname := range rt.Spec.Hostnames {
-			union = append(union, string(rtHostname))
+			addHostname(string(rtHostname))
 		}
 	}
-	// FIXME calculate intersection
-	isect = append(isect, "FIXME")
+
+	for hostname := range wildcards { // Unique wildcards goes in both union and intersection
+		hostname = "*." + hostname
+		union = append(union, hostname)
+		isect = append(isect, hostname)
+	}
+	for hostname := range hostnames {
+		union = append(union, hostname) // Unique hostnames goes in union
+		if !wildcards.Has(hostname) {   // Unique hostnames goes in intersection if not covered by wildcard
+			isect = append(isect, hostname)
+		}
+	}
 	return union, isect
 }
 
