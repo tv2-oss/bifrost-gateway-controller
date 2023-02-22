@@ -54,13 +54,13 @@ spec:
         kind: Gateway
         metadata:
           name: {{ .Gateway.ObjectMeta.Name }}-istio
-          namespace: {{ .Gateway.ObjectMeta.Namespace }}
+          namespace: {{ .Gateway.metadata.namespace }}
           annotations:
             networking.istio.io/service-type: ClusterIP
         spec:
           gatewayClassName: istio
           listeners:
-            {{- toYaml .Gateway.Spec.Listeners | nindent 6 }}
+            {{- toYaml .Gateway.spec.listeners | nindent 6 }}
   httpRouteTemplate:
     resourceTemplates:
       shadowHttproute: |
@@ -68,16 +68,16 @@ spec:
         kind: HTTPRoute
         metadata:
           name: {{ .HTTPRoute.ObjectMeta.Name }}-istio
-          namespace: {{ .HTTPRoute.ObjectMeta.Namespace }}
+          namespace: {{ .HTTPRoute.metadata.namespace }}
         spec:
           parentRefs:
-          {{ range .HTTPRoute.Spec.ParentRefs }}
-          - kind: {{ .Kind }}
-            name: {{ .Name }}-istio
-            namespace: {{ .Namespace }}
+          {{ range .HTTPRoute.spec.parentRefs }}
+          - kind: {{ .kind }}
+            name: {{ .name }}-istio
+            namespace: {{ .namespace }}
           {{ end }}
           rules:
-          {{ toYaml .HTTPRoute.Spec.Rules | nindent 4 }}`
+          {{ toYaml .HTTPRoute.spec.rules | nindent 4 }}`
 
 var _ = Describe("GatewayClass controller", func() {
 
