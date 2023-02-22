@@ -1,4 +1,4 @@
-#! /usr/bin/bash
+#! /bin/bash
 
 # Repeat running command until it succeeds, with timeout after 60 attempts spaced 1s (+time running command)
 
