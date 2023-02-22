@@ -1,0 +1,155 @@
+# This SG needs to be manually added as an 'allowed source' in the cluster SG
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: SecurityGroup
+metadata:
+  name: aws-alb-test-shared
+  labels:
+    tv2.dk/aws-alb: test
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    description: "SG for CGC ALBs"
+    region: eu-central-1
+    vpcId: $VPC_ID
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: SecurityGroupRule
+metadata:
+  name: aws-alb-test-shared-egress
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    cidrBlocks:
+      - 0.0.0.0/0
+    fromPort: 80
+    protocol: tcp
+    region: eu-central-1
+    securityGroupIdSelector:
+      matchLabels:
+        tv2.dk/aws-alb: test
+    toPort: 8080
+    type: egress
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: SecurityGroupRule
+metadata:
+  name: aws-alb-test-shared-ingress
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    cidrBlocks:
+      - 0.0.0.0/0
+    fromPort: 80
+    protocol: tcp
+    region: eu-central-1
+    securityGroupIdSelector:
+      matchLabels:
+        tv2.dk/aws-alb: test
+    toPort: 8080
+    type: ingress
+---
+apiVersion: elbv2.aws.upbound.io/v1beta1
+kind: LB
+metadata:
+  labels:
+    tv2.dk/aws-alb: test
+  name: aws-alb-test
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    name: aws-alb-test
+    region: eu-central-1
+    securityGroupSelector:
+      matchLabels:
+        tv2.dk/aws-alb: test
+    subnetMapping:
+    - subnetId: $SUBNET1
+    - subnetId: $SUBNET2
+    - subnetId: $SUBNET3
+---
+apiVersion: elbv2.aws.upbound.io/v1beta1
+kind: LBTargetGroup
+metadata:
+  labels:
+    tv2.dk/aws-alb: test
+  name: aws-alb-test
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    name: aws-alb-test
+    region: eu-central-1
+    vpcId: $VPC_ID
+    port: 8080
+    protocol: HTTP
+    targetType: ip
+---
+apiVersion: elbv2.aws.upbound.io/v1beta1
+kind: LBListener
+metadata:
+  name: aws-alb-test
+spec:
+  providerConfigRef:
+    name: admin
+  forProvider:
+    region: eu-central-1
+    port: 8080
+    protocol: HTTP
+    defaultAction:
+    - targetGroupArnSelector:
+        matchLabels:
+          tv2.dk/aws-alb: test
+      type: forward
+    loadBalancerArnSelector:
+      matchLabels:
+        tv2.dk/aws-alb: test
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: aws-alb-test
+  name: aws-alb-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aws-alb-test
+  template:
+    metadata:
+      labels:
+        app: aws-alb-test
+    spec:
+      containers:
+      - image: praqma/network-multitool
+        name: network-multitool
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: aws-alb-test
+  name: aws-alb-test
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: aws-alb-test
+  type: ClusterIP
+---
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  name: aws-alb-test
+spec:
+  targetGroupARN: $TG_ARN
+  targetType: ip
+  serviceRef:
+    name: aws-alb-test
+    port: 8080
