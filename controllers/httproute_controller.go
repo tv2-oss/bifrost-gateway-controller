@@ -46,7 +46,7 @@ type httprouteTemplateValues struct {
 	// Parent HTTPRoute
 	HTTPRoute *gatewayapi.HTTPRoute
 
-	// Parent Gateway references. Only Gateways implemented by will be included
+	// Parent Gateway references. Only Gateways managed by this controller by will be included
 	ParentRef *gatewayapi.Gateway
 }
 

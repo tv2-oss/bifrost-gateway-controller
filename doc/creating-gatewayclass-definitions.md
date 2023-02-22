@@ -117,6 +117,6 @@ metadata:
 
 Note, that if the `HTTPRoute` is attached to multiple `Gateway`s
 (which may be using different `GatewayClassParameters`), rendering of
-the `HTTPRoute` will be done independently for eachparent `Gateway`
+the `HTTPRoute` will be done independently for each parent `Gateway`
 the `HTTPRoute` is attached to. The `ParentRef` field will contain the
 specific parent Gateway.
