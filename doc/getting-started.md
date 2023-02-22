@@ -14,6 +14,22 @@ cluster. Specifically:
 
 The cluster-internal datapath is implemented using Istio.
 
+## Prerequisites
+
+The following is some of the prerequistites needed to build and run
+the getting-started guide.
+
+- Docker
+- [KIND](https://kind.sigs.k8s.io)
+- `kubectl`, `kustomize`, `make`, `helm`
+
+For building the controller etc. (developers):
+
+- Go (see [`go.mod`](go.mod) for version)
+- [GoReleaser](https://github.com/goreleaser/goreleaser)
+- Docker, with buildx
+- KubeBuilder and associated tooling
+
 ## Deploy KIND Cluster and Dependencies
 
 Deploy the KIND cluster and add gateway-API with:
