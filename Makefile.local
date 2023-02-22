@@ -76,7 +76,7 @@ deploy-external-dns:
 #################
 .PHONY: deploy-contour
 deploy-contour:
-	helm upgrade -i --repo https://charts.bitnami.com/bitnami contour contour -n projectcontour --create-namespace
+	helm upgrade -i --repo https://charts.bitnami.com/bitnami contour contour -n projectcontour --version 11.0.0 --create-namespace
 
 # To allow contour to provision from gateway resources
 .PHONY: deploy-contour-provisioner
@@ -120,21 +120,28 @@ deploy-crossplane-aws-provider:
 
 #################
 # See 'doc/getting-started.md'
-.PHONY: setup-getting-started-usecase
-setup-getting-started-usecase:
+.PHONY: setup-getting-started
+setup-getting-started: setup-getting-started-cluster setup-getting-started-controller setup-getting-started-usecase
+
+.PHONY: setup-getting-started-cluster
+setup-getting-started-cluster:
 	make create-cluster deploy-gateway-api
 	make deploy-istio
 	make deploy-contour deploy-contour-provisioner
 	make setup-external-dns-test
 	make deploy-cert-manager
+
+.PHONY: setup-getting-started-controller
+setup-getting-started-controller:
 	# Using 'Deploy from Local-build and YAML Artifacts' method
 	make build
 	make docker-build
 	make cluster-load-controller-image
 	make deploy
 	kubectl apply -f test-data/gatewayclass-kind-internal.yaml
-	# The actual usecase
-	kubectl apply -f test-data/getting-started/foo-namespaces.yaml
+
+.PHONY: setup-getting-started-usecase
+setup-getting-started-usecase:
 	kubectl apply -f test-data/getting-started/foo-namespaces.yaml
 	kubectl apply -f test-data/getting-started/foo-gateway.yaml
 	kubectl -n foo-site apply -f test-data/getting-started/app-foo-site.yaml

@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ns0
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ns1
+  labels:
+    allowGateway: example
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ns2
+  labels:
+    allowGateway: example
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ns3
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: example
+  namespace: ns0
+spec:
+  gatewayClassName: "{GATEWAY_CLASS_NAME}"
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    hostname: "*.example.com"
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            allowGateway: example
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: ns1-foo
+  namespace: ns1
+spec:
+  parentRefs:
+  - kind: Gateway
+    name: example
+    namespace: ns0
+  hostnames:
+  - foo.example.com
+  - foo.example.net
+  rules:
+  - backendRefs:
+    - name: foo
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: ns2-bar
+  namespace: ns2
+spec:
+  parentRefs:
+  - kind: Gateway
+    name: example
+    namespace: ns0
+  hostnames:
+  - bar.example.com
+  rules:
+  - backendRefs:
+    - name: bar
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: ns3-olo
+  namespace: ns3
+spec:
+  parentRefs:
+  - kind: Gateway
+    name: example
+    namespace: ns0
+  hostnames:
+  - olo.example.com
+  rules:
+  - backendRefs:
+    - name: olo
+      port: 80

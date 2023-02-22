@@ -79,3 +79,44 @@ library](http://masterminds.github.io/sprig) as well as a `toYaml`
 function.
 
 TBD. More details on the templating format.
+
+
+## Available Templating Variables
+
+This section documents the variables that are available for templates
+in `GatewayClassParameters`.
+
+### Variables Available to `Gateway` Templates
+
+TBD.
+
+### Variables Available to `HTTPRoute` Templates
+
+The following structure is passed when rendering `HTTPRoute` templates:
+
+```go
+type httprouteTemplateValues struct {
+	// Parent HTTPRoute
+	HTTPRoute *gatewayapi.HTTPRoute
+
+	// Parent Gateway references. Only Gateways implemented by will be included
+	ParentRef *gatewayapi.Gateway
+}
+```
+
+The `HTTPRoute` field of the structure above holds the parent
+`HTTPRoute` and fields can be referenced in the template using
+Go-struct field names as shown in the excerpt below:
+
+```yaml
+...
+metadata:
+  name: {{ .HTTPRoute.ObjectMeta.Name }}
+  namespace: {{ .HTTPRoute.ObjectMeta.Namespace }}
+```
+
+Note, that if the `HTTPRoute` is attached to multiple `Gateway`s
+(which may be using different `GatewayClassParameters`), rendering of
+the `HTTPRoute` will be done independently for each parent `Gateway`
+the `HTTPRoute` is attached to. The `ParentRef` field will contain the
+specific parent Gateway.
