@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
+	cgcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -20,9 +20,9 @@ kind: GatewayClass
 metadata:
   name: default
 spec:
-  controllerName: "github.com/tv2/cloud-gateway-controller"
+  controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
-    group: v1alpha1
+    group: gateway.tv2.dk
     kind: GatewayClassParameters
     name: default-gateway-class`
 
@@ -42,7 +42,7 @@ spec:
 `
 
 const gatewayClassParametersManifest string = `
-apiVersion: cgc.tv2.dk/v1alpha1
+apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassParameters
 metadata:
   name: default-gateway-class

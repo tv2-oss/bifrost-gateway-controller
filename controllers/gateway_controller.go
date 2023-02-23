@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
+	gcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 )
 
 // Used to requeue when a resource is missing a dependency
@@ -152,7 +152,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	addrType := gatewayapi.IPAddressType
 	g.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
 
-	// FIXME: Set real status conditions
+	// FIXME: Set real status conditions calculated from child resources
 	lStatus := make([]gatewayapi.ListenerStatus, 0, len(g.Spec.Listeners))
 	for _, listener := range g.Spec.Listeners {
 		status := gatewayapi.ListenerStatus{
@@ -186,7 +186,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *cgcapi.GatewayClassParameters, templateValues gatewayTemplateValues) error {
+func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *gcapi.GatewayClassParameters, templateValues gatewayTemplateValues) error {
 	for tmplKey, tmpl := range params.Spec.GatewayTemplate.ResourceTemplates {
 		u, err := template2Unstructured(tmpl, &templateValues)
 		if err != nil {

@@ -6,5 +6,5 @@ import (
 )
 
 const (
-	SelfControllerName gatewayapi.GatewayController = "github.com/tv2/cloud-gateway-controller"
+	SelfControllerName gatewayapi.GatewayController = "github.com/tv2-oss/gateway-controller"
 )

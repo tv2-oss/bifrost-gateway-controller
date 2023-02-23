@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 contains API Schema definitions for the cgc.tv2.dk v1alpha1 API group
+// Package v1alpha1 contains API Schema definitions for the gateway.tv2.dk v1alpha1 API group
 // +kubebuilder:object:generate=true
-// +groupName=cgc.tv2.dk
+// +groupName=gateway.tv2.dk
 package v1alpha1
 
 import (
@@ -26,7 +26,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "cgc.tv2.dk", Version: "v1alpha1"}
+	GroupVersion = schema.GroupVersion{Group: "gateway.tv2.dk", Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

@@ -3,7 +3,7 @@
 This document describes how to create new `GatewayClass`
 definitions. See also [Example GatewayClass
 Definitions](example-gatewayclasses.md) for the definitions provided
-with the *cloud-gateway-controller*.
+with the *gateway-controller*.
 
 Before preparing new `GatewayClass` definitions, it is important to
 understand the normalization implemented by the controller, since
@@ -34,7 +34,7 @@ kind: GatewayClass
 metadata:
   name: kind-internal
 spec:
-  controllerName: "github.com/tv2/cloud-gateway-controller"
+  controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
     group: v1alpha1
     kind: GatewayClassParameters
@@ -47,7 +47,7 @@ that implement the data-path. There are template(s) related to both
 below (with template details left out):
 
 ```yaml
-apiVersion: cgc.tv2.dk/v1alpha1
+apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassParameters
 metadata:
   name: default-gateway-class

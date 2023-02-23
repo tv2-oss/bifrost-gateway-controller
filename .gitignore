@@ -19,4 +19,4 @@ bin/
 # vendor/
 
 dist/
-cloud-gateway-controller
+gateway-controller

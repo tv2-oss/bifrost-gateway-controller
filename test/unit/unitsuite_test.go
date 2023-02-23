@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tv2/cloud-gateway-controller/test/unit/tests"
+	"github.com/tv2-oss/gateway-controller/test/unit/tests"
 
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	"sigs.k8s.io/gateway-api/apis/v1beta1"

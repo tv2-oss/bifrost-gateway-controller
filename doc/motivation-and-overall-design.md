@@ -46,7 +46,7 @@ The following is two examples of network datapaths:
 
 When building a platform, it is essential to provide a well-designed
 API to abstractions that are useful and manageable to users. The
-*cloud-gateway-controller* implements the [Kubernetes Gateway
+*gateway-controller* implements the [Kubernetes Gateway
 API](https://gateway-api.sigs.k8s.io/) to achieve this objective.
 
 The [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io/) is an
@@ -55,14 +55,14 @@ gateways to Kubernetes services. This API is fast becoming the
 standard API and is [widely
 supported](https://gateway-api.sigs.k8s.io/implementations/).
 
-**The *cloud-gateway-controller* presents the gateway API to users as
+**The *gateway-controller* presents the gateway API to users as
 the sole interface for network datapath definition.** This is the only
 interface users need to know and it fully supports a GitOps-based
 workflow. Users do not need to work with Terraform or generally know
 how the Gateway API is implemented by the platform.
 
 The Gateway API does not cover concerns such as DNS or web application
-firewall (WAF) configuration. **The *cloud-gateway-controller*
+firewall (WAF) configuration. **The *gateway-controller*
 implements concerns beyond Gateway API scope using configuration in
 `GatewayClass` resources.** E.g., a specific `GatewayClass` defines a
 specific set of WAF rules.  This is very similar to how Kubernetes
@@ -71,32 +71,32 @@ classes](https://kubernetes.io/docs/concepts/storage/storage-classes)
 map abstract storage claims to actual implementations.
 
 A side-effect of using the Gateway API is that the
-*cloud-gateway-controller* interoperate well with other Kubernetes
+*gateway-controller* interoperate well with other Kubernetes
 solutions that automate networking, e.g. Canary deployments using
 [Flagger](https://flagger.app).
 
-## The *cloud-gateway-controller* is a Controller-of-controllers
+## The *gateway-controller* is a Controller-of-controllers
 
-The *cloud-gateway-controller* does not talk to any cloud-APIs to
+The *gateway-controller* does not talk to any cloud-APIs to
 implement the datapath. Instead it creates other Kubernetes resources
 that implement the individual components - much like the Kubernetes
 Deployment controller creates Pod resources and let another
 controller implement Pod resources.
 
-**One can think of the *cloud-gateway-controller* as an advanced Helm
+**One can think of the *gateway-controller* as an advanced Helm
 chart or a Crossplane composition.**
 
-Because the *cloud-gateway-controller* implements cloud resources
+Because the *gateway-controller* implements cloud resources
 through other controllers and with resources configured through
-`GatewayClass` resources, the *cloud-gateway-controller* is
+`GatewayClass` resources, the *gateway-controller* is
 cloud-agnostic (but `GatewayClass` definitions are not).
 
-Similarly, the *cloud-gateway-controller* does not create datapaths
+Similarly, the *gateway-controller* does not create datapaths
 inside Kubernetes, e.g. the *service mesh gateway* shown in the image
 above. These parts of the datapath are implemented by traditional
 gateway controllers such as Istio, Contour etc.
 
-The overarching purpose of the *cloud-gateway-controller* is to
+The overarching purpose of the *gateway-controller* is to
 orchestrate the Kubernetes external and internal datapaths and this
 complete datapath is configured using the Gateway API. This is
 illustrated below using Crossplane for managing cloud resources and
@@ -106,25 +106,25 @@ Istio for managing the Kubernetes-internal datapath.
 
 ### Why Not Use e.g. Crossplane or Helm?
 
-An important objective of the *cloud-gateway-controller* is to maintain
+An important objective of the *gateway-controller* is to maintain
 a Gateway API compatible interface towards users. This would not be
 possible with techniques such as Crossplane and Helm.  Also, the
 mapping from the Gateway API to e.g. a Crossplane composition is
 non-trivial, i.e. it is difficult to do with purely templating.
 
-The *cloud-gateway-controller* implements some of the same composition
+The *gateway-controller* implements some of the same composition
 logic as e.g. Crossplane. Why did we not use Crossplane compositions,
 e.g. build a Gateway API implementation using the following hierarchy
 of services?
 
-- Cloud-gateway-controller implements facade gateway API, stamps out Crossplane claim.
+- gateway-controller implements facade gateway API, stamps out Crossplane claim.
 - Crossplane implements claim towards a composition.
 - Crossplane Composition defines how low-level cloud resources should be stamped out.
 - Crossplane cloud-specific provider implements low-level resources towards cloud API.
 
 While this would be feasible, there are several complicated
 dependencies between each of the above components, which increase the
-maintenance burden. The *cloud-gateway-controller* design aims at
+maintenance burden. The *gateway-controller* design aims at
 reducing the complexity by building on a more self-contained
 monolithic design - or at least a design with less non-trivial
 dependencies between components. For this reason, we use the basic,
@@ -132,13 +132,13 @@ low-level cloud resources of e.g. Crossplane and not the higher-level
 composition functionality.
 
 Another essential argument for keeping the composition logic internal
-to the *cloud-gateway-controller* is to support day-2 operational
+to the *gateway-controller* is to support day-2 operational
 concerns in the controller.  When operational concerns call for
 updates that are non-trivial, e.g. where the order of operations
 become important, a template-based solution is often not
 sufficient. E.g. when we renew a TLS certificate, we want to create
 the new certificate and associate it with our infrastructure before
 discarding the old certificate.  Handling the composition internally
-in the *cloud-gateway-controller* allow us to implement such
+in the *gateway-controller* allow us to implement such
 operational concerns with dedicated code and thus without network
 downtime.

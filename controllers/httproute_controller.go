@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
-	selfapi "github.com/tv2/cloud-gateway-controller/pkg/api"
+	cgcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	selfapi "github.com/tv2-oss/gateway-controller/pkg/api"
 )
 
 type HTTPRouteReconciler struct {
@@ -188,7 +188,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		gwc, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
 		if err != nil {
-			logger.Info("gatewayClass not found", "gatewayclass", gw.Spec.GatewayClassName)
+			logger.Info("gatewayClass not found", "gatewayclassname", gw.Spec.GatewayClassName)
 			requeue = true
 			continue
 		}
@@ -198,7 +198,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		gcp, err := lookupGatewayClassParameters(ctx, r, gwc)
 		if err != nil {
-			logger.Info("parameters for GatewayClass not found", "gatewayclass", gwc)
+			logger.Info("parameters for GatewayClass not found", "gatewayclassparameters", gwc.ObjectMeta.Name)
 			requeue = true
 			continue
 		}

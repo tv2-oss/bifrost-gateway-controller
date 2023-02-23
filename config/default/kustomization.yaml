@@ -1,5 +1,5 @@
-namespace: cloud-gateway-controller-system
-namePrefix: cloud-gateway-controller-
+namespace: gateway-controller-system
+namePrefix: gateway-controller-
 
 # Labels to add to all resources and selectors.
 #labels:

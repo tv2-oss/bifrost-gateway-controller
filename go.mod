@@ -1,4 +1,4 @@
-module github.com/tv2/cloud-gateway-controller
+module github.com/tv2-oss/gateway-controller
 
 go 1.19
 

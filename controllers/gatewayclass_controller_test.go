@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
+	cgcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -19,9 +19,9 @@ kind: GatewayClass
 metadata:
   name: cloud-gw
 spec:
-  controllerName: "github.com/tv2/cloud-gateway-controller"
+  controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
-    group: v1alpha1
+    group: gateway.tv2.dk
     kind: GatewayClassParameters
     name: default-gateway-class`
 
@@ -31,7 +31,7 @@ kind: GatewayClass
 metadata:
   name: cloud-gw-invalid
 spec:
-  controllerName: "github.com/tv2/cloud-gateway-controller"`
+  controllerName: "github.com/tv2-oss/gateway-controller"`
 
 const gatewayclassManifestNotOurs string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -39,10 +39,10 @@ kind: GatewayClass
 metadata:
   name: not-our-gatewayclass
 spec:
-  controllerName: "github.com/acme/cloud-gateway-controller"`
+  controllerName: "github.com/acme/gateway-controller"`
 
 const gwClassParametersManifest string = `
-apiVersion: cgc.tv2.dk/v1alpha1
+apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassParameters
 metadata:
   name: default-gateway-class

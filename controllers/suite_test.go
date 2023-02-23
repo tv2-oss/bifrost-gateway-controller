@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
+	gcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 
@@ -74,7 +74,7 @@ var _ = BeforeSuite(func() {
 	err = gateway.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = cgcapi.AddToScheme(scheme.Scheme)
+	err = gcapi.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme

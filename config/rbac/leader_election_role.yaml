@@ -6,8 +6,8 @@ metadata:
     app.kubernetes.io/name: role
     app.kubernetes.io/instance: leader-election-role
     app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: cloud-gateway-controller
-    app.kubernetes.io/part-of: cloud-gateway-controller
+    app.kubernetes.io/created-by: gateway-controller
+    app.kubernetes.io/part-of: gateway-controller
     app.kubernets.io/managed-by: kustomize
   name: leader-election-role
 rules:

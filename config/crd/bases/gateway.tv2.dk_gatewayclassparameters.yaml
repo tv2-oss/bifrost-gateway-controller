@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: gatewayclassparameters.cgc.tv2.dk
+  name: gatewayclassparameters.gateway.tv2.dk
 spec:
-  group: cgc.tv2.dk
+  group: gateway.tv2.dk
   names:
     kind: GatewayClassParameters
     listKind: GatewayClassParametersList

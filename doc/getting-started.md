@@ -1,6 +1,6 @@
 # Getting Started using a KIND Cluster
 
-This guide describes how to exercise the *cloud-gateway-controller*
+This guide describes how to exercise the *gateway-controller*
 using a KIND cluster, i.e. this guide does not require a cloud
 account. Instead, some resources that typically are allocated from a
 cloud provider are instead simulated inside the KIND
@@ -48,7 +48,7 @@ make setup-external-dns-test
 make deploy-cert-manager
 ```
 
-## Deploy cloud-gateway-controller
+## Deploy gateway-controller
 
 There are three alternative ways to deploy the controller as described
 by the following sections.
