@@ -19,11 +19,13 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,6 +44,26 @@ type GatewayReconciler struct {
 	client    client.Client
 	scheme    *runtime.Scheme
 	dynClient dynamic.Interface
+}
+
+// Helper struct for hostnames in gatewayTemplateValues struct
+type gatewayTemplateHostnameValues struct {
+	// Union and intersection of all hostnames across all
+	// listeners and attached HTTPRoutes (with duplicates
+	// removed). Intersection holds all hostnames from Union with
+	// duplicates covered by wildcards removed.
+	Union, Intersection []string
+}
+
+// Parameters used to render Gateway templates
+type gatewayTemplateValues struct {
+	// Parent Gateway
+	Gateway *gatewayapi.Gateway
+
+	// List of all hostnames across all listeners and attached
+	// HTTPRoutes. These lists of hostnames are particularly
+	// useful for TLS certificates which are not port specific.
+	Hostnames gatewayTemplateHostnameValues
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
@@ -100,16 +122,52 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
 
-	if err := applyGatewayTemplates(ctx, r, &g, gcp); err != nil {
+	routes, err := lookupHTTPRoutes(ctx, r)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("cannot look up routes: %w", err)
+	}
+	gwRoutes := filterHTTPRoutesForGateway(&g, routes)
+	union, isect := combineHostnames(&g, gwRoutes)
+
+	templateValues := gatewayTemplateValues{
+		Gateway: &g,
+		Hostnames: gatewayTemplateHostnameValues{
+			Union:        union,
+			Intersection: isect,
+		},
+	}
+
+	if err := applyGatewayTemplates(ctx, r, &g, gcp, templateValues); err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 	}
 
+	// FIXME, this is not a valid address
 	addrType := gatewayapi.IPAddressType
 	g.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
 
+	// FIXME: Set real status conditions
+	lStatus := make([]gatewayapi.ListenerStatus, 0, len(g.Spec.Listeners))
+	for _, listener := range g.Spec.Listeners {
+		status := gatewayapi.ListenerStatus{
+			Name: listener.Name,
+			SupportedKinds: []gatewayapi.RouteGroupKind{{
+				Group: (*gatewayapi.Group)(&gatewayapi.GroupVersion.Group),
+				Kind:  gatewayapi.Kind("HTTPRoute"),
+			}},
+			AttachedRoutes: int32(len(gwRoutes)),
+		}
+		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
+			Type:               string(gatewayapi.ListenerConditionAccepted),
+			Status:             metav1.ConditionTrue,
+			Reason:             string(gatewayapi.ListenerReasonAccepted),
+			ObservedGeneration: g.ObjectMeta.Generation})
+		lStatus = append(lStatus, status)
+	}
+	g.Status.Listeners = lStatus
+
 	meta.SetStatusCondition(&g.Status.Conditions, metav1.Condition{
 		Type:               string(gatewayapi.GatewayConditionAccepted),
-		Status:             "True",
+		Status:             metav1.ConditionTrue,
 		Reason:             string(gatewayapi.GatewayReasonAccepted),
 		ObservedGeneration: g.ObjectMeta.Generation})
 
@@ -121,19 +179,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-// Parameters used to render Gateway templates
-type gatewayTemplateValues struct {
-	// Parent Gateway
-	Gateway *gatewayapi.Gateway
-	// Union of all hostnames across all listeners and attached HTTPRoutes
-	Hostnames []string
-}
-
-func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *cgcapi.GatewayClassParameters) error {
-	templateValues := gatewayTemplateValues{
-		Gateway:   gwParent,
-		Hostnames: []string{string(*gwParent.Spec.Listeners[0].Hostname)}, // FIXME: this will be implemented as part of the normalization initiative
-	}
+func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *cgcapi.GatewayClassParameters, templateValues gatewayTemplateValues) error {
 	for tmplKey, tmpl := range params.Spec.GatewayTemplate.ResourceTemplates {
 		u, err := template2Unstructured(tmpl, &templateValues)
 		if err != nil {
@@ -149,4 +195,92 @@ func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent 
 		}
 	}
 	return nil
+}
+
+// Calculate union and intersection of Hostnames for use in templates.
+// Union is useful to reduce the number of child resources
+// changes. I.e. imagine a Gateway with hostname '*.example.com' and a
+// HTTPRoute with 'foo.example.com'. We may want to create a TLS
+// certificate using '*.example.com' (intersection) and not
+// 'foo.example.com' (union). Calculating both allows template authors
+// to choose which to use.
+func combineHostnames(gw *gatewayapi.Gateway, rtList []*gatewayapi.HTTPRoute) (union, isect []string) {
+	wildcards := sets.New[string]() // Wildcard hostnames without '*.' prefix
+	hostnames := sets.New[string]() // Non-wildcard hostnames
+
+	// Add 'hostname' to either 'wildcards' or 'hostnames' depending on presence of '*.' prefix
+	addHostname := func(hostname string) {
+		if strings.HasPrefix(hostname, "*.") {
+			domain := strings.TrimPrefix(hostname, "*.")
+			if !wildcards.Has(domain) {
+				wildcards = sets.Insert(wildcards, domain)
+			}
+		} else if !hostnames.Has(hostname) {
+			hostnames = sets.Insert(hostnames, hostname)
+		}
+	}
+
+	for _, l := range gw.Spec.Listeners {
+		if l.Hostname != nil {
+			addHostname(string(*l.Hostname))
+		}
+	}
+	for _, rt := range rtList {
+		for _, rtHostname := range rt.Spec.Hostnames {
+			addHostname(string(rtHostname))
+		}
+	}
+
+	for hostname := range wildcards { // Unique wildcards goes in both union and intersection
+		hostname = "*." + hostname
+		union = append(union, hostname)
+		isect = append(isect, hostname)
+	}
+	for hostname := range hostnames {
+		union = append(union, hostname) // Unique hostnames goes in union
+		if !wildcards.Has(hostname) {   // Unique hostnames goes in intersection if not covered by wildcard
+			isect = append(isect, hostname)
+		}
+	}
+	return union, isect
+}
+
+// Match HTTPRoutes against Gateway listeners, return valid HTTPRoute matches
+func filterHTTPRoutesForGateway(gw *gatewayapi.Gateway, rtList []*gatewayapi.HTTPRoute) []*gatewayapi.HTTPRoute {
+	rtOut := make([]*gatewayapi.HTTPRoute, 0, len(rtList))
+	for _, rt := range rtList {
+		for _, pRef := range rt.Spec.ParentRefs {
+			if (pRef.Group != nil && *pRef.Group != gatewayapi.Group(gatewayapi.GroupName)) ||
+				(pRef.Kind != nil && *pRef.Kind != gatewayapi.Kind("Gateway")) ||
+				(pRef.Namespace != nil && *pRef.Namespace != gatewayapi.Namespace(gw.ObjectMeta.Namespace)) ||
+				// Unspecified namespace means use HTTPRoute namespace
+				(pRef.Namespace == nil && rt.ObjectMeta.Namespace != gw.ObjectMeta.Namespace) ||
+				(pRef.Name != gatewayapi.ObjectName(gw.ObjectMeta.Name)) {
+				// Skip as ParentRef does not refer to Gateway
+				continue
+			}
+			// FIXME: Also include SectionName and Port in match
+			// for _, l := range gw.Spec.Listeners {
+			// 	if xxx
+			// }
+			rtOut = append(rtOut, rt)
+		}
+	}
+	return rtOut
+}
+
+// Lookup all HTTPRoutes
+func lookupHTTPRoutes(ctx context.Context, r ControllerClient) ([]*gatewayapi.HTTPRoute, error) {
+	var rtList gatewayapi.HTTPRouteList
+
+	if err := r.Client().List(ctx, &rtList); err != nil {
+		return nil, err
+	}
+
+	// Return pointer slice
+	rtOut := make([]*gatewayapi.HTTPRoute, 0, len(rtList.Items))
+	for idx := range rtList.Items {
+		rtOut = append(rtOut, &rtList.Items[idx])
+	}
+	return rtOut, nil
 }
