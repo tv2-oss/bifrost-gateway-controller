@@ -25,6 +25,11 @@ type ResourceTemplate struct {
 }
 
 type GatewayClassParametersSpec struct {
+	// Template for hardcoded values
+	//
+	// FIXME: Should be map[string]any
+	// +optional
+	Values map[string]string `json:"values,omitempty"`
 	// Template for shadow resources created from Gateways
 	//
 	// +optional

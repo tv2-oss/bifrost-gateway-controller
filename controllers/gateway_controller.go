@@ -60,6 +60,9 @@ type gatewayTemplateValues struct {
 	// Parent Gateway
 	Gateway *map[string]any
 
+	// Global template values
+	Values map[string]string
+
 	// List of all hostnames across all listeners and attached
 	// HTTPRoutes. These lists of hostnames are particularly
 	// useful for TLS certificates which are not port specific.
@@ -138,6 +141,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Setup template variables context
 	templateValues := gatewayTemplateValues{
 		Gateway: &gatewayMap,
+		Values:  gcp.Spec.Values,
 		Hostnames: gatewayTemplateHostnameValues{
 			Union:        union,
 			Intersection: isect,
