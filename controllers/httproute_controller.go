@@ -44,10 +44,10 @@ type HTTPRouteReconciler struct {
 // Parameters used to render HTTPRoute templates
 type httprouteTemplateValues struct {
 	// Parent HTTPRoute
-	HTTPRoute *gatewayapi.HTTPRoute
+	HTTPRoute map[string]any
 
 	// Parent Gateway references. Only Gateways managed by this controller by will be included
-	ParentRef *gatewayapi.Gateway
+	ParentRef map[string]any
 }
 
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
@@ -153,8 +153,14 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	logger.Info("HTTPRoute")
 
+	// Prepare HTTPRoute resource for use in templates by converting to map[string]any
+	rtMap, err := objectToMap(&rt, r.Scheme())
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("cannot convert httproute to map: %w", err)
+	}
+
 	templateValues := httprouteTemplateValues{
-		HTTPRoute: &rt,
+		HTTPRoute: rtMap,
 	}
 
 	// Prepare for setting status in parentRef loop
@@ -197,7 +203,13 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			continue
 		}
 
-		templateValues.ParentRef = gw
+		// Prepare Gateway resource for use in templates by converting to map[string]any
+		gatewayMap, err := objectToMap(gw, r.Scheme())
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
+		}
+
+		templateValues.ParentRef = gatewayMap
 		if err := applyHTTPRouteTemplates(ctx, r, &rt, gcp, &templateValues); err != nil {
 			logger.Info("unable to apply templates")
 			requeue = true

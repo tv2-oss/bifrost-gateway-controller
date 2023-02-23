@@ -58,7 +58,7 @@ type gatewayTemplateHostnameValues struct {
 // Parameters used to render Gateway templates
 type gatewayTemplateValues struct {
 	// Parent Gateway
-	Gateway *gatewayapi.Gateway
+	Gateway *map[string]any
 
 	// List of all hostnames across all listeners and attached
 	// HTTPRoutes. These lists of hostnames are particularly
@@ -129,8 +129,15 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	gwRoutes := filterHTTPRoutesForGateway(&g, routes)
 	union, isect := combineHostnames(&g, gwRoutes)
 
+	// Prepare Gateway resource for use in templates by converting to map[string]any
+	gatewayMap, err := objectToMap(&g, r.Scheme())
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
+	}
+
+	// Setup template variables context
 	templateValues := gatewayTemplateValues{
-		Gateway: &g,
+		Gateway: &gatewayMap,
 		Hostnames: gatewayTemplateHostnameValues{
 			Union:        union,
 			Intersection: isect,
