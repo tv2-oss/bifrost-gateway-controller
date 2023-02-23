@@ -22,7 +22,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -90,10 +91,8 @@ func (in *GatewayClassParametersSpec) DeepCopyInto(out *GatewayClassParametersSp
 	*out = *in
 	if in.Values != nil {
 		in, out := &in.Values, &out.Values
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
+		*out = new(v1.JSON)
+		(*in).DeepCopyInto(*out)
 	}
 	in.GatewayTemplate.DeepCopyInto(&out.GatewayTemplate)
 	in.HTTPRouteTemplate.DeepCopyInto(&out.HTTPRouteTemplate)
@@ -114,7 +113,7 @@ func (in *GatewayClassParametersStatus) DeepCopyInto(out *GatewayClassParameters
 	*out = *in
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]v1.Condition, len(*in))
+		*out = make([]metav1.Condition, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

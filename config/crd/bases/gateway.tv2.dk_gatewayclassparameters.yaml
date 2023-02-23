@@ -52,10 +52,8 @@ spec:
                     type: object
                 type: object
               values:
-                additionalProperties:
-                  type: string
-                description: "Template for hardcoded values \n FIXME: Should be map[string]any"
-                type: object
+                description: Template for hardcoded values
+                x-kubernetes-preserve-unknown-fields: true
             type: object
           status:
             properties:

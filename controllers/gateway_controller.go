@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/json"
 	"strings"
 	"time"
 
@@ -61,7 +62,7 @@ type gatewayTemplateValues struct {
 	Gateway *map[string]any
 
 	// Global template values
-	Values map[string]string
+	Values map[string]any
 
 	// List of all hostnames across all listeners and attached
 	// HTTPRoutes. These lists of hostnames are particularly
@@ -138,10 +139,15 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
 	}
 
+	var values map[string]interface{}
+	if err := json.Unmarshal(gcp.Spec.Values.Raw, &values); err != nil {
+		return ctrl.Result{}, fmt.Errorf("cannot unmarshal global values: %w", err)
+	}
+
 	// Setup template variables context
 	templateValues := gatewayTemplateValues{
 		Gateway: &gatewayMap,
-		Values:  gcp.Spec.Values,
+		Values:  values,
 		Hostnames: gatewayTemplateHostnameValues{
 			Union:        union,
 			Intersection: isect,
@@ -197,9 +203,9 @@ func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent 
 			return fmt.Errorf("cannot render template %q: %w", tmplKey, err)
 		}
 
-		if err := ctrl.SetControllerReference(gwParent, u, r.Scheme()); err != nil {
-			return fmt.Errorf("cannot set owner for resource created from template %q: %w", tmplKey, err)
-		}
+		//if err := ctrl.SetControllerReference(gwParent, u, r.Scheme()); err != nil {
+		//	return fmt.Errorf("cannot set owner for resource created from template %q: %w", tmplKey, err)
+		//}
 
 		if err := patchUnstructured(ctx, r, u, gwParent.ObjectMeta.Namespace); err != nil {
 			return fmt.Errorf("cannot apply template %q: %w", tmplKey, err)
