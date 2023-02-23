@@ -201,9 +201,9 @@ func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent 
 // Union is useful to reduce the number of child resources
 // changes. I.e. imagine a Gateway with hostname '*.example.com' and a
 // HTTPRoute with 'foo.example.com'. We may want to create a TLS
-// certificate using '*.example.com' (union) and not 'foo.example.com'
-// (intersection). Calculating both allows template authors to choose
-// which to use.
+// certificate using '*.example.com' (intersection) and not
+// 'foo.example.com' (union). Calculating both allows template authors
+// to choose which to use.
 func combineHostnames(gw *gatewayapi.Gateway, rtList []*gatewayapi.HTTPRoute) (union, isect []string) {
 	wildcards := sets.New[string]() // Wildcard hostnames without '*.' prefix
 	hostnames := sets.New[string]() // Non-wildcard hostnames
