@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -88,10 +89,10 @@ func template2Unstructured(templateData string, templateValues any) (*unstructur
 	return unstruct, nil
 }
 
-func unstructuredToGVR(r ControllerClient, u *unstructured.Unstructured) (*schema.GroupVersionResource, error) {
+func unstructuredToGVR(r ControllerClient, u *unstructured.Unstructured) (*schema.GroupVersionResource, bool, error) {
 	gv, err := schema.ParseGroupVersion(u.GetAPIVersion())
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	gk := schema.GroupKind{
@@ -101,35 +102,51 @@ func unstructuredToGVR(r ControllerClient, u *unstructured.Unstructured) (*schem
 
 	mapping, err := r.Client().RESTMapper().RESTMapping(gk, gv.Version)
 	if err != nil {
-		return nil, err
+		return nil, false, err
+	}
+
+	isNamespaced := false
+	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
+		isNamespaced = true
 	}
 
 	return &schema.GroupVersionResource{
 		Group:    gv.Group,
 		Version:  gv.Version,
 		Resource: mapping.Resource.Resource,
-	}, nil
+	}, isNamespaced, nil
 }
 
-func patchUnstructured(ctx context.Context, r ControllerDynClient, us *unstructured.Unstructured, namespace string) error {
-	gvr, err := unstructuredToGVR(r, us)
+// Apply an object in unstructured.Unstructured format using
+// patching. Return status of operation and if succesfull whether
+// object is namespaced or cluster scoped
+func patchUnstructured(ctx context.Context, r ControllerDynClient, us *unstructured.Unstructured, namespace string) (bool, error) {
+	gvr, isNamespaced, err := unstructuredToGVR(r, us)
 
 	if err != nil {
-		return fmt.Errorf("unable to convert unstructured to GVR %w", err)
+		return isNamespaced, fmt.Errorf("unable to convert unstructured to GVR %w", err)
 	}
 
 	jsonData, err := json.Marshal(us.Object)
 	if err != nil {
-		return fmt.Errorf("unable to marshal unstructured to json %w", err)
+		return isNamespaced, fmt.Errorf("unable to marshal unstructured to json %w", err)
 	}
 
-	dynamicClient := r.DynamicClient().Resource(*gvr).Namespace(namespace)
-	t := true
+	force := true
 
-	_, err = dynamicClient.Patch(ctx, us.GetName(), types.ApplyPatchType, jsonData, metav1.PatchOptions{
-		Force:        &t,
-		FieldManager: string(selfapi.SelfControllerName),
-	})
+	if isNamespaced {
+		dynamicClient := r.DynamicClient().Resource(*gvr).Namespace(namespace)
+		_, err = dynamicClient.Patch(ctx, us.GetName(), types.ApplyPatchType, jsonData, metav1.PatchOptions{
+			Force:        &force,
+			FieldManager: string(selfapi.SelfControllerName),
+		})
+	} else {
+		dynamicClient := r.DynamicClient().Resource(*gvr)
+		_, err = dynamicClient.Patch(ctx, us.GetName(), types.ApplyPatchType, jsonData, metav1.PatchOptions{
+			Force:        &force,
+			FieldManager: string(selfapi.SelfControllerName),
+		})
+	}
 
-	return err
+	return isNamespaced, err
 }

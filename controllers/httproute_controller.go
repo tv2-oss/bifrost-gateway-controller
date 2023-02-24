@@ -256,19 +256,23 @@ func applyHTTPRouteTemplates(ctx context.Context, r ControllerDynClient, rtParen
 			}
 		}
 
-		if err := ctrl.SetControllerReference(rtParent, u, r.Scheme()); err != nil {
-			logger.Error(err, "cannot set owner for resource created from template", "templateKey", tmplKey)
-			if firstErr == nil {
-				firstErr = err
-			}
-		}
-
-		if err := patchUnstructured(ctx, r, u, rtParent.ObjectMeta.Namespace); err != nil {
+		isNamespaced, err := patchUnstructured(ctx, r, u, rtParent.ObjectMeta.Namespace)
+		if err != nil {
 			logger.Error(err, "cannot apply template", "templateKey", tmplKey)
 			if firstErr == nil {
 				firstErr = err
 			}
 		}
+
+		if isNamespaced { // Only namespaced objects can have namespaced object as owner
+			if err := ctrl.SetControllerReference(rtParent, u, r.Scheme()); err != nil {
+				logger.Error(err, "cannot set owner for resource created from template", "templateKey", tmplKey)
+				if firstErr == nil {
+					firstErr = err
+				}
+			}
+		}
+
 	}
 	return firstErr
 }
