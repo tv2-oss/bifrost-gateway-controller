@@ -2,7 +2,8 @@ env:
   - REPOSITORY_OWNER={{ if index .Env "GITHUB_REPOSITORY_OWNER" }}{{ tolower .Env.GITHUB_REPOSITORY_OWNER }}{{ else }}local{{ end }}
 
 builds:
-  - env:
+  - binary: gateway-controller
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
