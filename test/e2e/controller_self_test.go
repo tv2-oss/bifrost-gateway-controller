@@ -37,8 +37,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
-	cgwctlapi "github.com/tv2/cloud-gateway-controller/pkg/api"
+	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	selfapi "github.com/tv2-oss/gateway-controller/pkg/api"
 )
 
 const gatewayclassManifest string = `
@@ -47,14 +47,14 @@ kind: GatewayClass
 metadata:
   name: cloud-gw
 spec:
-  controllerName: "github.com/tv2/cloud-gateway-controller"
+  controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
-    group: v1alpha1
+    group: gateway.tv2.dk
     kind: GatewayClassParameters
     name: default-gateway-class`
 
 const gwClassParametersManifest string = `
-apiVersion: cgc.tv2.dk/v1alpha1
+apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassParameters
 metadata:
   name: default-gateway-class
@@ -144,9 +144,14 @@ var _ = Describe("GatewayClass", func() {
 			// We deliberately sleep here to make the controller initially see the GatewayClass without its corresponding parameters
 			time.Sleep(5 * time.Second)
 
-			gcp := &cgcapi.GatewayClassParameters{}
-			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gcp)).To(Succeed())
-			Expect(k8sClient.Create(ctx, gcp)).Should(Succeed())
+			gwcp := &gwcapi.GatewayClassParameters{}
+			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gwcp)).To(Succeed())
+			Expect(k8sClient.Create(ctx, gwcp)).Should(Succeed())
+
+			DeferCleanup(func() {
+				Expect(k8sClient.Delete(ctx, gwcp)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
+			})
 
 			lookupKey := types.NamespacedName{Name: gwc.ObjectMeta.Name, Namespace: ""}
 			gwcRead := &gatewayapi.GatewayClass{}
@@ -161,9 +166,6 @@ var _ = Describe("GatewayClass", func() {
 				}
 				return true
 			}, fixmeExtendedTimeout, interval).Should(BeTrue())
-
-			Expect(k8sClient.Delete(ctx, gcp)).To(Succeed())
-			Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
 		})
 	})
 })
@@ -184,9 +186,9 @@ var _ = Describe("Gateway addresses", func() {
 	BeforeEach(func() {
 		ip4AddressRe = regexp.MustCompile(`^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$`)
 		hostnameRe = regexp.MustCompile(`^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$`)
-		gcp := &cgcapi.GatewayClassParameters{}
-		Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gcp)).To(Succeed())
-		Expect(k8sClient.Create(ctx, gcp)).Should(Succeed())
+		gwcp := &gwcapi.GatewayClassParameters{}
+		Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gwcp)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwcp)).Should(Succeed())
 
 		gwc := &gatewayapi.GatewayClass{}
 		err := yaml.Unmarshal([]byte(gatewayclassManifest), gwc)
@@ -196,7 +198,7 @@ var _ = Describe("Gateway addresses", func() {
 
 		DeferCleanup(func() {
 			Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
-			Expect(k8sClient.Delete(ctx, gcp)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, gwcp)).To(Succeed())
 		})
 	})
 
@@ -253,7 +255,7 @@ var _ = Describe("Gateway addresses", func() {
 					string(rtRead.Status.RouteStatus.Parents[0].ParentRef.Name) != gw.ObjectMeta.Name ||
 					// Namespace is optional, if defined it must match HTTPRoute namespace
 					(rtRead.Status.RouteStatus.Parents[0].ParentRef.Namespace != nil && string(*rtRead.Status.RouteStatus.Parents[0].ParentRef.Namespace) != gw.ObjectMeta.Namespace) ||
-					rtRead.Status.RouteStatus.Parents[0].ControllerName != cgwctlapi.SelfControllerName ||
+					rtRead.Status.RouteStatus.Parents[0].ControllerName != selfapi.SelfControllerName ||
 					rtRead.Status.RouteStatus.Parents[0].Conditions[0].Type != string(gatewayapi.RouteConditionAccepted) ||
 					rtRead.Status.RouteStatus.Parents[0].Conditions[0].Status != "True" {
 					return false

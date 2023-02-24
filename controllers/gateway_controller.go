@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
+	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 )
 
 // Used to requeue when a resource is missing a dependency
@@ -101,14 +101,14 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	logger := log.FromContext(ctx)
 	logger.Info("Reconcile")
 
-	var g gatewayapi.Gateway
-	if err := r.Client().Get(ctx, req.NamespacedName, &g); err != nil {
+	var gw gatewayapi.Gateway
+	if err := r.Client().Get(ctx, req.NamespacedName, &gw); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	logger.Info("Gateway")
 
-	gwc, err := lookupGatewayClass(ctx, r, g.Spec.GatewayClassName)
+	gwc, err := lookupGatewayClass(ctx, r, gw.Spec.GatewayClassName)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, client.IgnoreNotFound(err)
 	}
@@ -117,7 +117,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	gcp, err := lookupGatewayClassParameters(ctx, r, gwc)
+	gwcp, err := lookupGatewayClassParameters(ctx, r, gwc)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
@@ -126,11 +126,11 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("cannot look up routes: %w", err)
 	}
-	gwRoutes := filterHTTPRoutesForGateway(&g, routes)
-	union, isect := combineHostnames(&g, gwRoutes)
+	gwRoutes := filterHTTPRoutesForGateway(&gw, routes)
+	union, isect := combineHostnames(&gw, gwRoutes)
 
 	// Prepare Gateway resource for use in templates by converting to map[string]any
-	gatewayMap, err := objectToMap(&g, r.Scheme())
+	gatewayMap, err := objectToMap(&gw, r.Scheme())
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
 	}
@@ -144,17 +144,17 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		},
 	}
 
-	if err := applyGatewayTemplates(ctx, r, &g, gcp, templateValues); err != nil {
+	if err := applyGatewayTemplates(ctx, r, &gw, gwcp, templateValues); err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 	}
 
 	// FIXME, this is not a valid address
 	addrType := gatewayapi.IPAddressType
-	g.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
+	gw.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
 
-	// FIXME: Set real status conditions
-	lStatus := make([]gatewayapi.ListenerStatus, 0, len(g.Spec.Listeners))
-	for _, listener := range g.Spec.Listeners {
+	// FIXME: Set real status conditions calculated from child resources
+	lStatus := make([]gatewayapi.ListenerStatus, 0, len(gw.Spec.Listeners))
+	for _, listener := range gw.Spec.Listeners {
 		status := gatewayapi.ListenerStatus{
 			Name: listener.Name,
 			SupportedKinds: []gatewayapi.RouteGroupKind{{
@@ -167,18 +167,18 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			Type:               string(gatewayapi.ListenerConditionAccepted),
 			Status:             metav1.ConditionTrue,
 			Reason:             string(gatewayapi.ListenerReasonAccepted),
-			ObservedGeneration: g.ObjectMeta.Generation})
+			ObservedGeneration: gw.ObjectMeta.Generation})
 		lStatus = append(lStatus, status)
 	}
-	g.Status.Listeners = lStatus
+	gw.Status.Listeners = lStatus
 
-	meta.SetStatusCondition(&g.Status.Conditions, metav1.Condition{
+	meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
 		Type:               string(gatewayapi.GatewayConditionAccepted),
 		Status:             metav1.ConditionTrue,
 		Reason:             string(gatewayapi.GatewayReasonAccepted),
-		ObservedGeneration: g.ObjectMeta.Generation})
+		ObservedGeneration: gw.ObjectMeta.Generation})
 
-	if err := r.Client().Status().Update(ctx, &g); err != nil {
+	if err := r.Client().Status().Update(ctx, &gw); err != nil {
 		logger.Error(err, "unable to update Gateway status")
 		return ctrl.Result{}, err
 	}
@@ -186,7 +186,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *cgcapi.GatewayClassParameters, templateValues gatewayTemplateValues) error {
+func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *gwcapi.GatewayClassParameters, templateValues gatewayTemplateValues) error {
 	for tmplKey, tmpl := range params.Spec.GatewayTemplate.ResourceTemplates {
 		u, err := template2Unstructured(tmpl, &templateValues)
 		if err != nil {

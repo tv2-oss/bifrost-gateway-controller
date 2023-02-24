@@ -1,7 +1,7 @@
 # Example GatewayClass Definitions
 
 This document describe the example `GatewayClass` definitions that are
-provided as part of the *cloud-gateway-controller*.
+provided as part of the *gateway-controller*.
 
 ## KIND-internal Using Istio and Contour
 

@@ -6,8 +6,8 @@ patchesStrategicMerge:
     apiVersion: apps/v1
     kind: Deployment
     metadata:
-      name: cloud-gateway-controller-controller-manager
-      namespace: cloud-gateway-controller-system
+      name: gateway-controller-controller-manager
+      namespace: gateway-controller-system
     spec:
       template:
         spec:
@@ -46,7 +46,7 @@ patchesStrategicMerge:
       - update
       - watch
     - apiGroups:
-      - cgc.tv2.dk
+      - gateway.tv2.dk
       resources:
       - gatewayclassparameters
       verbs:
@@ -54,13 +54,13 @@ patchesStrategicMerge:
       - list
       - watch
     - apiGroups:
-      - cgc.tv2.dk
+      - gateway.tv2.dk
       resources:
       - gatewayclassparameters/finalizers
       verbs:
       - update
     - apiGroups:
-      - cgc.tv2.dk
+      - gateway.tv2.dk
       resources:
       - gatewayclassparameters/status
       verbs:

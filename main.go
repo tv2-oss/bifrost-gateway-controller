@@ -32,8 +32,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	cgctv2dkv1alpha1 "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
-	"github.com/tv2/cloud-gateway-controller/controllers"
+	gctv2dkv1alpha1 "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	"github.com/tv2-oss/gateway-controller/controllers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -49,7 +49,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(gateway.AddToScheme(scheme))
-	utilruntime.Must(cgctv2dkv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(gctv2dkv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -69,7 +69,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-	setupLog.Info("cloud-gateway-controller", "version", version, "build-date", date, "commit", commit)
+	setupLog.Info("gateway-controller", "version", version, "build-date", date, "commit", commit)
 
 	config := ctrl.GetConfigOrDie()
 	mgr, err := ctrl.NewManager(config, ctrl.Options{

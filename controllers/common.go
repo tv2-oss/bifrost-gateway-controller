@@ -16,8 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
-	selfapi "github.com/tv2/cloud-gateway-controller/pkg/api"
+	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	selfapi "github.com/tv2-oss/gateway-controller/pkg/api"
 )
 
 type ControllerClient interface {
@@ -43,22 +43,22 @@ func lookupGatewayClass(ctx context.Context, r ControllerClient, name gatewayapi
 	return &gwc, nil
 }
 
-func lookupGatewayClassParameters(ctx context.Context, r ControllerClient, gwc *gatewayapi.GatewayClass) (*cgcapi.GatewayClassParameters, error) {
+func lookupGatewayClassParameters(ctx context.Context, r ControllerClient, gwc *gatewayapi.GatewayClass) (*gwcapi.GatewayClassParameters, error) {
 	if gwc.Spec.ParametersRef == nil {
 		return nil, errors.New("GatewayClass without parameters")
 	}
 
 	// FIXME: More validation...
-	if gwc.Spec.ParametersRef.Kind != "GatewayClassParameters" {
-		return nil, errors.New("parameter Kind is not a GatewayClassParameters")
+	if gwc.Spec.ParametersRef.Kind != "GatewayClassParameters" || gwc.Spec.ParametersRef.Group != "gateway.tv2.dk" {
+		return nil, errors.New("parameter Kind is not a valid GatewayClassParameters")
 	}
 
-	var gcp cgcapi.GatewayClassParameters
-	if err := r.Client().Get(ctx, types.NamespacedName{Name: gwc.Spec.ParametersRef.Name}, &gcp); err != nil {
+	var gwcp gwcapi.GatewayClassParameters
+	if err := r.Client().Get(ctx, types.NamespacedName{Name: gwc.Spec.ParametersRef.Name}, &gwcp); err != nil {
 		return nil, err
 	}
 
-	return &gcp, nil
+	return &gwcp, nil
 }
 
 func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.ObjectName, namespace string) (*gatewayapi.Gateway, error) {
@@ -72,6 +72,8 @@ func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.Obje
 func template2Unstructured(templateData string, templateValues any) (*unstructured.Unstructured, error) {
 	renderBuffer, err := templateRender(templateData, templateValues)
 	if err != nil {
+		fmt.Printf("Template:\n%s\n", templateData)
+		fmt.Printf("Template values:\n%s\n", templateValues)
 		return nil, err
 	}
 

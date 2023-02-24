@@ -6,28 +6,6 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - cgc.tv2.dk
-  resources:
-  - gatewayclassparameters
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - cgc.tv2.dk
-  resources:
-  - gatewayclassparameters/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - cgc.tv2.dk
-  resources:
-  - gatewayclassparameters/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
   - gateway.networking.k8s.io
   resources:
   - gatewayclasses
@@ -97,6 +75,28 @@ rules:
   - gateway.networking.k8s.io
   resources:
   - httproutes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - gateway.tv2.dk
+  resources:
+  - gatewayclassparameters
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gateway.tv2.dk
+  resources:
+  - gatewayclassparameters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - gateway.tv2.dk
+  resources:
+  - gatewayclassparameters/status
   verbs:
   - get
   - patch

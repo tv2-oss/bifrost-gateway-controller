@@ -91,7 +91,7 @@ BUILD_COMMIT = $(shell git describe --match="" --always --abbrev=20 --dirty)
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
 	# The 'GOOS=linux GOARCH=amd64' ensures this also works on non-Linux/x86, e.g. Mac/Colima
-	HEAD_SHA=$(shell git describe --match="" --always --abbrev=7 --dirty) GOOS=linux GOARCH=amd64 goreleaser build --single-target --clean --snapshot --output $(PWD)/cloud-gateway-controller
+	HEAD_SHA=$(shell git describe --match="" --always --abbrev=7 --dirty) GOOS=linux GOARCH=amd64 goreleaser build --single-target --clean --snapshot --output $(PWD)/gateway-controller
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -100,8 +100,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 .PHONY: manifest-build
 manifest-build:
 	mkdir config/release
-	# Currently we have no CRDs
-	#$(KUSTOMIZE) build config/crd -o config/release/crds.yaml
+	$(KUSTOMIZE) build config/crd -o config/release/crds.yaml
 	$(KUSTOMIZE) build config/default -o config/release/install.yaml
 
 # If you wish built the manager image targeting other platforms you can use the --platform flag.

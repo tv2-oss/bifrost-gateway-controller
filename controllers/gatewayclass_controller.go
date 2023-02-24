@@ -39,9 +39,9 @@ type GatewayClassReconciler struct {
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/finalizers,verbs=update
 
-//+kubebuilder:rbac:groups=cgc.tv2.dk,resources=gatewayclassparameters,verbs=get;list;watch
-//+kubebuilder:rbac:groups=cgc.tv2.dk,resources=gatewayclassparameters/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=cgc.tv2.dk,resources=gatewayclassparameters/finalizers,verbs=update
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassparameters,verbs=get;list;watch
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassparameters/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassparameters/finalizers,verbs=update
 
 func (r *GatewayClassReconciler) Client() client.Client {
 	return r.client

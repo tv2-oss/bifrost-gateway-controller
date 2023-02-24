@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	cgcapi "github.com/tv2/cloud-gateway-controller/apis/cgc.tv2.dk/v1alpha1"
+	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -20,9 +20,9 @@ kind: GatewayClass
 metadata:
   name: default
 spec:
-  controllerName: "github.com/tv2/cloud-gateway-controller"
+  controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
-    group: v1alpha1
+    group: gateway.tv2.dk
     kind: GatewayClassParameters
     name: default-gateway-class`
 
@@ -42,7 +42,7 @@ spec:
 `
 
 const gatewayClassParametersManifest string = `
-apiVersion: cgc.tv2.dk/v1alpha1
+apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassParameters
 metadata:
   name: default-gateway-class
@@ -87,24 +87,24 @@ var _ = Describe("Gateway controller", func() {
 	)
 
 	var (
-		gwc *gateway.GatewayClass
-		gcp *cgcapi.GatewayClassParameters
-		ctx context.Context
+		gwc  *gateway.GatewayClass
+		gwcp *gwcapi.GatewayClassParameters
+		ctx  context.Context
 	)
 
 	BeforeEach(func() {
 		gwc = &gateway.GatewayClass{}
-		gcp = &cgcapi.GatewayClassParameters{}
+		gwcp = &gwcapi.GatewayClassParameters{}
 		ctx = context.Background()
 		Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
-		Expect(yaml.Unmarshal([]byte(gatewayClassParametersManifest), gcp)).To(Succeed())
-		Expect(k8sClient.Create(ctx, gcp)).Should(Succeed())
+		Expect(yaml.Unmarshal([]byte(gatewayClassParametersManifest), gwcp)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwcp)).Should(Succeed())
 	})
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
-		Expect(k8sClient.Delete(ctx, gcp)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, gwcp)).Should(Succeed())
 	})
 
 	When("Reconciling a parent Gateway", func() {
