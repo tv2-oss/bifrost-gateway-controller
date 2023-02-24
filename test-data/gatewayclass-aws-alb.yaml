@@ -5,7 +5,7 @@ metadata:
 spec:
   controllerName: "github.com/tv2/cloud-gateway-controller"
   parametersRef:
-    group: v1alpha1
+    group: gateway.tv2.dk
     kind: GatewayClassParameters
     name: aws-alb
 ---
