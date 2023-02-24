@@ -1,18 +1,18 @@
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
-  name: aws-alb
+  name: aws-alb-crossplane
 spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
     group: gateway.tv2.dk
     kind: GatewayClassParameters
-    name: aws-alb
+    name: aws-alb-crossplane
 ---
 apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassParameters
 metadata:
-  name: aws-alb
+  name: aws-alb-crossplane
 spec:
   # Global values used in the GatewayClassParameters
   values:
@@ -42,17 +42,17 @@ spec:
         kind: LB
         metadata:
           labels:
-            tv2.dk/aws-alb: test
-          name: {{ .Gateway.metadata.name }}-aws-alb
+            tv2.dk/aws-alb: crossplane
+          name: {{ .Gateway.metadata.name }}-aws-alb-crossplane
         spec:
           providerConfigRef:
             name: admin
           forProvider:
-            name: aws-alb-test
+            name: aws-alb-crossplane
             region: eu-central-1
             securityGroupSelector:
               matchLabels:
-                tv2.dk/aws-alb: test
+                tv2.dk/aws-alb: crossplane
             subnetMapping:
               - subnetId: {{ .Values.subnets.subnetId1 }}
               - subnetId: {{ .Values.subnets.subnetId2 }}
