@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	cgcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -88,7 +88,7 @@ var _ = Describe("GatewayClass controller", func() {
 
 	var (
 		gwcIn, gwc *gateway.GatewayClass
-		gcp        *cgcapi.GatewayClassParameters
+		gwcp       *gwcapi.GatewayClassParameters
 		ctx        context.Context
 	)
 
@@ -96,7 +96,7 @@ var _ = Describe("GatewayClass controller", func() {
 		ctx = context.Background()
 		gwcIn = &gateway.GatewayClass{}
 		gwc = &gateway.GatewayClass{}
-		gcp = &cgcapi.GatewayClassParameters{}
+		gwcp = &gwcapi.GatewayClassParameters{}
 	})
 
 	When("A gatewayclass we own is created", func() {
@@ -107,8 +107,8 @@ var _ = Describe("GatewayClass controller", func() {
 			Expect(err).Should(Succeed())
 			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
-			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gcp)).To(Succeed())
-			Expect(k8sClient.Create(ctx, gcp)).Should(Succeed())
+			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gwcp)).To(Succeed())
+			Expect(k8sClient.Create(ctx, gwcp)).Should(Succeed())
 
 			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
 
@@ -123,7 +123,7 @@ var _ = Describe("GatewayClass controller", func() {
 			}, timeout, interval).Should(BeTrue())
 
 			Expect(k8sClient.Delete(ctx, gwcIn)).Should(Succeed())
-			Expect(k8sClient.Delete(ctx, gcp)).Should(Succeed())
+			Expect(k8sClient.Delete(ctx, gwcp)).Should(Succeed())
 		})
 	})
 

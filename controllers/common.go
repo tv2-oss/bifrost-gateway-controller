@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	gcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	selfapi "github.com/tv2-oss/gateway-controller/pkg/api"
 )
 
@@ -43,7 +43,7 @@ func lookupGatewayClass(ctx context.Context, r ControllerClient, name gatewayapi
 	return &gwc, nil
 }
 
-func lookupGatewayClassParameters(ctx context.Context, r ControllerClient, gwc *gatewayapi.GatewayClass) (*gcapi.GatewayClassParameters, error) {
+func lookupGatewayClassParameters(ctx context.Context, r ControllerClient, gwc *gatewayapi.GatewayClass) (*gwcapi.GatewayClassParameters, error) {
 	if gwc.Spec.ParametersRef == nil {
 		return nil, errors.New("GatewayClass without parameters")
 	}
@@ -53,12 +53,12 @@ func lookupGatewayClassParameters(ctx context.Context, r ControllerClient, gwc *
 		return nil, errors.New("parameter Kind is not a valid GatewayClassParameters")
 	}
 
-	var gcp gcapi.GatewayClassParameters
-	if err := r.Client().Get(ctx, types.NamespacedName{Name: gwc.Spec.ParametersRef.Name}, &gcp); err != nil {
+	var gwcp gwcapi.GatewayClassParameters
+	if err := r.Client().Get(ctx, types.NamespacedName{Name: gwc.Spec.ParametersRef.Name}, &gwcp); err != nil {
 		return nil, err
 	}
 
-	return &gcp, nil
+	return &gwcp, nil
 }
 
 func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.ObjectName, namespace string) (*gatewayapi.Gateway, error) {

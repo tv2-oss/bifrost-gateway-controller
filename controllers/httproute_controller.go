@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	cgcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	selfapi "github.com/tv2-oss/gateway-controller/pkg/api"
 )
 
@@ -196,7 +196,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			continue
 		}
 
-		gcp, err := lookupGatewayClassParameters(ctx, r, gwc)
+		gwcp, err := lookupGatewayClassParameters(ctx, r, gwc)
 		if err != nil {
 			logger.Info("parameters for GatewayClass not found", "gatewayclassparameters", gwc.ObjectMeta.Name)
 			requeue = true
@@ -210,7 +210,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 
 		templateValues.ParentRef = gatewayMap
-		if err := applyHTTPRouteTemplates(ctx, r, &rt, gcp, &templateValues); err != nil {
+		if err := applyHTTPRouteTemplates(ctx, r, &rt, gwcp, &templateValues); err != nil {
 			logger.Info("unable to apply templates")
 			requeue = true
 			continue
@@ -242,7 +242,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 func applyHTTPRouteTemplates(ctx context.Context, r ControllerDynClient, rtParent *gatewayapi.HTTPRoute,
-	params *cgcapi.GatewayClassParameters, templateValues *httprouteTemplateValues) error {
+	params *gwcapi.GatewayClassParameters, templateValues *httprouteTemplateValues) error {
 	for tmplKey, tmpl := range params.Spec.HTTPRouteTemplate.ResourceTemplates {
 		u, err := template2Unstructured(tmpl, &templateValues)
 		if err != nil {
