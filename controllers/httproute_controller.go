@@ -272,7 +272,6 @@ func applyHTTPRouteTemplates(ctx context.Context, r ControllerDynClient, rtParen
 				}
 			}
 		}
-
 	}
 	return firstErr
 }
