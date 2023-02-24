@@ -19,13 +19,13 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/json"
 	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -140,7 +140,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	var values map[string]interface{}
-	if err := json.Unmarshal(gcp.Spec.Values.Raw, &values); err != nil {
+	if err := json.Unmarshal(gwcp.Spec.Values.Raw, &values); err != nil {
 		return ctrl.Result{}, fmt.Errorf("cannot unmarshal global values: %w", err)
 	}
 
