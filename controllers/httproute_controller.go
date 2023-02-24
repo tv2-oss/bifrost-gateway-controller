@@ -243,19 +243,32 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 func applyHTTPRouteTemplates(ctx context.Context, r ControllerDynClient, rtParent *gatewayapi.HTTPRoute,
 	params *gwcapi.GatewayClassParameters, templateValues *httprouteTemplateValues) error {
+	var firstErr error
+
+	logger := log.FromContext(ctx)
+
 	for tmplKey, tmpl := range params.Spec.HTTPRouteTemplate.ResourceTemplates {
 		u, err := template2Unstructured(tmpl, &templateValues)
 		if err != nil {
-			return fmt.Errorf("cannot render template %q: %w", tmplKey, err)
+			logger.Error(err, "cannot render template", "templateKey", tmplKey)
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 
 		if err := ctrl.SetControllerReference(rtParent, u, r.Scheme()); err != nil {
-			return fmt.Errorf("cannot set owner for resource created from template %q: %w", tmplKey, err)
+			logger.Error(err, "cannot set owner for resource created from template", "templateKey", tmplKey)
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 
 		if err := patchUnstructured(ctx, r, u, rtParent.ObjectMeta.Namespace); err != nil {
-			return fmt.Errorf("cannot apply template %q: %w", tmplKey, err)
+			logger.Error(err, "cannot apply template", "templateKey", tmplKey)
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 	}
-	return nil
+	return firstErr
 }
