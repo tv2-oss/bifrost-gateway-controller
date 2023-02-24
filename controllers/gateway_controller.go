@@ -33,8 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
-
-	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 )
 
 // Used to requeue when a resource is missing a dependency
@@ -156,7 +154,8 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		},
 	}
 
-	if err := applyGatewayTemplates(ctx, r, &gw, gwcp, templateValues); err != nil {
+	templates := gwcp.Spec.GatewayTemplate.ResourceTemplates
+	if err := applyTemplates(ctx, r, &gw, templates, templateValues); err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 	}
 
@@ -196,40 +195,6 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *gwcapi.GatewayClassParameters, templateValues gatewayTemplateValues) error {
-	var firstErr error
-
-	logger := log.FromContext(ctx)
-
-	for tmplKey, tmpl := range params.Spec.GatewayTemplate.ResourceTemplates {
-		u, err := template2Unstructured(tmpl, &templateValues)
-		if err != nil {
-			logger.Error(err, "cannot render template", "templateKey", tmplKey)
-			if firstErr == nil {
-				firstErr = err
-			}
-		}
-
-		isNamespaced, err := patchUnstructured(ctx, r, u, gwParent.ObjectMeta.Namespace)
-		if err != nil {
-			logger.Error(err, "cannot apply template", "templateKey", tmplKey)
-			if firstErr == nil {
-				firstErr = err
-			}
-		}
-
-		if isNamespaced { // Only namespaced objects can have namespaced object as owner
-			if err := ctrl.SetControllerReference(gwParent, u, r.Scheme()); err != nil {
-				logger.Error(err, "cannot set owner for resource created from template", "templateKey", tmplKey)
-				if firstErr == nil {
-					firstErr = err
-				}
-			}
-		}
-	}
-	return firstErr
 }
 
 // Calculate union and intersection of Hostnames for use in templates.

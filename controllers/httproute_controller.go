@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	selfapi "github.com/tv2-oss/gateway-controller/pkg/api"
 )
 
@@ -210,7 +209,8 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 
 		templateValues.ParentRef = gatewayMap
-		if err := applyHTTPRouteTemplates(ctx, r, &rt, gwcp, &templateValues); err != nil {
+		templates := gwcp.Spec.HTTPRouteTemplate.ResourceTemplates
+		if err := applyTemplates(ctx, r, &rt, templates, templateValues); err != nil {
 			logger.Info("unable to apply templates")
 			requeue = true
 			continue
@@ -239,39 +239,4 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, nil
 	}
 	return ctrl.Result{}, nil
-}
-
-func applyHTTPRouteTemplates(ctx context.Context, r ControllerDynClient, rtParent *gatewayapi.HTTPRoute,
-	params *gwcapi.GatewayClassParameters, templateValues *httprouteTemplateValues) error {
-	var firstErr error
-
-	logger := log.FromContext(ctx)
-
-	for tmplKey, tmpl := range params.Spec.HTTPRouteTemplate.ResourceTemplates {
-		u, err := template2Unstructured(tmpl, &templateValues)
-		if err != nil {
-			logger.Error(err, "cannot render template", "templateKey", tmplKey)
-			if firstErr == nil {
-				firstErr = err
-			}
-		}
-
-		isNamespaced, err := patchUnstructured(ctx, r, u, rtParent.ObjectMeta.Namespace)
-		if err != nil {
-			logger.Error(err, "cannot apply template", "templateKey", tmplKey)
-			if firstErr == nil {
-				firstErr = err
-			}
-		}
-
-		if isNamespaced { // Only namespaced objects can have namespaced object as owner
-			if err := ctrl.SetControllerReference(rtParent, u, r.Scheme()); err != nil {
-				logger.Error(err, "cannot set owner for resource created from template", "templateKey", tmplKey)
-				if firstErr == nil {
-					firstErr = err
-				}
-			}
-		}
-	}
-	return firstErr
 }
