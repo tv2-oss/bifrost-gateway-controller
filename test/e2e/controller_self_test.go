@@ -49,7 +49,7 @@ metadata:
 spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
-    group: v1alpha1
+    group: gateway.tv2.dk
     kind: GatewayClassParameters
     name: default-gateway-class`
 
@@ -148,6 +148,11 @@ var _ = Describe("GatewayClass", func() {
 			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gcp)).To(Succeed())
 			Expect(k8sClient.Create(ctx, gcp)).Should(Succeed())
 
+			DeferCleanup(func() {
+				Expect(k8sClient.Delete(ctx, gcp)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
+			})
+
 			lookupKey := types.NamespacedName{Name: gwc.ObjectMeta.Name, Namespace: ""}
 			gwcRead := &gatewayapi.GatewayClass{}
 
@@ -161,9 +166,6 @@ var _ = Describe("GatewayClass", func() {
 				}
 				return true
 			}, fixmeExtendedTimeout, interval).Should(BeTrue())
-
-			Expect(k8sClient.Delete(ctx, gcp)).To(Succeed())
-			Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
 		})
 	})
 })
