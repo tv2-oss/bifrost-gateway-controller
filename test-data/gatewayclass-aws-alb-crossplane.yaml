@@ -6,15 +6,15 @@ spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
     group: gateway.tv2.dk
-    kind: GatewayClassParameters
+    kind: GatewayClassBlueprint
     name: aws-alb-crossplane
 ---
 apiVersion: gateway.tv2.dk/v1alpha1
-kind: GatewayClassParameters
+kind: GatewayClassBlueprint
 metadata:
   name: aws-alb-crossplane
 spec:
-  # Global values used in the GatewayClassParameters
+  # Global values used in the GatewayClassBlueprint
   values:
     vpcId: vpc-0e4501e0fbc404284
     subnets:

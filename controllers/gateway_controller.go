@@ -119,7 +119,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	gwcp, err := lookupGatewayClassParameters(ctx, r, gwc)
+	gwcb, err := lookupGatewayClassBlueprint(ctx, r, gwc)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, fmt.Errorf("parameters for GatewayClass %q not found: %w", gwc.ObjectMeta.Name, err)
 	}
@@ -138,8 +138,8 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	var values map[string]interface{}
-	if gwcp.Spec.Values != nil {
-		if err := json.Unmarshal(gwcp.Spec.Values.Raw, &values); err != nil {
+	if gwcb.Spec.Values != nil {
+		if err := json.Unmarshal(gwcb.Spec.Values.Raw, &values); err != nil {
 			return ctrl.Result{}, fmt.Errorf("cannot unmarshal global values: %w", err)
 		}
 	}
@@ -154,7 +154,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		},
 	}
 
-	templates := gwcp.Spec.GatewayTemplate.ResourceTemplates
+	templates := gwcb.Spec.GatewayTemplate.ResourceTemplates
 	if err := applyTemplates(ctx, r, &gw, templates, templateValues); err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 	}

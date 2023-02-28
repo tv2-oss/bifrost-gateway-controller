@@ -22,7 +22,7 @@ spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
     group: gateway.tv2.dk
-    kind: GatewayClassParameters
+    kind: GatewayClassBlueprint
     name: default-gateway-class`
 
 const gatewayclassManifestInvalid string = `
@@ -41,9 +41,9 @@ metadata:
 spec:
   controllerName: "github.com/acme/gateway-controller"`
 
-const gwClassParametersManifest string = `
+const gwClassBlueprintManifest string = `
 apiVersion: gateway.tv2.dk/v1alpha1
-kind: GatewayClassParameters
+kind: GatewayClassBlueprint
 metadata:
   name: default-gateway-class
 spec:
@@ -88,7 +88,7 @@ var _ = Describe("GatewayClass controller", func() {
 
 	var (
 		gwcIn, gwc *gateway.GatewayClass
-		gwcp       *gwcapi.GatewayClassParameters
+		gwcb       *gwcapi.GatewayClassBlueprint
 		ctx        context.Context
 	)
 
@@ -96,7 +96,7 @@ var _ = Describe("GatewayClass controller", func() {
 		ctx = context.Background()
 		gwcIn = &gateway.GatewayClass{}
 		gwc = &gateway.GatewayClass{}
-		gwcp = &gwcapi.GatewayClassParameters{}
+		gwcb = &gwcapi.GatewayClassBlueprint{}
 	})
 
 	When("A gatewayclass we own is created", func() {
@@ -107,8 +107,8 @@ var _ = Describe("GatewayClass controller", func() {
 			Expect(err).Should(Succeed())
 			Expect(k8sClient.Create(ctx, gwcIn)).Should(Succeed())
 
-			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gwcp)).To(Succeed())
-			Expect(k8sClient.Create(ctx, gwcp)).Should(Succeed())
+			Expect(yaml.Unmarshal([]byte(gwClassBlueprintManifest), gwcb)).To(Succeed())
+			Expect(k8sClient.Create(ctx, gwcb)).Should(Succeed())
 
 			lookupKey := types.NamespacedName{Name: gwcIn.ObjectMeta.Name, Namespace: ""}
 
@@ -123,7 +123,7 @@ var _ = Describe("GatewayClass controller", func() {
 			}, timeout, interval).Should(BeTrue())
 
 			Expect(k8sClient.Delete(ctx, gwcIn)).Should(Succeed())
-			Expect(k8sClient.Delete(ctx, gwcp)).Should(Succeed())
+			Expect(k8sClient.Delete(ctx, gwcb)).Should(Succeed())
 		})
 	})
 

@@ -25,7 +25,7 @@ controller.
 
 A `GatewayClass` resource may look like the following. Note how we
 specify our own controller name and a `default-gateway-class` resource
-of kind `GatewayClassParameters` for parameters associated with the
+of kind `GatewayClassBlueprint` for parameters associated with the
 `GatewayClass`:
 
 ```yaml
@@ -37,7 +37,7 @@ spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
     group: v1alpha1
-    kind: GatewayClassParameters
+    kind: GatewayClassBlueprint
     name: default-gateway-class
 ```
 
@@ -48,7 +48,7 @@ below (with template details left out):
 
 ```yaml
 apiVersion: gateway.tv2.dk/v1alpha1
-kind: GatewayClassParameters
+kind: GatewayClassBlueprint
 metadata:
   name: default-gateway-class
 spec:
@@ -68,7 +68,7 @@ spec:
 I.e. when a `Gateway` resource is defined using a `GatewayClass` for
 our controller, 'shadow' resources will be created using the
 template(s) defined under `gatewayTemplate.resourceTemplates` in the
-`GatewayClassParameters` associated with the given
+`GatewayClassBlueprint` associated with the given
 `GatewayClass`. Similarly, 'shadow' resources will be created for
 `HTTPRoute` resources using the templates under
 `httpRouteTemplate.resourceTemplates`
@@ -84,7 +84,7 @@ TBD. More details on the templating format.
 ## Available Templating Variables
 
 This section documents the variables that are available for templates
-in `GatewayClassParameters`.
+in `GatewayClassBlueprint`.
 
 ### Variables Available to `Gateway` Templates
 
@@ -139,7 +139,7 @@ The `HTTPRoute` field of the structure above holds the parent
 `HTTPRoute` and fields can be referenced in the templates.
 
 Note, that if the `HTTPRoute` is attached to multiple `Gateway`s
-(which may be using different `GatewayClassParameters`), rendering of
+(which may be using different `GatewayClassBlueprint`), rendering of
 the `HTTPRoute` will be done independently for each parent `Gateway`
 the `HTTPRoute` is attached to. The `ParentRef` field will contain the
 specific parent Gateway.

@@ -39,9 +39,9 @@ type GatewayClassReconciler struct {
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/finalizers,verbs=update
 
-//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassparameters,verbs=get;list;watch
-//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassparameters/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassparameters/finalizers,verbs=update
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassblueprints,verbs=get;list;watch
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassblueprints/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassblueprints/finalizers,verbs=update
 
 func (r *GatewayClassReconciler) Client() client.Client {
 	return r.client
@@ -81,10 +81,10 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	_, err = lookupGatewayClassParameters(ctx, r, gwc)
+	_, err = lookupGatewayClassBlueprint(ctx, r, gwc)
 	if err != nil {
 		valid = false
-		errWhyInvalid = fmt.Errorf("parameters for GatewayClass %q not found", gwc.ObjectMeta.Name)
+		errWhyInvalid = fmt.Errorf("blueprint for GatewayClass %q not found", gwc.ObjectMeta.Name)
 	}
 
 	if valid {

@@ -167,7 +167,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		rt.Status.Parents = []gatewayapi.RouteParentStatus{}
 	}
 
-	// Loop through Gateway parents, render HTTPRoute using templates defined by associated GatewayClassParameters
+	// Loop through Gateway parents, render HTTPRoute using templates defined by associated GatewayClassBlueprint
 	for _, parent := range rt.Spec.ParentRefs {
 		if *parent.Kind != gatewayapi.Kind("Gateway") {
 			continue
@@ -195,7 +195,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			continue
 		}
 
-		gwcp, err := lookupGatewayClassParameters(ctx, r, gwc)
+		gwcb, err := lookupGatewayClassBlueprint(ctx, r, gwc)
 		if err != nil {
 			logger.Info("parameters for GatewayClass not found", "gatewayclassparameters", gwc.ObjectMeta.Name)
 			requeue = true
@@ -209,7 +209,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 
 		templateValues.ParentRef = gatewayMap
-		templates := gwcp.Spec.HTTPRouteTemplate.ResourceTemplates
+		templates := gwcb.Spec.HTTPRouteTemplate.ResourceTemplates
 		if err := applyTemplates(ctx, r, &rt, templates, templateValues); err != nil {
 			logger.Info("unable to apply templates")
 			requeue = true
