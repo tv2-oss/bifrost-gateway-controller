@@ -37,13 +37,13 @@ spec:
           gatewayClassName: istio
           listeners:
             {{- toYaml .Gateway.spec.listeners | nindent 6 }}
-      awsAlb: |
+      LB: |
         apiVersion: elbv2.aws.upbound.io/v1beta1
         kind: LB
         metadata:
           labels:
-            tv2.dk/aws-alb: crossplane
-          name: {{ .Gateway.metadata.name }}-aws-alb-crossplane
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
         spec:
           providerConfigRef:
             name: admin
@@ -57,11 +57,50 @@ spec:
               - subnetId: {{ .Values.subnets.subnetId1 }}
               - subnetId: {{ .Values.subnets.subnetId2 }}
               - subnetId: {{ .Values.subnets.subnetId3 }}
+      LBTargetGroup: |
+        apiVersion: elbv2.aws.upbound.io/v1beta1
+        kind: LBTargetGroup
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+        spec:
+          providerConfigRef:
+            name: admin
+          forProvider:
+            name: aws-alb-test
+            region: eu-central-1
+            vpcId: {{ .Values.vpcId }}
+            port: "8080"
+            protocol: HTTP
+            targetType: ip
+      LBListener: |
+        apiVersion: elbv2.aws.upbound.io/v1beta1
+        kind: LBListener
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+        spec:
+          providerConfigRef:
+            name: admin
+          forProvider:
+            region: eu-central-1
+            port: "8080"
+            protocol: HTTP
+            defaultAction:
+            - targetGroupArnSelector:
+                matchLabels:
+                  tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+              type: forward
+            loadBalancerArnSelector:
+              matchLabels:
+                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
 
   # The following are templates used to 'implement' a 'parent' HTTPRoute
   httpRouteTemplate:
     resourceTemplates:
-      shadowHttproute: |
+      childHttproute: |
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: HTTPRoute
         metadata:
