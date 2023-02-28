@@ -32,7 +32,7 @@ of kind `GatewayClassBlueprint` for parameters associated with the
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
-  name: kind-internal
+  name: example
 spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
