@@ -51,6 +51,9 @@ spec:
                       type: string
                     type: object
                 type: object
+              values:
+                description: Template for hardcoded values
+                x-kubernetes-preserve-unknown-fields: true
             type: object
           status:
             properties:

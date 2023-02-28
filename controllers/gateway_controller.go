@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -32,8 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
-
-	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 )
 
 // Used to requeue when a resource is missing a dependency
@@ -59,6 +58,9 @@ type gatewayTemplateHostnameValues struct {
 type gatewayTemplateValues struct {
 	// Parent Gateway
 	Gateway *map[string]any
+
+	// Global template values
+	Values map[string]any
 
 	// List of all hostnames across all listeners and attached
 	// HTTPRoutes. These lists of hostnames are particularly
@@ -135,16 +137,25 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
 	}
 
+	var values map[string]interface{}
+	if gwcp.Spec.Values != nil {
+		if err := json.Unmarshal(gwcp.Spec.Values.Raw, &values); err != nil {
+			return ctrl.Result{}, fmt.Errorf("cannot unmarshal global values: %w", err)
+		}
+	}
+
 	// Setup template variables context
 	templateValues := gatewayTemplateValues{
 		Gateway: &gatewayMap,
+		Values:  values,
 		Hostnames: gatewayTemplateHostnameValues{
 			Union:        union,
 			Intersection: isect,
 		},
 	}
 
-	if err := applyGatewayTemplates(ctx, r, &gw, gwcp, templateValues); err != nil {
+	templates := gwcp.Spec.GatewayTemplate.ResourceTemplates
+	if err := applyTemplates(ctx, r, &gw, templates, templateValues); err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 	}
 
@@ -184,24 +195,6 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	return ctrl.Result{}, nil
-}
-
-func applyGatewayTemplates(ctx context.Context, r ControllerDynClient, gwParent *gatewayapi.Gateway, params *gwcapi.GatewayClassParameters, templateValues gatewayTemplateValues) error {
-	for tmplKey, tmpl := range params.Spec.GatewayTemplate.ResourceTemplates {
-		u, err := template2Unstructured(tmpl, &templateValues)
-		if err != nil {
-			return fmt.Errorf("cannot render template %q: %w", tmplKey, err)
-		}
-
-		if err := ctrl.SetControllerReference(gwParent, u, r.Scheme()); err != nil {
-			return fmt.Errorf("cannot set owner for resource created from template %q: %w", tmplKey, err)
-		}
-
-		if err := patchUnstructured(ctx, r, u, gwParent.ObjectMeta.Namespace); err != nil {
-			return fmt.Errorf("cannot apply template %q: %w", tmplKey, err)
-		}
-	}
-	return nil
 }
 
 // Calculate union and intersection of Hostnames for use in templates.
