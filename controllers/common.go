@@ -91,6 +91,7 @@ func template2Unstructured(templateData string, templateValues any) (*unstructur
 	return unstruct, nil
 }
 
+// From an unstructured object, lookup GVR and whether resource is namespaced
 func unstructuredToGVR(r ControllerClient, u *unstructured.Unstructured) (*schema.GroupVersionResource, bool, error) {
 	gv, err := schema.ParseGroupVersion(u.GetAPIVersion())
 	if err != nil {
@@ -119,6 +120,7 @@ func unstructuredToGVR(r ControllerClient, u *unstructured.Unstructured) (*schem
 	}, isNamespaced, nil
 }
 
+// Apply an unstructured object using service-side apply
 func patchUnstructured(ctx context.Context, r ControllerDynClient, us *unstructured.Unstructured,
 	gvr *schema.GroupVersionResource, namespace *string) error {
 	jsonData, err := json.Marshal(us.Object)
@@ -145,6 +147,7 @@ func patchUnstructured(ctx context.Context, r ControllerDynClient, us *unstructu
 	return err
 }
 
+// Apply a list of templates. If errors are found, only the first detected error is returned.
 func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Object,
 	templates map[string]string, templateValues any) error {
 	var err, firstErr error
@@ -173,7 +176,7 @@ func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Ob
 			// Only namespaced objects can have namespaced object as owner
 			err = ctrl.SetControllerReference(parent, u, r.Scheme())
 			if err != nil {
-				logger.Error(err, "cannot set owner for resource created from template", "templateKey", tmplKey)
+				logger.Error(err, "cannot set owner for namespaced template", "templateKey", tmplKey)
 				if firstErr == nil {
 					firstErr = err
 				}
@@ -181,7 +184,7 @@ func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Ob
 				ns := parent.GetNamespace()
 				err = patchUnstructured(ctx, r, u, gvr, &ns)
 				if err != nil {
-					logger.Error(err, "cannot apply resource created from template", "templateKey", tmplKey)
+					logger.Error(err, "cannot apply namespaced template", "templateKey", tmplKey)
 					if firstErr == nil {
 						firstErr = err
 					}
@@ -189,11 +192,11 @@ func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Ob
 			}
 		} else {
 			err = patchUnstructured(ctx, r, u, gvr, nil)
-		}
-		if err != nil {
-			logger.Error(err, "cannot apply template", "templateKey", tmplKey)
-			if firstErr == nil {
-				firstErr = err
+			if err != nil {
+				logger.Error(err, "cannot apply cluster-scoped template", "templateKey", tmplKey)
+				if firstErr == nil {
+					firstErr = err
+				}
 			}
 		}
 	}
