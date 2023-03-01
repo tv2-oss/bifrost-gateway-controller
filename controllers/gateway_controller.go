@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -59,7 +58,7 @@ type gatewayTemplateValues struct {
 	// Parent Gateway
 	Gateway *map[string]any
 
-	// Global template values
+	// Template values
 	Values map[string]any
 
 	// List of all hostnames across all listeners and attached
@@ -137,11 +136,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
 	}
 
-	var values map[string]interface{}
-	if gwcb.Spec.Values != nil {
-		if err := json.Unmarshal(gwcb.Spec.Values.Raw, &values); err != nil {
-			return ctrl.Result{}, fmt.Errorf("cannot unmarshal global values: %w", err)
-		}
+	values, err := lookupValues(ctx, r, gwcb, gw.ObjectMeta.Namespace)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("cannot lookup values: %w", err)
 	}
 
 	// Setup template variables context

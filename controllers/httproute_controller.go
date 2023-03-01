@@ -45,6 +45,9 @@ type httprouteTemplateValues struct {
 	// Parent HTTPRoute
 	HTTPRoute map[string]any
 
+	// Template values
+	Values map[string]any
+
 	// Parent Gateway references. Only Gateways managed by this controller by will be included
 	ParentRef map[string]any
 }
@@ -202,13 +205,19 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			continue
 		}
 
+		values, err := lookupValues(ctx, r, gwcb, gw.ObjectMeta.Namespace)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("cannot lookup values: %w", err)
+		}
+		templateValues.Values = values
+
 		// Prepare Gateway resource for use in templates by converting to map[string]any
 		gatewayMap, err := objectToMap(gw, r.Scheme())
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
 		}
-
 		templateValues.ParentRef = gatewayMap
+
 		templates := gwcb.Spec.HTTPRouteTemplate.ResourceTemplates
 		if err := applyTemplates(ctx, r, &rt, templates, templateValues); err != nil {
 			logger.Info("unable to apply templates")

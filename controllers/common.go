@@ -51,9 +51,8 @@ func lookupGatewayClassBlueprint(ctx context.Context, r ControllerClient, gwc *g
 		return nil, errors.New("GatewayClass without parameters")
 	}
 
-	// FIXME: More validation...
 	if gwc.Spec.ParametersRef.Kind != "GatewayClassBlueprint" || gwc.Spec.ParametersRef.Group != "gateway.tv2.dk" {
-		return nil, errors.New("parameter Kind is not a valid GatewayClassBlueprint")
+		return nil, errors.New("parameter kind/group is not a valid GatewayClassBlueprint")
 	}
 
 	var gwcb gwcapi.GatewayClassBlueprint
@@ -62,6 +61,25 @@ func lookupGatewayClassBlueprint(ctx context.Context, r ControllerClient, gwc *g
 	}
 
 	return &gwcb, nil
+}
+
+// Lookup values from GatewayClassConfig/GatewayConfig CRDs (eventually) and combine using precedence rules:
+// - Values from GatewayClassBlueprint (highest precedence)
+// - Values from GatewayClassConfig in controller namespace
+// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace (lowest precedence)
+// - Values from GatewayConfig in Gateway/HTTPRoute local namespace (lowest precedence)
+//
+// FIXME: this will be refactored when adding GatewayClassConfig/GatewayConfig CRDs
+func lookupValues(_ /*ctx*/ context.Context, _ /*r*/ ControllerClient, gwcb *gwcapi.GatewayClassBlueprint, _ /*namespace*/ string) (map[string]any, error) {
+	var values map[string]any
+
+	if gwcb.Spec.Values != nil {
+		if err := json.Unmarshal(gwcb.Spec.Values.Raw, &values); err != nil {
+			return nil, fmt.Errorf("cannot unmarshal values from gatewayclassblueprint: %w", err)
+		}
+	}
+
+	return values, nil
 }
 
 func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.ObjectName, namespace string) (*gatewayapi.Gateway, error) {
