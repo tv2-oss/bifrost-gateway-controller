@@ -14,7 +14,7 @@ gateway API can be attached to standards-based gateway API and
 Kubernetes resources such as namespaces. For our purpose, the
 challenges are:
 
-- Keep the role-based model intact while ensuring we cover usecases
+- Keep the role-based model intact while ensuring we cover use-cases
   ranging from environment global settings under infrastructure
   provider control to Gateway specific settings under user/tenant
   control.
@@ -39,6 +39,10 @@ three groups are:
   user/tenant control.
 
 ![Extension through policy attachment](images/policy-attachment.png)
+
+Note, that the illustration show a policy being attached to a
+`Gateway`s resource, but the approach is similar for other gateway API
+resources like `HTTPRoute`.
 
 ## Policies are Generic Values for Templates in `GatewayClassBlueprint`s
 
@@ -70,7 +74,7 @@ namespaced because we need such resources to reference the specific
 a namespace reference such that different users/tenants can have
 configuration for the same `GatewayClassBlueprint`. An example
 use-case for this is that infrastructure providers configure the
-tagging rules for templated resources such as cloud load balancers and
+tagging rules for templated resources such as cloud load-balancers and
 the specified tagging will always be applied when a user/tenant
 creates a `Gateway` using the specified `GatewayClassBlueprint`.
 
