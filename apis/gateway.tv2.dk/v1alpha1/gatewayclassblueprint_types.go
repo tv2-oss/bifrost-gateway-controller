@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,13 +28,14 @@ type GatewayClassBlueprintSpec struct {
 	// Template for hardcoded values
 	//
 	// +optional
-	Values *apiextensionsv1.JSON `json:"values,omitempty"`
-	// Template for shadow resources created from Gateways
+	Values TemplateValues `json:"values,omitempty"`
+
+	// Template for child resources created from Gateways
 	//
 	// +optional
 	GatewayTemplate ResourceTemplate `json:"gatewayTemplate,omitempty"`
 
-	// Template for shadow resources created from HTTPRoutes
+	// Template for child resources created from HTTPRoutes
 	//
 	// +optional
 	HTTPRouteTemplate ResourceTemplate `json:"httpRouteTemplate,omitempty"`
