@@ -32,8 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	gatewaytv2dkv1alpha1 "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
-	gctv2dkv1alpha1 "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	gatewaytv2dkv1a1 "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	"github.com/tv2-oss/gateway-controller/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -50,8 +49,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(gateway.AddToScheme(scheme))
-	utilruntime.Must(gctv2dkv1alpha1.AddToScheme(scheme))
-	utilruntime.Must(gatewaytv2dkv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(gatewaytv2dkv1a1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

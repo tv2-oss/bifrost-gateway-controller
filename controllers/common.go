@@ -76,19 +76,20 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 	// Helper to parse and merge-overwrite values
 	mergeValues := func(src *apiextensionsv1.JSON, _ /*existing*/ map[string]any) (map[string]any, error) {
 		if src != nil {
-			new := map[string]any{}
-			if err := json.Unmarshal(src.Raw, &new); err != nil {
+			current := map[string]any{}
+			if err = json.Unmarshal(src.Raw, &current); err != nil {
 				return nil, fmt.Errorf("cannot unmarshal values: %w", err)
 			}
 			// FIXME: Needs to properly merge values, newly read values from `src` should overwrite what is already in `existing`
-			values = new
+			values = current
 		}
 		return values, nil
 	}
 
-	// FIXME: This is a hack, lookup GatewayClassConfigs in controller namespace - these have highest precedence
+	// FIXME: Should not hardcode controller namespace
 	var gwccl gwcapi.GatewayClassConfigList
-	if err := r.Client().List(ctx, &gwccl, client.InNamespace("gateway-controller")); err != nil {
+	err = r.Client().List(ctx, &gwccl, client.InNamespace("gateway-controller"))
+	if err != nil {
 		return nil, err
 	}
 
@@ -96,7 +97,11 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 
 	// Process overrides in increasing order of precedence
 
-	for _, gwcc := range gwccl.Items {
+	// FIXME: Use GatewayConfig and GatewayClassconfig from parent resource namespace (lowest override precedence)
+
+	// GatewayClassConfig from controller namesapce
+	for idx := range gwccl.Items {
+		gwcc := &gwccl.Items[idx]
 		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
 			gwcc.Spec.TargetRef.Group == gatewayapi.GroupName &&
 			string(gwcc.Spec.TargetRef.Name) == gatewayClassName {
