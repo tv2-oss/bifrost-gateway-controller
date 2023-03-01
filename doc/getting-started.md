@@ -88,7 +88,7 @@ kubectl apply -f test-data/gatewayclass-contour-istio.yaml
 
 ## Create Datapath and Deploy Test Applications
 
-As an example, we will implement the following usecase: <!--  -->
+As an example, we will implement the following usecase:
 
 ![Gateway-API example](images/gateway-api-multi-namespace.png)
 (source: https://gateway-api.sigs.k8s.io/)
