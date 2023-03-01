@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -68,15 +69,47 @@ func lookupGatewayClassBlueprint(ctx context.Context, r ControllerClient, gwc *g
 // - Values from GatewayClassConfig in controller namespace
 // - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace (lowest precedence)
 // - Values from GatewayConfig in Gateway/HTTPRoute local namespace (lowest precedence)
-//
-// FIXME: this will be refactored when adding GatewayClassConfig/GatewayConfig CRDs
-func lookupValues(_ /*ctx*/ context.Context, _ /*r*/ ControllerClient, gwcb *gwcapi.GatewayClassBlueprint, _ /*namespace*/ string) (map[string]any, error) {
+func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName string, gwcb *gwcapi.GatewayClassBlueprint, _ /*namespace*/ string) (map[string]any, error) {
 	var values map[string]any
+	var err error
 
-	if gwcb.Spec.Values != nil {
-		if err := json.Unmarshal(gwcb.Spec.Values.Raw, &values); err != nil {
-			return nil, fmt.Errorf("cannot unmarshal values from gatewayclassblueprint: %w", err)
+	// Helper to parse and merge-overwrite values
+	mergeValues := func(src *apiextensionsv1.JSON, _ /*existing*/ map[string]any) (map[string]any, error) {
+		if src != nil {
+			new := map[string]any{}
+			if err := json.Unmarshal(src.Raw, &new); err != nil {
+				return nil, fmt.Errorf("cannot unmarshal values: %w", err)
+			}
+			// FIXME: Needs to properly merge values, newly read values from `src` should overwrite what is already in `existing`
+			values = new
 		}
+		return values, nil
+	}
+
+	// FIXME: This is a hack, lookup GatewayClassConfigs in controller namespace - these have highest precedence
+	var gwccl gwcapi.GatewayClassConfigList
+	if err := r.Client().List(ctx, &gwccl, client.InNamespace("gateway-controller")); err != nil {
+		return nil, err
+	}
+
+	// FIXME: Process defaults
+
+	// Process overrides in increasing order of precedence
+
+	for _, gwcc := range gwccl.Items {
+		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
+			gwcc.Spec.TargetRef.Group == gatewayapi.GroupName &&
+			string(gwcc.Spec.TargetRef.Name) == gatewayClassName {
+			// gwcc targets gatewayclass
+			if values, err = mergeValues(gwcc.Spec.Override, values); err != nil {
+				return nil, fmt.Errorf("while processing %s: %w", gwcc.Name, err)
+			}
+		}
+	}
+
+	// Blueprint values are last since they have highest precedence
+	if values, err = mergeValues(gwcb.Spec.Values.Override, values); err != nil {
+		return nil, fmt.Errorf("while processing blueprint for gatewayclass %s: %w", gatewayClassName, err)
 	}
 
 	return values, nil
