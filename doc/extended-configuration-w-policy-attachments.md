@@ -25,10 +25,10 @@ challenges are:
 - Support precedence of settings as described in
   [GEP-713](https://gateway-api.sigs.k8s.io/geps/gep-713/#hierarchy).
 
-- Cover situations when an infrastructure contain more than one
+- Cover situations when an infrastructure contains more than one
   `GatewayClass`.
 
-The illustration below show the three categories of settings we
+The illustration below shows the three categories of settings we
 envision in the role-based model with yellow boxes being *policies*
 attached to blue boxed with 'traditional' gateway API resources. The
 three groups are:
@@ -40,7 +40,7 @@ three groups are:
 
 ![Extension through policy attachment](images/policy-attachment.png)
 
-Note, that the illustration show a policy being attached to a
+Note, that the illustration shows a policy being attached to a
 `Gateway`s resource, but the approach is similar for other gateway API
 resources like `HTTPRoute`.
 
@@ -53,8 +53,8 @@ precedence rules defined by GEP-713, but otherwise made directly
 available to template rendering through a top-level `.Values` object
 (much like Helm charts).
 
-The keep the terminology from GEP-713, we will refer to these generic
-values as *policies* even though the scope if broader than merely
+To keep the terminology from GEP-713, we will refer to these generic
+values as *policies* even though the scope is broader than merely
 *policies*.
 
 ## Using RBAC for Role-based Access
@@ -70,9 +70,9 @@ Both `GatewayClassConfig` and `GatewayConfig` CRDs will be
 namespaced. For `GatewayConfig` this is obviously because this is used
 to configure namespaced `Gateway`s. However, `GatewayClassConfig`s are
 namespaced because we need such resources to reference the specific
-`GatewayClassBlueprint` which it configures and simultaneously contain
+`GatewayClassBlueprint` which it configures and simultaneously contains
 a namespace reference such that different users/tenants can have
-configuration for the same `GatewayClassBlueprint`. An example
+configurations for the same `GatewayClassBlueprint`. An example
 use-case for this is that infrastructure providers configure the
 tagging rules for templated resources such as cloud load-balancers and
 the specified tagging will always be applied when a user/tenant
@@ -96,7 +96,7 @@ Increasing order of precedence:
 
 - `GatewayConfig` in same namespace as `Gateway`
 
-- `GatewayClassConfig` in same namespace as `Gateway` when `Gateway`
+- `GatewayClassConfig` in the same namespace as `Gateway` when `Gateway`
   reference `GatewayClassConfig` indirectly through `GatewayClass`.
 
 - `GatewayClassConfig` in *gateway-controller* namespace when
