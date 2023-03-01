@@ -5,21 +5,19 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: gatewayclassblueprints.gateway.tv2.dk
+  name: gatewayconfigs.gateway.tv2.dk
 spec:
   group: gateway.tv2.dk
   names:
-    kind: GatewayClassBlueprint
-    listKind: GatewayClassBlueprintList
-    plural: gatewayclassblueprints
-    singular: gatewayclassblueprint
-  scope: Cluster
+    kind: GatewayConfig
+    listKind: GatewayConfigList
+    plural: gatewayconfigs
+    singular: gatewayconfig
+  scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: GatewayClassBlueprint represents parameters and settings for
-          a specific GatewayClass.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -35,47 +33,57 @@ spec:
             type: object
           spec:
             properties:
-              gatewayTemplate:
-                description: Template for child resources created from Gateways
+              default:
+                description: Defaults have precedence from GatewayConfig (highest)
+                  through GatewayClassConfig to GatewayClassBlueprint (lowest)
+                x-kubernetes-preserve-unknown-fields: true
+              override:
+                description: Overrides have precedence from GatewayClassBlueprint
+                  (highest) through GatewayClassConfig to GatewayConfig (lowest)
+                x-kubernetes-preserve-unknown-fields: true
+              targetRef:
+                description: PolicyTargetReference identifies an API object to apply
+                  policy to. This should be used as part of Policy resources that
+                  can target Gateway API resources. For more information on how this
+                  policy attachment model works, and a sample Policy resource, refer
+                  to the policy attachment documentation for Gateway API.
                 properties:
-                  resourceTemplates:
-                    additionalProperties:
-                      type: string
-                    type: object
+                  group:
+                    description: Group is the group of the target resource.
+                    maxLength: 253
+                    pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                    type: string
+                  kind:
+                    description: Kind is kind of the target resource.
+                    maxLength: 63
+                    minLength: 1
+                    pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                    type: string
+                  name:
+                    description: Name is the name of the target resource.
+                    maxLength: 253
+                    minLength: 1
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the referent. When
+                      unspecified, the local namespace is inferred. Even when policy
+                      targets a resource in a different namespace, it MUST only apply
+                      to traffic originating from the same namespace as the policy.
+                    maxLength: 63
+                    minLength: 1
+                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                    type: string
+                required:
+                - group
+                - kind
+                - name
                 type: object
-              httpRouteTemplate:
-                description: Template for child resources created from HTTPRoutes
-                properties:
-                  resourceTemplates:
-                    additionalProperties:
-                      type: string
-                    type: object
-                type: object
-              values:
-                description: Template for hardcoded values
-                properties:
-                  default:
-                    description: Defaults have precedence from GatewayConfig (highest)
-                      through GatewayClassConfig to GatewayClassBlueprint (lowest)
-                    x-kubernetes-preserve-unknown-fields: true
-                  override:
-                    description: Overrides have precedence from GatewayClassBlueprint
-                      (highest) through GatewayClassConfig to GatewayConfig (lowest)
-                    x-kubernetes-preserve-unknown-fields: true
-                type: object
+            required:
+            - targetRef
             type: object
           status:
             properties:
               conditions:
-                default:
-                - lastTransitionTime: "1970-01-01T00:00:00Z"
-                  message: Waiting for controller
-                  reason: Pending
-                  status: Unknown
-                  type: Accepted
-                description: Conditions is the current status from the controller
-                  for this GatewayClassParameter. Updates follow the same specification
-                  as conditions for GatewayClass.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
