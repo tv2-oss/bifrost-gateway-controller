@@ -200,12 +200,12 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		gwcb, err := lookupGatewayClassBlueprint(ctx, r, gwc)
 		if err != nil {
-			logger.Info("parameters for GatewayClass not found", "gatewayclassparameters", gwc.ObjectMeta.Name)
+			logger.Info("parameters for GatewayClass not found", "gatewayclassparameters", gwc.Name)
 			requeue = true
 			continue
 		}
 
-		values, err := lookupValues(ctx, r, gwcb, gw.ObjectMeta.Namespace)
+		values, err := lookupValues(ctx, r, gwc.Name, gwcb, gw.Namespace)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("cannot lookup values: %w", err)
 		}

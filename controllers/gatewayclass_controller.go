@@ -43,6 +43,14 @@ type GatewayClassReconciler struct {
 //+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassblueprints/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassblueprints/finalizers,verbs=update
 
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassconfigs,verbs=get;list;watch
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassconfigs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayclassconfigs/finalizers,verbs=update
+
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayconfigs,verbs=get;list;watch
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayconfigs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=gateway.tv2.dk,resources=gatewayconfigs/finalizers,verbs=update
+
 func (r *GatewayClassReconciler) Client() client.Client {
 	return r.client
 }

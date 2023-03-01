@@ -1,20 +1,20 @@
-# permissions for end users to view gatewayclassparameters.
+# permissions for end users to view gatewayclassconfigs.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: gatewayclassparameters-viewer-role
+    app.kubernetes.io/instance: gatewayclassconfig-viewer-role
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: gateway-controller
     app.kubernetes.io/part-of: gateway-controller
     app.kubernetes.io/managed-by: kustomize
-  name: gatewayclassparameters-viewer-role
+  name: gatewayclassconfig-viewer-role
 rules:
 - apiGroups:
   - gateway.tv2.dk
   resources:
-  - gatewayclassparameters
+  - gatewayclassconfigs
   verbs:
   - get
   - list
@@ -22,6 +22,6 @@ rules:
 - apiGroups:
   - gateway.tv2.dk
   resources:
-  - gatewayclassparameters/status
+  - gatewayclassconfigs/status
   verbs:
   - get

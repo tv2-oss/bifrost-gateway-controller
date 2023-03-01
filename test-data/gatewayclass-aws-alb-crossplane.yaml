@@ -14,14 +14,6 @@ kind: GatewayClassBlueprint
 metadata:
   name: aws-alb-crossplane
 spec:
-  # Global values used in the GatewayClassBlueprint
-  values:
-    vpcId: vpc-0e4501e0fbc404284
-    subnets:
-      subnetId1: subnet-045141a3fdf9d7bb9
-      subnetId2: subnet-094508a77cf895ec9
-      subnetId3: subnet-099f1b955e66e1a4a
-
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
     resourceTemplates:
@@ -108,12 +100,12 @@ spec:
           namespace: {{ .HTTPRoute.metadata.namespace }}
         spec:
           parentRefs:
-          {{ range .HTTPRoute.spec.parentRefs }}
+          {{ range .HTTPRoute.spec.parentRefs -}}
           - kind: {{ .kind }}
             name: {{ .name }}-child
-            {{ if .namespace }}
+            {{ if .namespace -}}
             namespace: {{ .namespace }}
-            {{ end }}
-          {{ end }}
+            {{ end -}}
+          {{ end -}}
           rules:
-          {{ toYaml .HTTPRoute.spec.rules | nindent 4 }}
+            {{- toYaml .HTTPRoute.spec.rules | nindent 4 }}
