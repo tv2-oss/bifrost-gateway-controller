@@ -48,7 +48,7 @@ patchesStrategicMerge:
     - apiGroups:
       - gateway.tv2.dk
       resources:
-      - gatewayclassparameters
+      - gatewayclassblueprints
       verbs:
       - get
       - list
@@ -56,13 +56,13 @@ patchesStrategicMerge:
     - apiGroups:
       - gateway.tv2.dk
       resources:
-      - gatewayclassparameters/finalizers
+      - gatewayclassblueprints/finalizers
       verbs:
       - update
     - apiGroups:
       - gateway.tv2.dk
       resources:
-      - gatewayclassparameters/status
+      - gatewayclassblueprints/status
       verbs:
       - get
       - patch

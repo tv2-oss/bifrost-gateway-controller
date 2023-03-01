@@ -25,7 +25,7 @@ type ResourceTemplate struct {
 	ResourceTemplates map[string]string `json:"resourceTemplates,omitempty"`
 }
 
-type GatewayClassParametersSpec struct {
+type GatewayClassBlueprintSpec struct {
 	// Template for hardcoded values
 	//
 	// +optional
@@ -41,7 +41,7 @@ type GatewayClassParametersSpec struct {
 	HTTPRouteTemplate ResourceTemplate `json:"httpRouteTemplate,omitempty"`
 }
 
-type GatewayClassParametersStatus struct {
+type GatewayClassBlueprintStatus struct {
 	// Conditions is the current status from the controller for
 	// this GatewayClassParameter. Updates follow the same
 	// specification as conditions for GatewayClass.
@@ -58,23 +58,23 @@ type GatewayClassParametersStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// GatewayClassParameters represents parameters and settings for a specific GatewayClass.
-type GatewayClassParameters struct {
+// GatewayClassBlueprint represents parameters and settings for a specific GatewayClass.
+type GatewayClassBlueprint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   GatewayClassParametersSpec   `json:"spec,omitempty"`
-	Status GatewayClassParametersStatus `json:"status,omitempty"`
+	Spec   GatewayClassBlueprintSpec   `json:"spec,omitempty"`
+	Status GatewayClassBlueprintStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-type GatewayClassParametersList struct {
+type GatewayClassBlueprintList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []GatewayClassParameters `json:"items"`
+	Items           []GatewayClassBlueprint `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&GatewayClassParameters{}, &GatewayClassParametersList{})
+	SchemeBuilder.Register(&GatewayClassBlueprint{}, &GatewayClassBlueprintList{})
 }

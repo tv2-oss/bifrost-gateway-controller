@@ -5,20 +5,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: gatewayclassparameters.gateway.tv2.dk
+  name: gatewayclassblueprints.gateway.tv2.dk
 spec:
   group: gateway.tv2.dk
   names:
-    kind: GatewayClassParameters
-    listKind: GatewayClassParametersList
-    plural: gatewayclassparameters
-    singular: gatewayclassparameters
+    kind: GatewayClassBlueprint
+    listKind: GatewayClassBlueprintList
+    plural: gatewayclassblueprints
+    singular: gatewayclassblueprint
   scope: Cluster
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: GatewayClassParameters represents parameters and settings for
+        description: GatewayClassBlueprint represents parameters and settings for
           a specific GatewayClass.
         properties:
           apiVersion:

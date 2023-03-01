@@ -46,22 +46,22 @@ func lookupGatewayClass(ctx context.Context, r ControllerClient, name gatewayapi
 	return &gwc, nil
 }
 
-func lookupGatewayClassParameters(ctx context.Context, r ControllerClient, gwc *gatewayapi.GatewayClass) (*gwcapi.GatewayClassParameters, error) {
+func lookupGatewayClassBlueprint(ctx context.Context, r ControllerClient, gwc *gatewayapi.GatewayClass) (*gwcapi.GatewayClassBlueprint, error) {
 	if gwc.Spec.ParametersRef == nil {
 		return nil, errors.New("GatewayClass without parameters")
 	}
 
 	// FIXME: More validation...
-	if gwc.Spec.ParametersRef.Kind != "GatewayClassParameters" || gwc.Spec.ParametersRef.Group != "gateway.tv2.dk" {
-		return nil, errors.New("parameter Kind is not a valid GatewayClassParameters")
+	if gwc.Spec.ParametersRef.Kind != "GatewayClassBlueprint" || gwc.Spec.ParametersRef.Group != "gateway.tv2.dk" {
+		return nil, errors.New("parameter Kind is not a valid GatewayClassBlueprint")
 	}
 
-	var gwcp gwcapi.GatewayClassParameters
-	if err := r.Client().Get(ctx, types.NamespacedName{Name: gwc.Spec.ParametersRef.Name}, &gwcp); err != nil {
+	var gwcb gwcapi.GatewayClassBlueprint
+	if err := r.Client().Get(ctx, types.NamespacedName{Name: gwc.Spec.ParametersRef.Name}, &gwcb); err != nil {
 		return nil, err
 	}
 
-	return &gwcp, nil
+	return &gwcb, nil
 }
 
 func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.ObjectName, namespace string) (*gatewayapi.Gateway, error) {

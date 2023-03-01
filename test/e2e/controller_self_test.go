@@ -50,12 +50,12 @@ spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
     group: gateway.tv2.dk
-    kind: GatewayClassParameters
+    kind: GatewayClassBlueprint
     name: default-gateway-class`
 
 const gwClassParametersManifest string = `
 apiVersion: gateway.tv2.dk/v1alpha1
-kind: GatewayClassParameters
+kind: GatewayClassBlueprint
 metadata:
   name: default-gateway-class
 spec:
@@ -144,12 +144,12 @@ var _ = Describe("GatewayClass", func() {
 			// We deliberately sleep here to make the controller initially see the GatewayClass without its corresponding parameters
 			time.Sleep(5 * time.Second)
 
-			gwcp := &gwcapi.GatewayClassParameters{}
-			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gwcp)).To(Succeed())
-			Expect(k8sClient.Create(ctx, gwcp)).Should(Succeed())
+			gwcb := &gwcapi.GatewayClassBlueprint{}
+			Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gwcb)).To(Succeed())
+			Expect(k8sClient.Create(ctx, gwcb)).Should(Succeed())
 
 			DeferCleanup(func() {
-				Expect(k8sClient.Delete(ctx, gwcp)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, gwcb)).To(Succeed())
 				Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
 			})
 
@@ -186,9 +186,9 @@ var _ = Describe("Gateway addresses", func() {
 	BeforeEach(func() {
 		ip4AddressRe = regexp.MustCompile(`^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$`)
 		hostnameRe = regexp.MustCompile(`^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$`)
-		gwcp := &gwcapi.GatewayClassParameters{}
-		Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gwcp)).To(Succeed())
-		Expect(k8sClient.Create(ctx, gwcp)).Should(Succeed())
+		gwcb := &gwcapi.GatewayClassBlueprint{}
+		Expect(yaml.Unmarshal([]byte(gwClassParametersManifest), gwcb)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwcb)).Should(Succeed())
 
 		gwc := &gatewayapi.GatewayClass{}
 		err := yaml.Unmarshal([]byte(gatewayclassManifest), gwc)
@@ -198,7 +198,7 @@ var _ = Describe("Gateway addresses", func() {
 
 		DeferCleanup(func() {
 			Expect(k8sClient.Delete(ctx, gwc)).To(Succeed())
-			Expect(k8sClient.Delete(ctx, gwcp)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, gwcb)).To(Succeed())
 		})
 	})
 

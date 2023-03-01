@@ -4,7 +4,7 @@ metadata:
   name: foo-gateway
   namespace: foo-infra
 spec:
-  gatewayClassName: kind-internal
+  gatewayClassName: contour-istio
   listeners:
   - name: web
     port: 80

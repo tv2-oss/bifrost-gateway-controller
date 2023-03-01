@@ -23,7 +23,7 @@ spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
   parametersRef:
     group: gateway.tv2.dk
-    kind: GatewayClassParameters
+    kind: GatewayClassBlueprint
     name: default-gateway-class`
 
 const gatewayManifest string = `
@@ -41,9 +41,9 @@ spec:
     hostname: example.com
 `
 
-const gatewayClassParametersManifest string = `
+const gatewayClassBlueprintManifest string = `
 apiVersion: gateway.tv2.dk/v1alpha1
-kind: GatewayClassParameters
+kind: GatewayClassBlueprint
 metadata:
   name: default-gateway-class
 spec:
@@ -88,23 +88,23 @@ var _ = Describe("Gateway controller", func() {
 
 	var (
 		gwc  *gateway.GatewayClass
-		gwcp *gwcapi.GatewayClassParameters
+		gwcb *gwcapi.GatewayClassBlueprint
 		ctx  context.Context
 	)
 
 	BeforeEach(func() {
 		gwc = &gateway.GatewayClass{}
-		gwcp = &gwcapi.GatewayClassParameters{}
+		gwcb = &gwcapi.GatewayClassBlueprint{}
 		ctx = context.Background()
 		Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
-		Expect(yaml.Unmarshal([]byte(gatewayClassParametersManifest), gwcp)).To(Succeed())
-		Expect(k8sClient.Create(ctx, gwcp)).Should(Succeed())
+		Expect(yaml.Unmarshal([]byte(gatewayClassBlueprintManifest), gwcb)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwcb)).Should(Succeed())
 	})
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
-		Expect(k8sClient.Delete(ctx, gwcp)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, gwcb)).Should(Succeed())
 	})
 
 	When("Reconciling a parent Gateway", func() {

@@ -69,8 +69,8 @@ e2e-test: envtest
 
 .PHONY: unit-test
 unit-test:
-	kubectl apply -f test-data/gatewayclass-kind-internal.yaml
-	(cd test/unit && USE_EXISTING_CLUSTER=true go test -test.v -gateway-class=kind-internal)
+	kubectl apply -f test-data/gatewayclass-contour-istio.yaml
+	(cd test/unit && USE_EXISTING_CLUSTER=true go test -test.v -gateway-class=contour-istio)
 
 ## Runs conformance tests against cluster with controller deployed. Flag `-test.v' can be used to increase logging
 
