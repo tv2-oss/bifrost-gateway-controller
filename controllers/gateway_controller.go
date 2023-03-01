@@ -61,6 +61,9 @@ type gatewayTemplateValues struct {
 	// Template values
 	Values map[string]any
 
+	// Current resource values
+	Resources map[string]any
+
 	// List of all hostnames across all listeners and attached
 	// HTTPRoutes. These lists of hostnames are particularly
 	// useful for TLS certificates which are not port specific.
@@ -152,8 +155,17 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	templates := gwcb.Spec.GatewayTemplate.ResourceTemplates
-	if err := applyTemplates(ctx, r, &gw, templates, templateValues); err != nil {
+	if rendered, err := renderTemplates(ctx, r, &gw, templates, templateValues); err != nil {
 		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
+	} else {
+		resources, err := buildResourceValues(r, rendered)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("unable to build values from current resources: %w", err)
+		}
+		templateValues.Resources = resources
+		if err := applyTemplates(ctx, r, &gw, rendered); err != nil {
+			return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
+		}
 	}
 
 	// FIXME, this is not a valid address

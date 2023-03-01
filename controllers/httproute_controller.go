@@ -219,10 +219,16 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		templateValues.ParentRef = gatewayMap
 
 		templates := gwcb.Spec.HTTPRouteTemplate.ResourceTemplates
-		if err := applyTemplates(ctx, r, &rt, templates, templateValues); err != nil {
+		if rendered, err := renderTemplates(ctx, r, &rt, templates, templateValues); err != nil {
 			logger.Info("unable to apply templates")
 			requeue = true
 			continue
+		} else {
+			if err := applyTemplates(ctx, r, &rt, rendered); err != nil {
+				logger.Info("unable to apply templates")
+				requeue = true
+				continue
+			}
 		}
 
 		// FIXME errors in templating and status of sub-resources in general should set status conditions
