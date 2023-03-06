@@ -25,26 +25,26 @@ import (
 // structure holds information about a rendered template between these
 // two stages
 type TemplateResource struct {
-	// Name of rendered resource (from template key in GatewayClassBlueprint, not Kubernetes resource name)
-	TemplateName string
-
-	// Raw template for resource
-	StringTemplate string
-
 	// Compiled template
 	Template *template.Template
 
 	// The rendered resource
 	Resource *unstructured.Unstructured
 
-	// Whether resource is namespaced or not
-	IsNamespaced bool
-
 	// GVR for resource
 	GVR *schema.GroupVersionResource
 
 	// Current resource fetch from API-server (or as close as our local caching allows)
 	Current *unstructured.Unstructured
+
+	// Name of rendered resource (from template key in GatewayClassBlueprint, not Kubernetes resource name)
+	TemplateName string
+
+	// Raw template for resource
+	StringTemplate string
+
+	// Whether resource is namespaced or not
+	IsNamespaced bool
 }
 
 // Parameters used when rendering templates
@@ -139,7 +139,7 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 		}
 		exists++
 	}
-	return
+	return rendered, exists
 }
 
 // Build a map of values from current resources. Useful for
