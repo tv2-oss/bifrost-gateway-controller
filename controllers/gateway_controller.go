@@ -140,15 +140,14 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// progress.
 	var lastRenderedNum, renderedNum, existsNum int
 	lastRenderedNum = -1
-	for attempt := 0; attempt < len(templates)-1; attempt++ {
+	for attempt := 0; attempt < len(templates); attempt++ {
+		isFinalAttempt := attempt < len(templates)-1
 		templateValues.Resources, err = buildResourceValues(r, templates)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("unable to build values from current resources: %w", err)
 		}
 
-		fmt.Printf("xxx\n%+v\n", templateValues.Resources)
-
-		renderedNum, existsNum = renderTemplates(ctx, r, &gw, templates, &templateValues)
+		renderedNum, existsNum = renderTemplates(ctx, r, &gw, templates, &templateValues, isFinalAttempt)
 		logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
 		if renderedNum == lastRenderedNum {
 			logger.Info("breaking render/apply loop", "renderedNum", renderedNum, "totalNum", len(templates))

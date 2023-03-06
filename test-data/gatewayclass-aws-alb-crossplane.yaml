@@ -118,6 +118,6 @@ spec:
             {{ if .namespace -}}
             namespace: {{ .namespace }}
             {{ end -}}
-          {{ end -}}
+          {{ end }}
           rules:
             {{- toYaml .HTTPRoute.spec.rules | nindent 4 }}

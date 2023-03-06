@@ -101,9 +101,10 @@ func parseTemplates(resourceTemplates map[string]string) ([]*TemplateResource, e
 // Attempt to render templates and get current resource, skipping
 // resources that have already been rendered/fetched. note that
 // fetching current resource from API server/cache require that we can
-// render the template first.
+// render the template first. Rendering errors on final attempt are
+// logged as errors.
 func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Object,
-	templates []*TemplateResource, values *TemplateValues) (rendered, exists int) {
+	templates []*TemplateResource, values *TemplateValues, isFinalAttempt bool) (rendered, exists int) {
 	var err error
 
 	logger := log.FromContext(ctx)
@@ -113,7 +114,9 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 		if tmplRes.Resource == nil {
 			tmplRes.Resource, err = template2Unstructured(tmplRes, values)
 			if err != nil {
-				logger.Error(err, "cannot render template", "templateName", tmplRes.TemplateName)
+				if isFinalAttempt {
+					logger.Error(err, "cannot render template", "templateName", tmplRes.TemplateName)
+				}
 				continue
 			}
 		}
@@ -135,6 +138,7 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 			tmplRes.Current, err = dynamicClient.Get(ctx, tmplRes.Resource.GetName(), metav1.GetOptions{})
 			if err != nil {
 				logger.Error(err, "cannot get current resource", "templateName", tmplRes.TemplateName)
+				continue
 			}
 		}
 		exists++

@@ -218,13 +218,14 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		// progress.
 		var lastRenderedNum, renderedNum, existsNum int
 		lastRenderedNum = -1
-		for attempt := 0; attempt < len(templates)-1; attempt++ {
+		for attempt := 0; attempt < len(templates); attempt++ {
+			isFinalAttempt := attempt < len(templates)-1
 			templateValues.Resources, err = buildResourceValues(r, templates)
 			if err != nil {
 				return ctrl.Result{}, fmt.Errorf("unable to build values from current resources: %w", err)
 			}
 
-			renderedNum, existsNum = renderTemplates(ctx, r, &rt, templates, &templateValues)
+			renderedNum, existsNum = renderTemplates(ctx, r, &rt, templates, &templateValues, isFinalAttempt)
 			logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
 			if renderedNum == lastRenderedNum {
 				logger.Info("breaking render/apply loop", "renderedNum", renderedNum, "totalNum", len(templates))
