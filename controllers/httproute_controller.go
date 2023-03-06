@@ -40,18 +40,6 @@ type HTTPRouteReconciler struct {
 	dynClient dynamic.Interface
 }
 
-// Parameters used to render HTTPRoute templates
-type httprouteTemplateValues struct {
-	// Parent HTTPRoute
-	HTTPRoute map[string]any
-
-	// Template values
-	Values map[string]any
-
-	// Parent Gateway references. Only Gateways managed by this controller by will be included
-	ParentRef map[string]any
-}
-
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes/finalizers,verbs=update
@@ -161,7 +149,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, fmt.Errorf("cannot convert httproute to map: %w", err)
 	}
 
-	templateValues := httprouteTemplateValues{
+	templateValues := TemplateValues{
 		HTTPRoute: rtMap,
 	}
 
@@ -216,19 +204,37 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
 		}
-		templateValues.ParentRef = gatewayMap
+		templateValues.Gateway = &gatewayMap
 
-		templates := gwcb.Spec.HTTPRouteTemplate.ResourceTemplates
-		if rendered, err := renderTemplates(ctx, r, &rt, templates, templateValues); err != nil {
-			logger.Info("unable to apply templates")
-			requeue = true
-			continue
-		} else {
-			if err := applyTemplates(ctx, r, &rt, rendered); err != nil {
-				logger.Info("unable to apply templates")
-				requeue = true
-				continue
+		templates, err := parseTemplates(gwcb.Spec.HTTPRouteTemplate.ResourceTemplates)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		// Resource templates may reference each other, with the
+		// worst-case being a strictly linear DAG. This means that we
+		// may have to loop N-1 times, with N being the number of
+		// resources. We break the loop when we no longer make
+		// progress.
+		var lastRenderedNum, renderedNum, existsNum int
+		lastRenderedNum = -1
+		for attempt := 0; attempt < len(templates)-1; attempt++ {
+			templateValues.Resources, err = buildResourceValues(r, templates)
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("unable to build values from current resources: %w", err)
 			}
+
+			renderedNum, existsNum = renderTemplates(ctx, r, &rt, templates, &templateValues)
+			logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
+			if renderedNum == lastRenderedNum {
+				logger.Info("breaking render/apply loop", "renderedNum", renderedNum, "totalNum", len(templates))
+				break
+			}
+
+			if err := applyTemplates(ctx, r, &rt, templates); err != nil {
+				return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
+			}
+			lastRenderedNum = renderedNum
 		}
 
 		// FIXME errors in templating and status of sub-resources in general should set status conditions

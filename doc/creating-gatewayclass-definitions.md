@@ -11,16 +11,16 @@ understand the normalization implemented by the controller, since
 specifications to define actual data path resources. See
 [Normalization of Gateway Resources](normalization.md).
 
-## `GatewayClass` and `GatewayClassParameter` Resources
+## `GatewayClass` and `GatewayClassBlueprint` Resources
 
 The actual implementation of data-paths are defined by
-`GatewayClassParameter` resources and the purpose of `GatewayClass`
+`GatewayClassBlueprint` resources and the purpose of `GatewayClass`
 resources is to name a given class, reference a
-`GatewayClassParameter` resource and map the class to a specific
+`GatewayClassBlueprint` resource and map the class to a specific
 controller. See also [Gateway API on GatewayClass
 documentation](https://gateway-api.sigs.k8s.io/references/spec/#gateway.networking.k8s.io/v1beta1.GatewayClass)
 
-The `GatewayClassParameter` is a specific extension of this
+The `GatewayClassBlueprint` is a specific extension of this
 controller.
 
 A `GatewayClass` resource may look like the following. Note how we
@@ -41,7 +41,7 @@ spec:
     name: default-gateway-class
 ```
 
-A `GatewayClassParameter` contains templates for the sub-resource(s)
+A `GatewayClassBlueprint` contains templates for the sub-resource(s)
 that implement the data-path. There are template(s) related to both
 `Gateway` and `HTTPRoute` resources, and the general format is shown
 below (with template details left out):
@@ -78,7 +78,18 @@ includes support for the 100+ functions from the [Sprig
 library](http://masterminds.github.io/sprig) as well as a `toYaml`
 function.
 
+Templated resources are always created in the namespace of the parent
+resource, e.g. a resource defined under `gatewayTemplate` will be
+created in the namespace of the parent `Gateway` resource.
+
+
 TBD. More details on the templating format.
+
+
+## Inter-resource References
+
+
+
 
 
 ## Available Templating Variables

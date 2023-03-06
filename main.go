@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -68,6 +69,8 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
+	syncPeriod, _ := time.ParseDuration("30s")
+
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 	setupLog.Info("gateway-controller", "version", version, "build-date", date, "commit", commit)
 
@@ -77,6 +80,7 @@ func main() {
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
+		SyncPeriod:             &syncPeriod,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "71264cc8.ccs.tv2.dk",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily

@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -124,25 +123,6 @@ func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.Obje
 		return nil, err
 	}
 	return &gw, nil
-}
-
-func template2Unstructured(templateData string, templateValues any) (*unstructured.Unstructured, error) {
-	renderBuffer, err := templateRender(templateData, templateValues)
-	if err != nil {
-		fmt.Printf("Template:\n%s\n", templateData)
-		fmt.Printf("Template values:\n%s\n", templateValues)
-		return nil, err
-	}
-
-	rawResource := map[string]any{}
-	err = yaml.Unmarshal(renderBuffer.Bytes(), &rawResource)
-	if err != nil {
-		return nil, err
-	}
-
-	unstruct := &unstructured.Unstructured{Object: rawResource}
-
-	return unstruct, nil
 }
 
 // From an unstructured object, lookup GVR and whether resource is namespaced

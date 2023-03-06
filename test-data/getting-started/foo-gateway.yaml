@@ -4,7 +4,7 @@ metadata:
   name: foo-gateway
   namespace: foo-infra
 spec:
-  gatewayClassName: contour-istio
+  gatewayClassName: aws-alb-crossplane
   listeners:
   - name: web
     port: 80
