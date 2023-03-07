@@ -95,10 +95,10 @@ spec:
           name: tgb-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
           namespace: {{ .Gateway.metadata.namespace }}
         spec:
-          targetGroupARN: FIXME-{{ .Resources.LBTargetGroup.metadata.uid }}
+          targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
           targetType: ip
           serviceRef:
-            name: aws-alb-test-FIXME
+            name: {{ .Gateway.metadata.name }}-child-istio
             port: 8080
 
   # The following are templates used to 'implement' a 'parent' HTTPRoute

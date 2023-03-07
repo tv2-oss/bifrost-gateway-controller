@@ -76,6 +76,8 @@ func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	var requeue bool
+
 	logger := log.FromContext(ctx)
 	logger.Info("Reconcile")
 
@@ -140,6 +142,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// progress.
 	var lastRenderedNum, renderedNum, existsNum int
 	lastRenderedNum = -1
+	requeue = true
 	for attempt := 0; attempt < len(templates); attempt++ {
 		isFinalAttempt := attempt < len(templates)-1
 		templateValues.Resources, err = buildResourceValues(r, templates)
@@ -151,6 +154,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
 		if renderedNum == lastRenderedNum {
 			logger.Info("breaking render/apply loop", "renderedNum", renderedNum, "totalNum", len(templates))
+			requeue = false
 			break
 		}
 
@@ -195,6 +199,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
+	if requeue {
+		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, nil
+	}
 	return ctrl.Result{}, nil
 }
 

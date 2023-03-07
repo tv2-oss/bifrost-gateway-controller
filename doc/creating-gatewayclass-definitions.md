@@ -88,32 +88,72 @@ TBD. More details on the templating format.
 
 ## Inter-resource References
 
+Resources may reference other resources, e.g. a `status` field from
+one resource can be used in the template of another resource. When
+resources have been created in the API server, they will be available
+for templating of other resources. However, the dependencies must be a
+directed acyclic graph.
 
+When a resource template can be rendered without missing references,
+the rendered template will be used to retrieve the current version of
+the resource from the API server. These 'current resources' will be
+made available as template variables under `.Resources` and the name
+of the template.
 
+The following excerpt from a `GatewayClassBlueprint` illustrates how a
+value is read from the status field of one resource `LBTargetGroup`
+and how the `status.atProvider.arn` value is used in the template of
+`TargetGroupBinding` through `.Resources.LBTargetGroup`.
 
+```yaml
+...
+spec:
+  gatewayTemplate:
+    resourceTemplates:
+      LBTargetGroup: |
+        kind: LBTargetGroup
+        metadata:
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+        spec:
+          ...
+          # This resource will have its 'status.atProvider.arn' set when resource is created as provider
+          ...
+      TargetGroupBinding: |
+        kind: TargetGroupBinding
+          ...
+        spec:
+          targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
+```
 
 ## Available Templating Variables
 
 This section documents the variables that are available for templates
 in `GatewayClassBlueprint`.
 
-### Variables Available to `Gateway` Templates
-
-The following structure is passed when rendering `HTTPRoute` templates:
+The following structure is passed when rendering `Gateway` and
+`HTTPRoute` templates:
 
 ```go
-// Parameters used to render Gateway templates
-type gatewayTemplateValues struct {
-	// Parent Gateway
+type TemplateValues struct {
+	// Parent Gateway, always defined
 	Gateway *map[string]any
+
+	// Parent HTTPRoute. Only set when rendering HTTPRoute templates
+	HTTPRoute map[string]any
+
+	// Template values
+	Values map[string]any
+
+	// Current resources (i.e. sibling resources)
+	Resources map[string]any
 
 	// List of all hostnames across all listeners and attached
 	// HTTPRoutes. These lists of hostnames are particularly
 	// useful for TLS certificates which are not port specific.
-	Hostnames gatewayTemplateHostnameValues
+	Hostnames TemplateHostnameValues
 }
 
-type gatewayTemplateHostnameValues struct {
+type TemplateHostnameValues struct {
 	// Union and intersection of all hostnames across all
 	// listeners and attached HTTPRoutes (with duplicates
 	// removed). Intersection holds all hostnames from Union with
@@ -132,25 +172,8 @@ below:
     namespace: {{ .Gateway.metadata.namespace }}
 ```
 
-### Variables Available to `HTTPRoute` Templates
-
-The following structure is passed when rendering `HTTPRoute` templates:
-
-```go
-type httprouteTemplateValues struct {
-	// Parent HTTPRoute
-	HTTPRoute map[string]any
-
-	// Parent Gateway references. Only Gateways managed by this controller by will be included
-	ParentRef map[string]any
-}
-```
-
-The `HTTPRoute` field of the structure above holds the parent
-`HTTPRoute` and fields can be referenced in the templates.
-
-Note, that if the `HTTPRoute` is attached to multiple `Gateway`s
-(which may be using different `GatewayClassBlueprint`), rendering of
-the `HTTPRoute` will be done independently for each parent `Gateway`
-the `HTTPRoute` is attached to. The `ParentRef` field will contain the
+Note, that if a `HTTPRoute` is attached to multiple `Gateway`s (which
+may be using different `GatewayClassBlueprint`), rendering of the
+`HTTPRoute` will be done independently for each parent `Gateway` the
+`HTTPRoute` is attached to. The `ParentRef` field will contain the
 specific parent Gateway.
