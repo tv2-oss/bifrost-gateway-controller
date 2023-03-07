@@ -142,9 +142,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// progress.
 	var lastRenderedNum, renderedNum, existsNum int
 	lastRenderedNum = -1
-	requeue = true
 	for attempt := 0; attempt < len(templates); attempt++ {
-		isFinalAttempt := attempt < len(templates)-1
+		logger.Info("start reconcile loop", "attempt", attempt)
+		isFinalAttempt := attempt == len(templates)-1
 		templateValues.Resources, err = buildResourceValues(r, templates)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("unable to build values from current resources: %w", err)
@@ -154,7 +154,6 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
 		if renderedNum == lastRenderedNum {
 			logger.Info("breaking render/apply loop", "renderedNum", renderedNum, "totalNum", len(templates))
-			requeue = false
 			break
 		}
 
@@ -163,6 +162,8 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		lastRenderedNum = renderedNum
 	}
+	requeue = (renderedNum != len(templates))
+	logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "requeue", requeue)
 
 	// FIXME, this is not a valid address
 	addrType := gatewayapi.IPAddressType
@@ -200,6 +201,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if requeue {
+		logger.Info("requeue - not all resources updated")
 		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, nil
 	}
 	return ctrl.Result{}, nil

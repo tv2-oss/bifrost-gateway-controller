@@ -140,6 +140,9 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 				logger.Error(err, "cannot get current resource", "templateName", tmplRes.TemplateName)
 				continue
 			}
+			logger.Info("update current", "templatename", tmplRes.TemplateName, "current", tmplRes.Current)
+		} else {
+			logger.Info("already have update current", "templatename", tmplRes.TemplateName, "current", tmplRes.Current)
 		}
 		exists++
 	}

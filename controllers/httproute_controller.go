@@ -219,7 +219,8 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		var lastRenderedNum, renderedNum, existsNum int
 		lastRenderedNum = -1
 		for attempt := 0; attempt < len(templates); attempt++ {
-			isFinalAttempt := attempt < len(templates)-1
+			logger.Info("start reconcile loop", "attempt", attempt)
+			isFinalAttempt := attempt == len(templates)-1
 			templateValues.Resources, err = buildResourceValues(r, templates)
 			if err != nil {
 				return ctrl.Result{}, fmt.Errorf("unable to build values from current resources: %w", err)
@@ -237,6 +238,9 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			}
 			lastRenderedNum = renderedNum
 		}
+		// If we haven't already decided to requeue, then requeue if not all templates could render (possibly a missing dependency)
+		requeue = requeue || (renderedNum != len(templates))
+		logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "requeue", requeue)
 
 		// FIXME errors in templating and status of sub-resources in general should set status conditions
 
@@ -258,6 +262,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if requeue {
+		logger.Info("requeue - not all resources updated")
 		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, nil
 	}
 	return ctrl.Result{}, nil

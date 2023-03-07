@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -49,7 +50,7 @@ metadata:
 spec:
   gatewayTemplate:
     resourceTemplates:
-      istioShadowGw: |
+      childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: Gateway
         metadata:
@@ -61,6 +62,33 @@ spec:
           gatewayClassName: istio
           listeners:
             {{- toYaml .Gateway.spec.listeners | nindent 6 }}
+      # The follow three configmaps tests referencing between resources
+      configMapTestSource: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: source-configmap
+          namespace: {{ .Gateway.metadata.namespace }}
+        data:
+          valueToRead1: Hello
+          valueToRead2: World
+      configMapTestIntermediate: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: intermediate-configmap
+          namespace: {{ .Gateway.metadata.namespace }}
+        data:
+          valueIntermediate: {{ .Resources.configMapTestSource.data.valueToRead1 }}
+      # Use references to multiple resources coupled with template pipeline and functions
+      configMapTestDestination: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: dst-configmap
+          namespace: {{ .Gateway.metadata.namespace }}
+        data:
+          valueRead: {{ printf "%s, %s" .Resources.configMapTestIntermediate.data.valueIntermediate .Resources.configMapTestSource.data.valueToRead2 | upper }}
   httpRouteTemplate:
     resourceTemplates:
       shadowHttproute: |
@@ -140,6 +168,18 @@ var _ = Describe("Gateway controller", func() {
 				BlockOwnerDeletion: &t,
 			}
 			Expect(childGateway.ObjectMeta.OwnerReferences).To(ContainElement(expectedOwnerReference))
+		})
+
+		It("Should update intra resource-references", func() {
+
+			cm := corev1.ConfigMap{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: "dst-configmap", Namespace: "default"}, &cm)
+				return err == nil
+			}, timeout, interval).Should(BeTrue())
+
+			By("Setting the content of the destination configmap")
+			Expect(cm.Data["valueRead"]).To(Equal("HELLO, WORLD"))
 		})
 	})
 })
