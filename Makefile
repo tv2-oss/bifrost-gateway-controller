@@ -98,7 +98,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 .PHONY: manifest-build
-manifest-build:
+manifest-build: kustomize
 	mkdir config/release
 	$(KUSTOMIZE) build config/crd -o config/release/crds.yaml
 	$(KUSTOMIZE) build config/default -o config/release/install.yaml
