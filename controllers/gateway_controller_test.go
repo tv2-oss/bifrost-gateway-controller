@@ -170,7 +170,7 @@ var _ = Describe("Gateway controller", func() {
 			Expect(childGateway.ObjectMeta.OwnerReferences).To(ContainElement(expectedOwnerReference))
 		})
 
-		It("Should update intra resource-references", func() {
+		It("Should update inter resource-references", func() {
 
 			cm := corev1.ConfigMap{}
 			Eventually(func() bool {
