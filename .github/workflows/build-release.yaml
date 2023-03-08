@@ -125,6 +125,8 @@ jobs:
           echo -n "HEAD_SHA=" >>${GITHUB_ENV}
           git rev-parse --short $GITHUB_SHA >>${GITHUB_ENV}
 
+      # Build release manifests - not to release these, but to force a failure
+      # below if repo does not already contain updated manifests
       - name: Build release manifests
         run: |
           make manifest-build
@@ -133,6 +135,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --rm-dist
+          args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
