@@ -13,11 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
@@ -128,25 +125,6 @@ func lookupGateway(ctx context.Context, r ControllerClient, name gatewayapi.Obje
 	return &gw, nil
 }
 
-func template2Unstructured(templateData string, templateValues any) (*unstructured.Unstructured, error) {
-	renderBuffer, err := templateRender(templateData, templateValues)
-	if err != nil {
-		fmt.Printf("Template:\n%s\n", templateData)
-		fmt.Printf("Template values:\n%s\n", templateValues)
-		return nil, err
-	}
-
-	rawResource := map[string]any{}
-	err = yaml.Unmarshal(renderBuffer.Bytes(), &rawResource)
-	if err != nil {
-		return nil, err
-	}
-
-	unstruct := &unstructured.Unstructured{Object: rawResource}
-
-	return unstruct, nil
-}
-
 // From an unstructured object, lookup GVR and whether resource is namespaced
 func unstructuredToGVR(r ControllerClient, u *unstructured.Unstructured) (*schema.GroupVersionResource, bool, error) {
 	gv, err := schema.ParseGroupVersion(u.GetAPIVersion())
@@ -201,55 +179,4 @@ func patchUnstructured(ctx context.Context, r ControllerDynClient, us *unstructu
 	}
 
 	return err
-}
-
-// Apply a list of templates. If errors are found, only the first detected error is returned.
-func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Object,
-	templates map[string]string, templateValues any) error {
-	var err error
-	var errorCnt = 0
-	var u *unstructured.Unstructured
-
-	logger := log.FromContext(ctx)
-
-	for tmplKey, tmpl := range templates {
-		u, err = template2Unstructured(tmpl, &templateValues)
-		if err != nil {
-			logger.Error(err, "cannot render template", "templateKey", tmplKey)
-			errorCnt++
-		}
-
-		gvr, isNamespaced, err := unstructuredToGVR(r, u)
-		if err != nil {
-			logger.Error(err, "cannot detect GVR for resource", "templateKey", tmplKey)
-			errorCnt++
-		}
-
-		if isNamespaced {
-			// Only namespaced objects can have namespaced object as owner
-			err = ctrl.SetControllerReference(parent, u, r.Scheme())
-			if err != nil {
-				logger.Error(err, "cannot set owner for namespaced template", "templateKey", tmplKey)
-				errorCnt++
-			} else {
-				ns := parent.GetNamespace()
-				err = patchUnstructured(ctx, r, u, gvr, &ns)
-				if err != nil {
-					logger.Error(err, "cannot apply namespaced template", "templateKey", tmplKey)
-					errorCnt++
-				}
-			}
-		} else {
-			err = patchUnstructured(ctx, r, u, gvr, nil)
-			if err != nil {
-				logger.Error(err, "cannot apply cluster-scoped template", "templateKey", tmplKey)
-				errorCnt++
-			}
-		}
-	}
-
-	if errorCnt > 0 {
-		return fmt.Errorf("found %v problems while applying %v templates", errorCnt, len(templates))
-	}
-	return nil
 }

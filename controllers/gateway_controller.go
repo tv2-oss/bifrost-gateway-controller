@@ -44,29 +44,6 @@ type GatewayReconciler struct {
 	dynClient dynamic.Interface
 }
 
-// Helper struct for hostnames in gatewayTemplateValues struct
-type gatewayTemplateHostnameValues struct {
-	// Union and intersection of all hostnames across all
-	// listeners and attached HTTPRoutes (with duplicates
-	// removed). Intersection holds all hostnames from Union with
-	// duplicates covered by wildcards removed.
-	Union, Intersection []string
-}
-
-// Parameters used to render Gateway templates
-type gatewayTemplateValues struct {
-	// Parent Gateway
-	Gateway *map[string]any
-
-	// Template values
-	Values map[string]any
-
-	// List of all hostnames across all listeners and attached
-	// HTTPRoutes. These lists of hostnames are particularly
-	// useful for TLS certificates which are not port specific.
-	Hostnames gatewayTemplateHostnameValues
-}
-
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways/finalizers,verbs=update
@@ -99,6 +76,8 @@ func (r *GatewayReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	var requeue bool
+
 	logger := log.FromContext(ctx)
 	logger.Info("Reconcile")
 
@@ -142,19 +121,49 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	// Setup template variables context
-	templateValues := gatewayTemplateValues{
+	templateValues := TemplateValues{
 		Gateway: &gatewayMap,
 		Values:  values,
-		Hostnames: gatewayTemplateHostnameValues{
+		Hostnames: TemplateHostnameValues{
 			Union:        union,
 			Intersection: isect,
 		},
 	}
 
-	templates := gwcb.Spec.GatewayTemplate.ResourceTemplates
-	if err := applyTemplates(ctx, r, &gw, templates, templateValues); err != nil {
-		return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
+	templates, err := parseTemplates(gwcb.Spec.GatewayTemplate.ResourceTemplates)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
+
+	// Resource templates may reference each other, with the
+	// worst-case being a strictly linear DAG. This means that we
+	// may have to loop N times, with N being the number of
+	// resources. We break the loop when we no longer make
+	// progress.
+	var lastRenderedNum, renderedNum, existsNum int
+	lastRenderedNum = -1
+	for attempt := 0; attempt < len(templates); attempt++ {
+		logger.Info("start reconcile loop", "attempt", attempt)
+		isFinalAttempt := attempt == len(templates)-1
+		templateValues.Resources, err = buildResourceValues(r, templates)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("unable to build values from current resources: %w", err)
+		}
+
+		renderedNum, existsNum = renderTemplates(ctx, r, &gw, templates, &templateValues, isFinalAttempt)
+		logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
+		if renderedNum == lastRenderedNum {
+			logger.Info("breaking render/apply loop", "renderedNum", renderedNum, "totalNum", len(templates))
+			break
+		}
+
+		if err := applyTemplates(ctx, r, &gw, templates); err != nil {
+			return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
+		}
+		lastRenderedNum = renderedNum
+	}
+	requeue = (renderedNum != len(templates))
+	logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "requeue", requeue)
 
 	// FIXME, this is not a valid address
 	addrType := gatewayapi.IPAddressType
@@ -191,6 +200,10 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
+	if requeue {
+		logger.Info("requeue - not all resources updated")
+		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, nil
+	}
 	return ctrl.Result{}, nil
 }
 

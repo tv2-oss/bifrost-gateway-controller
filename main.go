@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -57,11 +58,13 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var syncPeriodArg string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&syncPeriodArg, "sync-period", "30s", "The period between non event-driven resynchronizations")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -71,12 +74,19 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 	setupLog.Info("gateway-controller", "version", version, "build-date", date, "commit", commit)
 
+	syncPeriod, err := time.ParseDuration(syncPeriodArg)
+	if err != nil {
+		setupLog.Error(err, "unable to parse 'sync-period' argument: %w", err)
+		os.Exit(1)
+	}
+
 	config := ctrl.GetConfigOrDie()
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
+		SyncPeriod:             &syncPeriod,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "71264cc8.ccs.tv2.dk",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily

@@ -40,7 +40,7 @@ spec:
           providerConfigRef:
             name: admin
           forProvider:
-            name: aws-alb-crossplane
+            name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             region: eu-central-1
             securityGroupSelector:
               matchLabels:
@@ -60,7 +60,7 @@ spec:
           providerConfigRef:
             name: admin
           forProvider:
-            name: aws-alb-test
+            name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             region: eu-central-1
             vpcId: {{ .Values.vpcId }}
             port: "8080"
@@ -88,6 +88,18 @@ spec:
             loadBalancerArnSelector:
               matchLabels:
                 tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+      TargetGroupBinding: |
+        apiVersion: elbv2.k8s.aws/v1beta1
+        kind: TargetGroupBinding
+        metadata:
+          name: tgb-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          namespace: {{ .Gateway.metadata.namespace }}
+        spec:
+          targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
+          targetType: ip
+          serviceRef:
+            name: {{ .Gateway.metadata.name }}-child-istio
+            port: 8080
 
   # The following are templates used to 'implement' a 'parent' HTTPRoute
   httpRouteTemplate:
@@ -106,6 +118,6 @@ spec:
             {{ if .namespace -}}
             namespace: {{ .namespace }}
             {{ end -}}
-          {{ end -}}
+          {{ end }}
           rules:
             {{- toYaml .HTTPRoute.spec.rules | nindent 4 }}
