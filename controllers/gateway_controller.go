@@ -137,7 +137,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Resource templates may reference each other, with the
 	// worst-case being a strictly linear DAG. This means that we
-	// may have to loop N-1 times, with N being the number of
+	// may have to loop N times, with N being the number of
 	// resources. We break the loop when we no longer make
 	// progress.
 	var lastRenderedNum, renderedNum, existsNum int

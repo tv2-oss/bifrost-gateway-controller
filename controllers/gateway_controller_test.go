@@ -62,7 +62,7 @@ spec:
           gatewayClassName: istio
           listeners:
             {{- toYaml .Gateway.spec.listeners | nindent 6 }}
-      # The follow three configmaps tests referencing between resources
+      # The following three configmaps tests referencing between resources
       configMapTestSource: |
         apiVersion: v1
         kind: ConfigMap

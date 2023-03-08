@@ -116,12 +116,13 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
         spec:
           ...
-          # This resource will have its 'status.atProvider.arn' set when resource is created as provider
+          # This resource will have its 'status.atProvider.arn' set when resource is created
           ...
       TargetGroupBinding: |
         kind: TargetGroupBinding
           ...
         spec:
+          # And here we use the value 'status.atProvider.arn' from the 'LBTargetGroup' resource
           targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
 ```
 

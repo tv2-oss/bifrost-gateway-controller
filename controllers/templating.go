@@ -99,7 +99,7 @@ func parseTemplates(resourceTemplates map[string]string) ([]*TemplateResource, e
 }
 
 // Attempt to render templates and get current resource, skipping
-// resources that have already been rendered/fetched. note that
+// resources that have already been rendered/fetched. Note that
 // fetching current resource from API server/cache require that we can
 // render the template first. Rendering errors on final attempt are
 // logged as errors.
@@ -167,7 +167,8 @@ func buildResourceValues(r ControllerDynClient, templates []*TemplateResource) (
 	return resources, nil
 }
 
-// Apply a list of pre-rendered templates
+// Apply a list of pre-rendered templates and set owner reference for
+// namespaced resources
 func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Object, templates []*TemplateResource) error {
 	var err error
 	var errorCnt = 0
@@ -176,7 +177,7 @@ func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Ob
 
 	for _, tmplRes := range templates {
 		if tmplRes.Resource == nil || tmplRes.GVR == nil {
-			// We do not yet have enough information to render this resource
+			// We do not yet have enough information to render/apply this resource
 			continue
 		}
 		if tmplRes.IsNamespaced {
@@ -224,6 +225,7 @@ func templateRender(tmpl *template.Template, templateValues *TemplateValues) (*b
 		return nil, err
 	}
 
+	// FIXME: These are convenient, but we should have a better logging design, i.e. it should be possible to enable rendering info only
 	fmt.Printf("Rendered:\n%s\n", buffer.Bytes())
 	fmt.Printf("Values:\n%+v\n", templateValues)
 
@@ -233,6 +235,7 @@ func templateRender(tmpl *template.Template, templateValues *TemplateValues) (*b
 func template2Unstructured(tmplRes *TemplateResource, templateValues *TemplateValues) (*unstructured.Unstructured, error) {
 	renderBuffer, err := templateRender(tmplRes.Template, templateValues)
 	if err != nil {
+		// FIXME: These are convenient, but we should have a better logging design, i.e. it should be possible to enable rendering errors only
 		fmt.Printf("Template:\n%s\n", tmplRes.StringTemplate)
 		fmt.Printf("Template values:\n%+v\n", templateValues)
 		return nil, err
