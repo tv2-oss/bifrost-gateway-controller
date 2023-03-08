@@ -129,6 +129,7 @@ jobs:
       # below if repo does not already contain updated manifests
       - name: Build release manifests
         run: |
+          rm -rf config/release
           make manifest-build
 
       - name: Make release
