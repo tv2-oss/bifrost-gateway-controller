@@ -20,6 +20,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	gcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -83,8 +84,11 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
+	syncPeriod, err := time.ParseDuration("5s")
+	Expect(err).NotTo(HaveOccurred())
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
+		Scheme:     scheme.Scheme,
+		SyncPeriod: &syncPeriod,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
