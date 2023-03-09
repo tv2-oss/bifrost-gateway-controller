@@ -156,7 +156,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			break
 		}
 
-		if err := applyTemplates(ctx, r, &gw, templates); err != nil {
+		if err = applyTemplates(ctx, r, &gw, templates); err != nil {
 			return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 		}
 		lastRenderedNum = renderedNum
@@ -188,10 +188,45 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	gw.Status.Listeners = lStatus
 
+	// Gateway was accepted as 'ours'
 	meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
 		Type:               string(gatewayapi.GatewayConditionAccepted),
 		Status:             metav1.ConditionTrue,
 		Reason:             string(gatewayapi.GatewayReasonAccepted),
+		ObservedGeneration: gw.ObjectMeta.Generation})
+
+	// Consider Gateway as 'programmed' when all resources have
+	// been templated and applied
+	progStatus := metav1.ConditionFalse
+	progReason := "Pending"
+	progMsg := ""
+	if existsNum == len(templates) {
+		progStatus = metav1.ConditionTrue
+		progReason = string(gatewayapi.GatewayReasonProgrammed)
+	} else {
+		progMsg = fmt.Sprintf("Pending ready, %v of %v resource ready", existsNum, len(templates))
+	}
+	meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
+		Type:               string(gatewayapi.GatewayConditionProgrammed),
+		Status:             progStatus,
+		Reason:             progReason,
+		Message:            progMsg,
+		ObservedGeneration: gw.ObjectMeta.Generation})
+
+	// Set `Ready` condition based on child resource statuses
+	status := metav1.ConditionFalse
+	isReady, err := statusIsReady(templates)
+	if err != nil {
+		logger.Error(err, "unable to update status condition due to sub-resource status error")
+		return ctrl.Result{}, err
+	}
+	if isReady {
+		status = metav1.ConditionTrue
+	}
+	meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
+		Type:               string(gatewayapi.GatewayConditionReady),
+		Status:             status,
+		Reason:             string(gatewayapi.GatewayReasonReady),
 		ObservedGeneration: gw.ObjectMeta.Generation})
 
 	if err := r.Client().Status().Update(ctx, &gw); err != nil {
