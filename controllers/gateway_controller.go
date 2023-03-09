@@ -110,7 +110,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	union, isect := combineHostnames(&gw, gwRoutes)
 
 	// Prepare Gateway resource for use in templates by converting to map[string]any
-	gatewayMap, err := objectToMap(&gw, r.Scheme())
+	gatewayMap, err := objectToMap(&gw)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
 	}
@@ -145,13 +145,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	for attempt := 0; attempt < len(templates); attempt++ {
 		logger.Info("start reconcile loop", "attempt", attempt)
 		isFinalAttempt := attempt == len(templates)-1
-		templateValues.Resources, err = buildResourceValues(r, templates)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("unable to build values from current resources: %w", err)
-		}
+
+		templateValues.Resources = buildResourceValues(templates)
 
 		renderedNum, existsNum = renderTemplates(ctx, r, &gw, templates, &templateValues, isFinalAttempt)
 		logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
+
 		if renderedNum == lastRenderedNum {
 			logger.Info("breaking render/apply loop", "renderedNum", renderedNum, "totalNum", len(templates))
 			break
