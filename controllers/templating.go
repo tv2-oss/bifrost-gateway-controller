@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -152,19 +151,15 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 // Build a map of values from current resources. Useful for
 // referencing values between resources, e.g. a status field from one
 // resource may be used to template another resource
-func buildResourceValues(r ControllerDynClient, templates []*TemplateResource) (map[string]any, error) {
+func buildResourceValues(templates []*TemplateResource) map[string]any {
 	resources := map[string]any{}
 
 	for _, tmplRes := range templates {
 		if tmplRes.Current != nil {
-			objMap, err := objectToMap(tmplRes.Current, r.Scheme())
-			if err != nil {
-				return nil, err
-			}
-			resources[tmplRes.TemplateName] = objMap
+			resources[tmplRes.TemplateName] = tmplRes.Current.UnstructuredContent()
 		}
 	}
-	return resources, nil
+	return resources
 }
 
 // Apply a list of pre-rendered templates and set owner reference for
@@ -254,20 +249,10 @@ func template2Unstructured(tmplRes *TemplateResource, templateValues *TemplateVa
 
 // Prepare a resource like Gateway or HTTPRoute for use in templates
 // by converting to map[string]any
-func objectToMap(obj runtime.Object, scheme *runtime.Scheme) (map[string]any, error) {
-	ser := json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme,
-		json.SerializerOptions{Yaml: true, Pretty: false, Strict: true})
-	if ser == nil {
-		return nil, fmt.Errorf("cannot create object serializer")
-	}
-	buffer, err := runtime.Encode(ser, obj)
+func objectToMap(obj runtime.Object) (map[string]any, error) {
+	mapObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 	if err != nil {
-		return nil, fmt.Errorf("cannot serialize oject: %w", err)
-	}
-	mapObj := map[string]any{}
-	err = yaml.Unmarshal(buffer, &mapObj)
-	if err != nil {
-		return nil, fmt.Errorf("cannot unmarshal object: %w", err)
+		return nil, fmt.Errorf("cannot convert %+v: %w", obj, err)
 	}
 	return mapObj, nil
 }
