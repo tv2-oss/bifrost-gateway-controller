@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gateway-controller
+description: The gateway-controller is an augmented Kubernetes network gateway-controller.
+type: application
+version: 0.1.0
+appVersion: "0.0.5"
