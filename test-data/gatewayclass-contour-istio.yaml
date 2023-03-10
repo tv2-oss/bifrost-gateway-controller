@@ -4,6 +4,7 @@ metadata:
   name: contour-istio
 spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
+  description: "Contour-based load balancer and Istio ingress gateway"
   parametersRef:
     group: gateway.tv2.dk
     kind: GatewayClassBlueprint
