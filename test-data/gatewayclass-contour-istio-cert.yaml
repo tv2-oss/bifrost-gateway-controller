@@ -18,6 +18,10 @@ spec:
 
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
+    status:
+      template: |
+        addresses:
+          {{ toYaml .Resources.childGateway.status.addresses | nindent 2}}
     resourceTemplates:
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
