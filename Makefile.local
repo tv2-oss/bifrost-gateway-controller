@@ -138,7 +138,7 @@ setup-getting-started-controller:
 	make docker-build
 	make cluster-load-controller-image
 	make deploy
-	kubectl apply -f test-data/gatewayclass-contour-istio.yaml
+	kubectl apply -f test-data/gatewayclass-contour-istio-cert.yaml
 
 .PHONY: setup-getting-started-usecase
 setup-getting-started-usecase:

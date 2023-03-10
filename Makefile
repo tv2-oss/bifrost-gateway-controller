@@ -76,13 +76,13 @@ unit-test:
 
 .PHONY: conformance-test
 conformance-test: ## Only 'core' suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
-	kubectl apply -f test-data/gateway-class.yaml
-	(cd test/conformance/gateway-api/ && USE_EXISTING_CLUSTER=true go test -gateway-class=default)
+	kubectl apply -f test-data/gatewayclass-contour-istio.yaml
+	(cd test/conformance/gateway-api/ && USE_EXISTING_CLUSTER=true go test -gateway-class=contour-istio)
 
 .PHONY: conformance-test-full
 conformance-test-full: ## Full suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
-	kubectl apply -f test-data/gateway-class.yaml
-	(cd test/conformance/gateway-api/ && go test -gateway-class=default -supported-features=ReferenceGrant,TLSRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPResponseHeaderModification,RouteDestinationPortMatching,GatewayClassObservedGenerationBump,HTTPRoutePortRedirect,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite)
+	kubectl apply -f test-data/gatewayclass-contour-istio.yaml
+	(cd test/conformance/gateway-api/ && go test -gateway-class=contour-istio -supported-features=ReferenceGrant,TLSRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPResponseHeaderModification,RouteDestinationPortMatching,GatewayClassObservedGenerationBump,HTTPRoutePortRedirect,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite)
 
 ##@ Build
 

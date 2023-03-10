@@ -7,7 +7,11 @@ provided as part of the *gateway-controller*.
 
 TODO: Text
 
-This definition is provided in [`gatewayclass-contour-istio.yaml`](../test-data/gatewayclass-contour-istio.yaml)
+This definition is provided in
+[`gatewayclass-contour-istio.yaml`](../test-data/gatewayclass-contour-istio.yaml)
+(without attached TLS certificate) and in
+[`gatewayclass-contour-istio-cert.yaml`](../test-data/gatewayclass-contour-istio-cert.yaml)
+(with attached TLS certificate).
 
 TODO: Drawing, and description of template
 
