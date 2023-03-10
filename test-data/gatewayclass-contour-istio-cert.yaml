@@ -1,10 +1,10 @@
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
-  name: contour-istio
+  name: contour-istio-cert
 spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
-  description: "Contour-based load balancer+Istio ingress gateway"
+  description: "Contour-based load balancer+Istio ingress gateway+certificate"
   parametersRef:
     group: gateway.tv2.dk
     kind: GatewayClassBlueprint
@@ -58,6 +58,35 @@ spec:
                     port:
                       number: 80
           {{- end }}
+      tlsCertificate: |
+        apiVersion: cert-manager.io/v1
+        kind: Certificate
+        metadata:
+          name: {{ .Gateway.metadata.name }}-cert
+          namespace: {{ .Gateway.metadata.namespace }}
+        spec:
+          secretName: {{ .Gateway.metadata.name }}-tls
+          duration: 2160h # 90d
+          renewBefore: 360h # 15d
+          subject:
+            organizations:
+              - acme-example-corp
+          isCA: false
+          privateKey:
+            algorithm: RSA
+            encoding: PKCS1
+            size: 2048
+          usages:
+            - server auth
+            - client auth
+          dnsNames:
+            {{- range .Hostnames.Intersection }}
+            - {{ . | quote }}
+            {{- end }}
+          issuerRef:
+            name: ca-issuer
+            kind: ClusterIssuer
+            group: cert-manager.io
 
   # The following are templates used to 'implement' a 'parent' HTTPRoute
   httpRouteTemplate:

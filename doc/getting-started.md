@@ -83,7 +83,7 @@ make run
 ### Deploy GatewayClass for KIND Datapath
 
 ```
-kubectl apply -f test-data/gatewayclass-contour-istio.yaml
+kubectl apply -f test-data/gatewayclass-contour-istio-cert.yaml
 ```
 
 ## Create Datapath and Deploy Test Applications
