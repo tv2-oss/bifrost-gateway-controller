@@ -180,7 +180,7 @@ var _ = Describe("Gateway controller", func() {
 				Type:   string(gatewayapi.GatewayConditionReady),
 				Status: metav1.ConditionFalse,
 				Reason: string(gatewayapi.GatewayReasonReady)})).Should(Succeed())
-			time.Sleep(5 * time.Second)
+			time.Sleep(5 * time.Second) // Ensure that controllers cache is updated and we can use 'Consistently' below
 
 			gwRead := &gatewayapi.Gateway{}
 			Consistently(func() bool {
@@ -204,7 +204,6 @@ var _ = Describe("Gateway controller", func() {
 				Type:   string(gatewayapi.GatewayConditionReady),
 				Status: metav1.ConditionTrue,
 				Reason: string(gatewayapi.GatewayReasonReady)})).Should(Succeed())
-			time.Sleep(5 * time.Second)
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, gwNN, gwRead)
