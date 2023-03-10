@@ -51,7 +51,12 @@ metadata:
   name: default-gateway-class
 spec:
   gatewayTemplate:
+    status:
+      fromFieldPath: Resources.parentGatewayStatus.status.addresses
+      #toFieldPath: addresses
     resourceTemplates:
+      parentGatewayStatus: |
+        addresses: {{ toYaml .Resources.childGateway.status.addresses | indent 2}}
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: Gateway

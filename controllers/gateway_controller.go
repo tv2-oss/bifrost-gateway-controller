@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -164,11 +165,29 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	requeue = (renderedNum != len(templates))
 	logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "requeue", requeue)
 
-	// FIXME, this is not a valid address
-	addrType := gatewayapi.IPAddressType
-	gw.Status.Addresses = []gatewayapi.GatewayAddress{gatewayapi.GatewayAddress{Type: &addrType, Value: "1.2.3.4"}}
+	// Update status.addresses field
+	tmplStr, found := gwcb.Spec.GatewayTemplate.Status["template"]
+	if found {
+		tmpl, err := parseSingleTemplate("status", &tmplStr)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("unable to parse status template: %w", err)
+		}
+		statusMap, err := template2map(tmpl, &templateValues)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("unable to render status template: %w", err)
+		}
+		gw.Status.Addresses = []gatewayapi.GatewayAddress{}
+		_, found := statusMap["addresses"]
+		if found {
+			addresses := statusMap["addresses"]
+			err := mapstructure.Decode(addresses, &gw.Status.Addresses)
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("unable to decode status data: %w", err)
+			}
+		}
+	}
 
-	// FIXME: Set real status conditions calculated from child resources
+	// FIXME: Set real listener status conditions calculated from child resources
 	lStatus := make([]gatewayapi.ListenerStatus, 0, len(gw.Spec.Listeners))
 	for _, listener := range gw.Spec.Listeners {
 		status := gatewayapi.ListenerStatus{

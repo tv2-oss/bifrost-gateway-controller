@@ -42,11 +42,19 @@ spec:
                     additionalProperties:
                       type: string
                     type: object
+                  status:
+                    additionalProperties:
+                      type: string
+                    type: object
                 type: object
               httpRouteTemplate:
                 description: Template for child resources created from HTTPRoutes
                 properties:
                   resourceTemplates:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  status:
                     additionalProperties:
                       type: string
                     type: object

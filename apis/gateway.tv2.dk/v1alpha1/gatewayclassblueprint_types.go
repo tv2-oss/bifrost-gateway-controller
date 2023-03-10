@@ -20,8 +20,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// A ResourceTemplate is a map with templates for individual resources.
 type ResourceTemplate struct {
 	ResourceTemplates map[string]string `json:"resourceTemplates,omitempty"`
+}
+
+// A ResourceStatusSpec defines how the parent resource status should be updated
+// FIXME: Improve schema
+type ResourceStatusSpec struct {
+	Status map[string]string `json:"status,omitempty"`
+}
+
+// A ResourceSpec defines how a gateway API resource like `Gateway`
+// and `HTTPRoute` should be implemented through child resource
+// templates and parent status updates
+type ResourceSpec struct {
+	ResourceStatusSpec `json:",inline"`
+	ResourceTemplate   `json:",inline"`
 }
 
 type GatewayClassBlueprintSpec struct {
@@ -33,12 +48,12 @@ type GatewayClassBlueprintSpec struct {
 	// Template for child resources created from Gateways
 	//
 	// +optional
-	GatewayTemplate ResourceTemplate `json:"gatewayTemplate,omitempty"`
+	GatewayTemplate ResourceSpec `json:"gatewayTemplate,omitempty"`
 
 	// Template for child resources created from HTTPRoutes
 	//
 	// +optional
-	HTTPRouteTemplate ResourceTemplate `json:"httpRouteTemplate,omitempty"`
+	HTTPRouteTemplate ResourceSpec `json:"httpRouteTemplate,omitempty"`
 }
 
 type GatewayClassBlueprintStatus struct {
