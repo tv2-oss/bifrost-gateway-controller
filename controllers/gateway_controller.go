@@ -83,6 +83,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	logger.Info("Reconcile")
 
 	var gw gatewayapi.Gateway
+
 	if err := r.Client().Get(ctx, req.NamespacedName, &gw); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -163,28 +164,35 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		lastRenderedNum = renderedNum
 	}
 	requeue = (renderedNum != len(templates))
-	logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "requeue", requeue)
+	logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "totalNum", len(templates), "requeue", requeue)
 
 	// Update status.addresses field
 	tmplStr, found := gwcb.Spec.GatewayTemplate.Status["template"]
+	statusUpdateOK := true
 	if found {
-		tmpl, err := parseSingleTemplate("status", &tmplStr)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("unable to parse status template: %w", err)
-		}
-		statusMap, err := template2map(tmpl, &templateValues)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("unable to render status template: %w", err)
-		}
-		gw.Status.Addresses = []gatewayapi.GatewayAddress{}
-		_, found := statusMap["addresses"]
-		if found {
-			addresses := statusMap["addresses"]
-			err := mapstructure.Decode(addresses, &gw.Status.Addresses)
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("unable to decode status data: %w", err)
+		statusUpdateOK = false
+		if tmpl, errs := parseSingleTemplate("status", tmplStr); errs != nil {
+			logger.Info("unable to parse status template", "temporary error", err)
+		} else {
+			if statusMap, errs := template2map(tmpl, &templateValues); errs != nil {
+				logger.Info("unable to render status template", "temporary error", err)
+			} else {
+				gw.Status.Addresses = []gatewayapi.GatewayAddress{}
+				_, found := statusMap["addresses"]
+				if found {
+					addresses := statusMap["addresses"]
+					if errs := mapstructure.Decode(addresses, &gw.Status.Addresses); errs != nil {
+						// This is probably not a temporary error
+						logger.Error(err, "unable to decode status data")
+					} else {
+						statusUpdateOK = true
+					}
+				}
 			}
 		}
+	}
+	if !statusUpdateOK {
+		requeue = true
 	}
 
 	// FIXME: Set real listener status conditions calculated from child resources
@@ -219,11 +227,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	progStatus := metav1.ConditionFalse
 	progReason := "Pending"
 	progMsg := ""
-	if existsNum == len(templates) {
+	if existsNum == len(templates) { // 'Programmed' relates to templates alone
 		progStatus = metav1.ConditionTrue
 		progReason = string(gatewayapi.GatewayReasonProgrammed)
 	} else {
-		progMsg = fmt.Sprintf("Pending ready, %v of %v resource ready", existsNum, len(templates))
+		missing := statusExistingTemplates(templates)
+		progMsg = fmt.Sprintf("missing %v resources: %s", len(templates)-existsNum, strings.Join(missing, ","))
 	}
 	meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
 		Type:               string(gatewayapi.GatewayConditionProgrammed),
@@ -232,14 +241,14 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		Message:            progMsg,
 		ObservedGeneration: gw.ObjectMeta.Generation})
 
-	// Set `Ready` condition based on child resource statuses
+	// Set `Ready` condition based on child resource statuses AND status update
 	status := metav1.ConditionFalse
 	isReady, err := statusIsReady(templates)
 	if err != nil {
 		logger.Error(err, "unable to update status condition due to sub-resource status error")
 		return ctrl.Result{}, err
 	}
-	if isReady {
+	if isReady && statusUpdateOK {
 		status = metav1.ConditionTrue
 	}
 	meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{

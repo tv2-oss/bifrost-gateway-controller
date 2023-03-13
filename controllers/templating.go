@@ -75,11 +75,11 @@ type TemplateHostnameValues struct {
 }
 
 // Parse a single template with our additional functions added
-func parseSingleTemplate(tmplKey string, tmpl *string) (*template.Template, error) {
+func parseSingleTemplate(tmplKey, tmpl string) (*template.Template, error) {
 	var funcs = template.FuncMap{
 		"toYaml": helperToYaml,
 	}
-	return template.New(tmplKey).Option("missingkey=error").Funcs(sprig.FuncMap()).Funcs(funcs).Parse(*tmpl)
+	return template.New(tmplKey).Option("missingkey=error").Funcs(sprig.FuncMap()).Funcs(funcs).Parse(tmpl)
 }
 
 // Initialize TemplateResource slice by parsing templates
@@ -92,7 +92,7 @@ func parseTemplates(resourceTemplates map[string]string) ([]*TemplateResource, e
 		r := TemplateResource{}
 		r.TemplateName = tmplKey
 		r.StringTemplate = tmpl
-		r.Template, err = parseSingleTemplate(tmplKey, &tmpl)
+		r.Template, err = parseSingleTemplate(tmplKey, tmpl)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse template %q: %w", tmplKey, err)
 		}
