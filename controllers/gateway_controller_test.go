@@ -52,11 +52,10 @@ metadata:
 spec:
   gatewayTemplate:
     status:
-      fromFieldPath: Resources.parentGatewayStatus.status.addresses
-      #toFieldPath: addresses
+      template: |
+        addresses:
+          {{ toYaml .Resources.childGateway.status.addresses | nindent 2}}
     resourceTemplates:
-      parentGatewayStatus: |
-        addresses: {{ toYaml .Resources.childGateway.status.addresses | indent 2}}
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: Gateway
@@ -181,10 +180,10 @@ var _ = Describe("Gateway controller", func() {
 			By("Updating conditions")
 
 			// Set child status to not ready
-			Expect(setStatusCondition(gwChildNN, &metav1.Condition{
+			Expect(setGatewayStatus(gwChildNN, &metav1.Condition{
 				Type:   string(gatewayapi.GatewayConditionReady),
 				Status: metav1.ConditionFalse,
-				Reason: string(gatewayapi.GatewayReasonReady)})).Should(Succeed())
+				Reason: string(gatewayapi.GatewayReasonReady)}, nil)).Should(Succeed())
 			time.Sleep(5 * time.Second) // Ensure that controllers cache is updated and we can use 'Consistently' below
 
 			gwRead := &gatewayapi.Gateway{}
@@ -205,10 +204,12 @@ var _ = Describe("Gateway controller", func() {
 			}, 5*time.Second, interval).Should(BeTrue())
 
 			// Set child status to ready
-			Expect(setStatusCondition(gwChildNN, &metav1.Condition{
+			addrType := gatewayapi.IPAddressType
+			Expect(setGatewayStatus(gwChildNN, &metav1.Condition{
 				Type:   string(gatewayapi.GatewayConditionReady),
 				Status: metav1.ConditionTrue,
-				Reason: string(gatewayapi.GatewayReasonReady)})).Should(Succeed())
+				Reason: string(gatewayapi.GatewayReasonReady)},
+				&gatewayapi.GatewayAddress{Type: &addrType, Value: "4.5.6.7"})).Should(Succeed())
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, gwNN, gwRead)
@@ -252,18 +253,22 @@ func conditionStateIs(gw *gatewayapi.Gateway, condType string, status metav1.Con
 	return false
 }
 
-func setStatusCondition(nn types.NamespacedName, newCondition *metav1.Condition) error {
+func setGatewayStatus(nn types.NamespacedName, newCondition *metav1.Condition, address *gatewayapi.GatewayAddress) error {
 	gw := &gatewayapi.Gateway{}
 
 	if err := k8sClient.Get(context.TODO(), nn, gw); err != nil {
 		return err
 	}
 
-	newCondition.ObservedGeneration = gw.ObjectMeta.Generation
-
-	meta.SetStatusCondition(&gw.Status.Conditions, *newCondition)
-
-	GinkgoT().Logf("update gw: %+v conditions: %+v\n", gw, newCondition)
+	if newCondition != nil {
+		newCondition.ObservedGeneration = gw.ObjectMeta.Generation
+		meta.SetStatusCondition(&gw.Status.Conditions, *newCondition)
+		GinkgoT().Logf("update gw: %+v conditions: %+v\n", gw, newCondition)
+	}
+	if address != nil {
+		gw.Status.Addresses = []gatewayapi.GatewayAddress{}
+		gw.Status.Addresses = append(gw.Status.Addresses, *address)
+	}
 
 	if err := k8sClient.Status().Update(context.TODO(), gw); err != nil {
 		return err

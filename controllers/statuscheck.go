@@ -53,3 +53,14 @@ func statusIsReady(templates []*TemplateResource) (bool, error) {
 	}
 	return true, nil
 }
+
+// Build a list of template names which are not yet reconciled. Useful for status reporting
+func statusExistingTemplates(templates []*TemplateResource) []string {
+	var missing []string
+	for _, tmplRes := range templates {
+		if tmplRes.Current == nil {
+			missing = append(missing, tmplRes.TemplateName)
+		}
+	}
+	return missing
+}
