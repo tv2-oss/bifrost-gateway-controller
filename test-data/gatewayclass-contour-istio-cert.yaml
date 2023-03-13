@@ -21,7 +21,10 @@ spec:
     status:
       template: |
         addresses:
-          {{ toYaml .Resources.childGateway.status.addresses | nindent 2}}
+        {{ range .Resources.loadBalancer.status.loadBalancer.ingress }}
+        - type: IPAddress
+          value: {{ .ip }}
+        {{ end }}
     resourceTemplates:
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1

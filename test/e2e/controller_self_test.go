@@ -60,6 +60,10 @@ metadata:
   name: default-gateway-class
 spec:
   gatewayTemplate:
+    status:
+      template: |
+        addresses:
+          {{ toYaml .Resources.resourceTemplates.status.addresses | nindent 2}}
     resourceTemplates:
       istioShadowGw: |
         apiVersion: gateway.networking.k8s.io/v1beta1

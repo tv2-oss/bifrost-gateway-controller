@@ -74,6 +74,14 @@ deploy-external-dns:
 	helm upgrade -i --repo https://kubernetes-sigs.github.io/external-dns external-dns external-dns --version 1.12.0 --values test-data/external-dns-values.yaml
 
 #################
+# https://kind.sigs.k8s.io/docs/user/loadbalancer/
+.PHONY: deploy-metallb
+deploy-metallb:
+	kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
+	kubectl wait --namespace metallb-system --for=condition=ready pod --selector=app=metallb --timeout=90s
+	scripts/kind-metallb-configure.sh
+
+#################
 .PHONY: deploy-contour
 deploy-contour:
 	helm upgrade -i --repo https://charts.bitnami.com/bitnami contour contour -n projectcontour --version 11.0.0 --create-namespace
@@ -126,6 +134,7 @@ setup-getting-started: setup-getting-started-cluster setup-getting-started-contr
 .PHONY: setup-getting-started-cluster
 setup-getting-started-cluster:
 	make create-cluster deploy-gateway-api
+	make deploy-metallb
 	make deploy-istio
 	make deploy-contour deploy-contour-provisioner
 	make setup-external-dns-test
