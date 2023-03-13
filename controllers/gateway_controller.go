@@ -171,11 +171,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	statusUpdateOK := true
 	if found {
 		statusUpdateOK = false
+		templateValues.Resources = buildResourceValues(templates) // Needed in case of a single-pass render loop above
 		if tmpl, errs := parseSingleTemplate("status", tmplStr); errs != nil {
 			logger.Info("unable to parse status template", "temporary error", errs)
 		} else {
 			if statusMap, errs := template2map(tmpl, &templateValues); errs != nil {
-				logger.Info("unable to render status template", "temporary error", errs)
+				logger.Info("unable to render status template", "temporary error", errs, "template", tmplStr, "values", templateValues)
 			} else {
 				gw.Status.Addresses = []gatewayapi.GatewayAddress{}
 				_, found := statusMap["addresses"]
