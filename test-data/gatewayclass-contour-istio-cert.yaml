@@ -109,7 +109,7 @@ spec:
           {{ range .HTTPRoute.spec.parentRefs }}
           - kind: {{ .kind }}
             name: {{ .name }}-child
-            {{ if .namespace }}
+            {{ if get . "namespace" }}
             namespace: {{ .namespace }}
             {{ end }}
           {{ end }}
