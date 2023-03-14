@@ -33,7 +33,7 @@ controllerManager:
       periodSeconds: 10
 
   # Annotations to add to the deployment
-  annotationer: {}
+  annotations: {}
   replicas: 1
 
   deploymentStrategy:
