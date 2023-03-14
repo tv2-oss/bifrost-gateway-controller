@@ -168,7 +168,8 @@ wait-ready-getting-started-usecase:
 
 .PHONY: tryout-getting-started-usecase
 tryout-getting-started-usecase:
-	scripts/curl.sh -s --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site                                | grep Welcome-to-foo-site
-	scripts/curl.sh -s --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/site | grep Welcome-to-foo-site
-	scripts/curl.sh -s --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/store                               | grep -e 'Welcome-to-foo-store-v[12]'
-	scripts/curl.sh -s --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/store| grep -e 'Welcome-to-foo-store-v[12]'
+	$(eval GATEWAY_IP=$(shell kubectl -n foo-infra get gateway foo-gateway -o jsonpath='{.status.addresses[0].value}'))
+	scripts/curl.sh -s --resolve foo.example.com:80:$(GATEWAY_IP) http://foo.example.com/site                                | grep Welcome-to-foo-site
+	scripts/curl.sh -s --cacert foo-example-com.crt --resolve foo.example.com:443:$(GATEWAY_IP) https://foo.example.com/site | grep Welcome-to-foo-site
+	scripts/curl.sh -s --resolve foo.example.com:80:$(GATEWAY_IP) http://foo.example.com/store                               | grep -e 'Welcome-to-foo-store-v[12]'
+	scripts/curl.sh -s --cacert foo-example-com.crt --resolve foo.example.com:443:$(GATEWAY_IP) https://foo.example.com/store| grep -e 'Welcome-to-foo-store-v[12]'
