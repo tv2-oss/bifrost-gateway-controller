@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gateway-controller
+description: Gateway API driven management of network infrastructure across Kubernetes and cloud infrastructure
+type: application
+version: 0.1.0
+appVersion: "0.0.5"
