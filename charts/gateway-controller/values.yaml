@@ -1,9 +1,14 @@
+# Default values for gateway-controller
+
 controllerManager:
+  # controller-manager deployment configuration
   manager:
+
     image:
       repository: ghcr.io/tv2-oss/gateway-controller
       tag: latest
       pullPolicy: IfNotPresent
+
     resources:
       limits:
         cpu: 500m
@@ -11,25 +16,32 @@ controllerManager:
       requests:
         cpu: 10m
         memory: 64Mi
+
     livenessProbe:
       httpGet:
         path: /healthz
         port: 8081
       initialDelaySeconds: 15
       periodSeconds: 20
+
     readinessProbe:
       httpGet:
         path: /readyz
         port: 8081
       initialDelaySeconds: 5
       periodSeconds: 10
+
+  # Annotations to add to the deployment
   annotationer: {}
   replicas: 1
+
   deploymentStrategy:
     type: Recreate
 
 serviceAccount:
+  # Specifies whether a service account should be created
   create: true
+  # Annotations to add to the service account
   annotations: {}
 
 metricsService:
