@@ -47,10 +47,10 @@ spec:
             name: admin
           forProvider:
             name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-            region: eu-central-1
+            region: {{ .Values.region }}
             securityGroupSelector:
               matchLabels:
-                tv2.dk/aws-alb: crossplane
+                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             subnetMapping:
               - subnetId: {{ .Values.subnets.subnetId1 }}
               - subnetId: {{ .Values.subnets.subnetId2 }}
@@ -67,9 +67,12 @@ spec:
             name: admin
           forProvider:
             name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-            region: eu-central-1
+            region: {{ .Values.region }}
             vpcId: {{ .Values.vpcId }}
-            port: "8080"
+            healthCheck:
+            - path: /healthz/ready
+              port: "15021"
+            port: 80
             protocol: HTTP
             targetType: ip
       LBListener: |
@@ -83,8 +86,8 @@ spec:
           providerConfigRef:
             name: admin
           forProvider:
-            region: eu-central-1
-            port: "8080"
+            region: {{ .Values.region }}
+            port: 80
             protocol: HTTP
             defaultAction:
             - targetGroupArnSelector:
@@ -98,14 +101,92 @@ spec:
         apiVersion: elbv2.k8s.aws/v1beta1
         kind: TargetGroupBinding
         metadata:
-          name: tgb-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
           namespace: {{ .Gateway.metadata.namespace }}
         spec:
           targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
           targetType: ip
           serviceRef:
-            name: {{ .Gateway.metadata.name }}-child-istio
-            port: 8080
+            name: {{ .Gateway.metadata.name }}-child
+            port: 80
+      SecurityGroup: |
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroup
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+        spec:
+          providerConfigRef:
+            name: admin
+          forProvider:
+            description: "SG for ALB"
+            region: {{ .Values.region }}
+            vpcId: {{ .Values.vpcId}}
+            name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+      SecurityGroupRuleEgress80: |
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroupRule
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-egress80
+        spec:
+          providerConfigRef:
+            name: admin
+          forProvider:
+            cidrBlocks:
+              - 0.0.0.0/0
+            fromPort: 80
+            protocol: tcp
+            region: {{ .Values.region }}
+            securityGroupIdSelector:
+              matchLabels:
+                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+            toPort: 80
+            type: egress
+      SecurityGroupRuleEgress15021: |
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroupRule
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-egress15021
+        spec:
+          providerConfigRef:
+            name: admin
+          forProvider:
+            cidrBlocks:
+              - 0.0.0.0/0
+            fromPort: 15021
+            protocol: tcp
+            region: {{ .Values.region }}
+            securityGroupIdSelector:
+              matchLabels:
+                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+            toPort: 15021
+            type: egress
+      SecurityGroupRuleIngress: |
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroupRule
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-ingress
+        spec:
+          providerConfigRef:
+            name: admin
+          forProvider:
+            cidrBlocks:
+              - 0.0.0.0/0
+            fromPort: 80
+            protocol: tcp
+            region: {{ .Values.region }}
+            securityGroupIdSelector:
+              matchLabels:
+                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+            toPort: 80
+            type: ingress
 
   # The following are templates used to 'implement' a 'parent' HTTPRoute
   httpRouteTemplate:
@@ -121,7 +202,7 @@ spec:
           {{ range .HTTPRoute.spec.parentRefs -}}
           - kind: {{ .kind }}
             name: {{ .name }}-child
-            {{ if .namespace -}}
+            {{ if get . "namespace" }}
             namespace: {{ .namespace }}
             {{ end -}}
           {{ end }}
