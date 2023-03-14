@@ -1,16 +1,16 @@
 apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassConfig
 metadata:
-  name: aws-alb-crossplane-dev-env
+  name: aws-alb-crossplane-public-dev-env
   namespace: gateway-controller
 spec:
   override:
     region: eu-central-1
     vpcId: vpc-0e4501e0fbc404284
     subnets:
-      subnetId1: subnet-045141a3fdf9d7bb9
-      subnetId2: subnet-094508a77cf895ec9
-      subnetId3: subnet-099f1b955e66e1a4a
+      subnetId1: subnet-03b44b0d7d83febbc
+      subnetId2: subnet-0844755379de6d6f8
+      subnetId3: subnet-0e6f13b058d3c3729
   targetRef:
     group: gateway.networking.k8s.io
     kind: GatewayClass
