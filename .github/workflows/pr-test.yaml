@@ -1,0 +1,42 @@
+name: Test PR
+
+on:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Run tests
+        run: |
+          make test
+
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.50.1
+          args: --timeout 3m --verbose
