@@ -5,6 +5,7 @@ metadata:
   namespace: gateway-controller
 spec:
   override:
+    region: eu-central-1
     vpcId: vpc-0e4501e0fbc404284
     subnets:
       subnetId1: subnet-045141a3fdf9d7bb9
