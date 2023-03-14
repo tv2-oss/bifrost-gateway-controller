@@ -22,6 +22,15 @@ jobs:
         run: |
           make test
 
+      # Build release manifests - not to release these, but to force a failure
+      # below if repo does not already contain updated manifests
+      - name: Verify release manifests without changes
+        run: |
+          rm -rf config/release
+          make manifest-build
+          git status --porcelain
+          if [[ -z `git status --porcelain` ]]; then echo "No repo changes"; else echo "Repo have unexpected changes"; exit 1; fi
+
   golangci:
     name: lint
     runs-on: ubuntu-latest
