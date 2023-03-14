@@ -1,0 +1,87 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+        "controllerManager",
+        "serviceAccount",
+        "metricsService"
+    ],
+    "properties": {
+        "controllerManager": {
+            "required": [
+                "manager",
+                "annotations",
+                "replicas",
+                "deploymentStrategy"
+            ],
+            "properties": {
+                "manager": {
+                    "required": [
+                        "image",
+                        "resources",
+                        "livenessProbe",
+                        "readinessProbe"
+                    ],
+                    "properties": {
+                        "image": {
+                            "required": [
+                                "repository",
+                                "name",
+                                "tag",
+                                "pullPolicy"
+                            ],
+                            "properties": {
+                                "repository": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "tag": {
+                                    "type": "string"
+                                },
+                                "pullPolicy": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "resources": {
+                            "type": "object"
+                        },
+                        "livenessProbe": {
+                            "type": "object"
+                        },
+                        "readinessProbe": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "annotationer": {
+                    "type": "object"
+                },
+                "replicas": {
+                    "type": "integer"
+                },
+                "deploymentStrategy": {
+                    "type": "object",
+                    "required": [
+                        "type"
+                    ]
+                }
+            }
+        },
+        "serviceAccount": {
+            "type": "object",
+            "required": [
+                "create",
+                "annotations"
+            ]
+        },
+        "metricsService": {
+            "type": "object",
+            "required": [
+                "ports",
+                "type"
+            ]
+        }
+    }
+}
