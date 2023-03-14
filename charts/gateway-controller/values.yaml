@@ -1,7 +1,7 @@
 controllerManager:
   manager:
     image:
-      repository: controller
+      repository: ghcr.io/tv2-oss/gateway-controller
       tag: latest
       pullPolicy: IfNotPresent
     resources:
