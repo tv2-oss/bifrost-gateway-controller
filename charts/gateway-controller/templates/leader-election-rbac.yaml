@@ -3,11 +3,7 @@ kind: Role
 metadata:
   name: {{ include "gateway-controller.fullname" . }}-leader-election-role
   labels:
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: gateway-controller
-    app.kubernetes.io/part-of: gateway-controller
-    app.kubernets.io/managed-by: kustomize
-  {{- include "gateway-controller.labels" . | nindent 4 }}
+    {{- include "gateway-controller.labels" . | nindent 4 }}
 rules:
 - apiGroups:
   - ""
@@ -46,10 +42,7 @@ kind: RoleBinding
 metadata:
   name: {{ include "gateway-controller.fullname" . }}-leader-election-rolebinding
   labels:
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: gateway-controller
-    app.kubernetes.io/part-of: gateway-controller
-  {{- include "gateway-controller.labels" . | nindent 4 }}
+    {{- include "gateway-controller.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

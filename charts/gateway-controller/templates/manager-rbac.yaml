@@ -3,7 +3,7 @@ kind: ClusterRole
 metadata:
   name: {{ include "gateway-controller.fullname" . }}-manager-role
   labels:
-  {{- include "gateway-controller.labels" . | nindent 4 }}
+    {{- include "gateway-controller.labels" . | nindent 4 }}
 rules:
 - apiGroups:
   - gateway.networking.k8s.io
@@ -151,10 +151,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "gateway-controller.fullname" . }}-manager-rolebinding
   labels:
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: gateway-controller
-    app.kubernetes.io/part-of: gateway-controller
-  {{- include "gateway-controller.labels" . | nindent 4 }}
+    {{- include "gateway-controller.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

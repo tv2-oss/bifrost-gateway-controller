@@ -1,29 +1,21 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: {{ include "gateway-controller.fullname" . }}-controller-manager
-  labels:
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: gateway-controller
-    app.kubernetes.io/part-of: gateway-controller
-  {{- include "gateway-controller.labels" . | nindent 4 }}
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "gateway-controller.fullname" . }}-controller-manager
   labels:
-    app.kubernetes.io/component: manager
-    app.kubernetes.io/created-by: gateway-controller
-    app.kubernetes.io/part-of: gateway-controller
-    control-plane: controller-manager
-  {{- include "gateway-controller.labels" . | nindent 4 }}
+    {{- include "gateway-controller.labels" . | nindent 4 }}
+  {{- with .Values.controllerManager.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.controllerManager.replicas }}
   selector:
     matchLabels:
       control-plane: controller-manager
     {{- include "gateway-controller.selectorLabels" . | nindent 6 }}
+  strategy:
+    {{- toYaml .Values.controllerManager.deploymentStrategy | nindent 4 }}
   template:
     metadata:
       labels:
@@ -38,19 +30,10 @@ spec:
         command:
         - /gateway-controller
         image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag }}
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8081
-          initialDelaySeconds: 15
-          periodSeconds: 20
+        imagePullPolicy: {{ .Values.controllerManager.manager.image.pullPolicy }}
         name: manager
-        readinessProbe:
-          httpGet:
-            path: /readyz
-            port: 8081
-          initialDelaySeconds: 5
-          periodSeconds: 10
+        livenessProbe: {{- toYaml .Values.controllerManager.manager.livenessProbe | nindent 10 }}
+        readinessProbe: {{- toYaml .Values.controllerManager.manager.readinessProbe | nindent 10 }}
         resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10 }}
         securityContext:
           allowPrivilegeEscalation: false

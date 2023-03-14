@@ -3,6 +3,7 @@ controllerManager:
     image:
       repository: controller
       tag: latest
+      pullPolicy: IfNotPresent
     resources:
       limits:
         cpu: 500m
@@ -10,7 +11,26 @@ controllerManager:
       requests:
         cpu: 10m
         memory: 64Mi
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8081
+      initialDelaySeconds: 15
+      periodSeconds: 20
+    readinessProbe:
+      httpGet:
+        path: /readyz
+        port: 8081
+      initialDelaySeconds: 5
+      periodSeconds: 10
+  annotationer: {}
   replicas: 1
+  deploymentStrategy:
+    type: Recreate
+
+serviceAccount:
+  create: true
+  annotations: {}
 
 metricsService:
   ports:
