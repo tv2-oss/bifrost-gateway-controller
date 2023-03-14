@@ -17,6 +17,11 @@ metadata:
 spec:
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
+    status:
+      template: |
+        addresses:
+        - type: Hostname
+          value: {{ .Resources.LB.status.atProvider.dnsName }}
     resourceTemplates:
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
