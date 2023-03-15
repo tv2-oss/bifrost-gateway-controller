@@ -19,3 +19,6 @@ bin/
 # vendor/
 
 dist/
+gateway-controller
+!charts/gateway-controller
+

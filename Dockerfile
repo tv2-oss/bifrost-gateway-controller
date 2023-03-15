@@ -2,7 +2,7 @@
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY gateway-controller /gateway-controller
+COPY bin/gateway-controller /gateway-controller
 USER 65532:65532
 
 ENTRYPOINT ["/gateway-controller"]
