@@ -32,6 +32,22 @@ controllerManager:
       initialDelaySeconds: 5
       periodSeconds: 10
 
+    rbac:
+      additionalPermissions: []
+      # Example
+      # - apiGroups:
+      #   - networking.k8s.io
+      #   resources:
+      #   - ingresses
+      #   verbs:
+      #   - create
+      #   - delete
+      #   - get
+      #   - list
+      #   - patch
+      #   - update
+      #   - watch
+
   # Annotations to add to the deployment
   annotations: {}
   replicas: 1
