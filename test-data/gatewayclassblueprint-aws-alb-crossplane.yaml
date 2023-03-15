@@ -8,6 +8,7 @@ spec:
   #   region:
   #   vpcId:
   #   subnets:
+  #   upstreamSecurityGroup:
 
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
@@ -150,6 +151,7 @@ spec:
           providerConfigRef:
             name: admin
           forProvider:
+            description: "Healthcheck towards Istio ingress gateway"
             cidrBlocks:
               - 0.0.0.0/0
             fromPort: 15021
@@ -177,6 +179,27 @@ spec:
             protocol: tcp
             region: {{ .Values.region }}
             securityGroupIdSelector:
+              matchLabels:
+                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+            toPort: 80
+            type: ingress
+      SecurityGroupRuleUpstreamIngress: |
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroupRule
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-upstream
+        spec:
+          providerConfigRef:
+            name: admin
+          forProvider:
+            description: {{ printf "Ingress from gw-%s-%s" .Gateway.metadata.namespace .Gateway.metadata.name }}
+            fromPort: 80
+            protocol: tcp
+            region: {{ .Values.region }}
+            securityGroupId: {{ .Values.upstreamSecurityGroup }}
+            sourceSecurityGroupIdSelector:
               matchLabels:
                 tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             toPort: 80
