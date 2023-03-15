@@ -4,11 +4,15 @@ metadata:
   name: aws-alb-crossplane
 spec:
   # Values required by this blueprint:
+  #
   # Values:
-  #   region:
-  #   vpcId:
+  #   region: "example-region"
+  #   vpcId:  "example-vpc"
   #   subnets:
-  #   upstreamSecurityGroup:
+  #   - "example-subnet1"
+  #   - "example-subnet2"
+  #   - "example-subnet3"
+  #   upstreamSecurityGroup: "example-cluster-sg"
 
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
@@ -183,13 +187,13 @@ spec:
                 tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             toPort: 80
             type: ingress
-      SecurityGroupRuleUpstreamIngress: |
+      SecurityGroupRuleUpstreamIngress80: |
         apiVersion: ec2.aws.upbound.io/v1beta1
         kind: SecurityGroupRule
         metadata:
           labels:
             tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-upstream
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-upstream80
         spec:
           providerConfigRef:
             name: admin
@@ -203,6 +207,27 @@ spec:
               matchLabels:
                 tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             toPort: 80
+            type: ingress
+      SecurityGroupRuleUpstreamIngress15021: |
+        apiVersion: ec2.aws.upbound.io/v1beta1
+        kind: SecurityGroupRule
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-upstream15021
+        spec:
+          providerConfigRef:
+            name: admin
+          forProvider:
+            description: {{ printf "Healthcheck ingress from gw-%s-%s" .Gateway.metadata.namespace .Gateway.metadata.name }}
+            fromPort: 15021
+            protocol: tcp
+            region: {{ .Values.region }}
+            securityGroupId: {{ .Values.upstreamSecurityGroup }}
+            sourceSecurityGroupIdSelector:
+              matchLabels:
+                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+            toPort: 15021
             type: ingress
 
   # The following are templates used to 'implement' a 'parent' HTTPRoute
