@@ -1,210 +1,23 @@
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
-  name: aws-alb-crossplane
+  name: aws-alb-crossplane-public
 spec:
   controllerName: "github.com/tv2-oss/gateway-controller"
-  description: "AWS ALB load balancer and Istio ingress gateway"
+  description: "Internet-facing AWS ALB load balancer and Istio ingress gateway"
   parametersRef:
     group: gateway.tv2.dk
     kind: GatewayClassBlueprint
     name: aws-alb-crossplane
 ---
-apiVersion: gateway.tv2.dk/v1alpha1
-kind: GatewayClassBlueprint
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
 metadata:
-  name: aws-alb-crossplane
+  name: aws-alb-crossplane-internal
 spec:
-  # The following are templates used to 'implement' a 'parent' Gateway
-  gatewayTemplate:
-    status:
-      template: |
-        addresses:
-        - type: Hostname
-          value: {{ .Resources.LB.status.atProvider.dnsName }}
-    resourceTemplates:
-      childGateway: |
-        apiVersion: gateway.networking.k8s.io/v1beta1
-        kind: Gateway
-        metadata:
-          name: {{ .Gateway.metadata.name }}-child
-          namespace: {{ .Gateway.metadata.namespace }}
-          annotations:
-            networking.istio.io/service-type: ClusterIP
-        spec:
-          gatewayClassName: istio
-          listeners:
-            {{- toYaml .Gateway.spec.listeners | nindent 6 }}
-      LB: |
-        apiVersion: elbv2.aws.upbound.io/v1beta1
-        kind: LB
-        metadata:
-          labels:
-            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-        spec:
-          providerConfigRef:
-            name: admin
-          forProvider:
-            name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-            region: {{ .Values.region }}
-            securityGroupSelector:
-              matchLabels:
-                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-            subnetMapping:
-              - subnetId: {{ .Values.subnets.subnetId1 }}
-              - subnetId: {{ .Values.subnets.subnetId2 }}
-              - subnetId: {{ .Values.subnets.subnetId3 }}
-      LBTargetGroup: |
-        apiVersion: elbv2.aws.upbound.io/v1beta1
-        kind: LBTargetGroup
-        metadata:
-          labels:
-            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-        spec:
-          providerConfigRef:
-            name: admin
-          forProvider:
-            name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-            region: {{ .Values.region }}
-            vpcId: {{ .Values.vpcId }}
-            healthCheck:
-            - path: /healthz/ready
-              port: "15021"
-            port: 80
-            protocol: HTTP
-            targetType: ip
-      LBListener: |
-        apiVersion: elbv2.aws.upbound.io/v1beta1
-        kind: LBListener
-        metadata:
-          labels:
-            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-        spec:
-          providerConfigRef:
-            name: admin
-          forProvider:
-            region: {{ .Values.region }}
-            port: 80
-            protocol: HTTP
-            defaultAction:
-            - targetGroupArnSelector:
-                matchLabels:
-                  tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-              type: forward
-            loadBalancerArnSelector:
-              matchLabels:
-                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-      TargetGroupBinding: |
-        apiVersion: elbv2.k8s.aws/v1beta1
-        kind: TargetGroupBinding
-        metadata:
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          namespace: {{ .Gateway.metadata.namespace }}
-        spec:
-          targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
-          targetType: ip
-          serviceRef:
-            name: {{ .Gateway.metadata.name }}-child
-            port: 80
-      SecurityGroup: |
-        apiVersion: ec2.aws.upbound.io/v1beta1
-        kind: SecurityGroup
-        metadata:
-          labels:
-            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-        spec:
-          providerConfigRef:
-            name: admin
-          forProvider:
-            description: "SG for ALB"
-            region: {{ .Values.region }}
-            vpcId: {{ .Values.vpcId}}
-            name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-      SecurityGroupRuleEgress80: |
-        apiVersion: ec2.aws.upbound.io/v1beta1
-        kind: SecurityGroupRule
-        metadata:
-          labels:
-            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-egress80
-        spec:
-          providerConfigRef:
-            name: admin
-          forProvider:
-            cidrBlocks:
-              - 0.0.0.0/0
-            fromPort: 80
-            protocol: tcp
-            region: {{ .Values.region }}
-            securityGroupIdSelector:
-              matchLabels:
-                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-            toPort: 80
-            type: egress
-      SecurityGroupRuleEgress15021: |
-        apiVersion: ec2.aws.upbound.io/v1beta1
-        kind: SecurityGroupRule
-        metadata:
-          labels:
-            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-egress15021
-        spec:
-          providerConfigRef:
-            name: admin
-          forProvider:
-            cidrBlocks:
-              - 0.0.0.0/0
-            fromPort: 15021
-            protocol: tcp
-            region: {{ .Values.region }}
-            securityGroupIdSelector:
-              matchLabels:
-                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-            toPort: 15021
-            type: egress
-      SecurityGroupRuleIngress: |
-        apiVersion: ec2.aws.upbound.io/v1beta1
-        kind: SecurityGroupRule
-        metadata:
-          labels:
-            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-ingress
-        spec:
-          providerConfigRef:
-            name: admin
-          forProvider:
-            cidrBlocks:
-              - 0.0.0.0/0
-            fromPort: 80
-            protocol: tcp
-            region: {{ .Values.region }}
-            securityGroupIdSelector:
-              matchLabels:
-                tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-            toPort: 80
-            type: ingress
-
-  # The following are templates used to 'implement' a 'parent' HTTPRoute
-  httpRouteTemplate:
-    resourceTemplates:
-      childHttproute: |
-        apiVersion: gateway.networking.k8s.io/v1beta1
-        kind: HTTPRoute
-        metadata:
-          name: {{ .HTTPRoute.metadata.name }}-child
-          namespace: {{ .HTTPRoute.metadata.namespace }}
-        spec:
-          parentRefs:
-          {{ range .HTTPRoute.spec.parentRefs -}}
-          - kind: {{ .kind }}
-            name: {{ .name }}-child
-            {{ if get . "namespace" }}
-            namespace: {{ .namespace }}
-            {{ end -}}
-          {{ end }}
-          rules:
-            {{- toYaml .HTTPRoute.spec.rules | nindent 4 }}
+  controllerName: "github.com/tv2-oss/gateway-controller"
+  description: "Internal AWS ALB load balancer and Istio ingress gateway"
+  parametersRef:
+    group: gateway.tv2.dk
+    kind: GatewayClassBlueprint
+    name: aws-alb-crossplane
