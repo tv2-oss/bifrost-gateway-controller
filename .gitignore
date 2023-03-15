@@ -20,3 +20,5 @@ bin/
 
 dist/
 gateway-controller
+!charts/gateway-controller
+
