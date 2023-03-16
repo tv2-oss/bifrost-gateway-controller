@@ -81,7 +81,10 @@ deploy-contour:
 # To allow contour to provision from gateway resources
 .PHONY: deploy-contour-provisioner
 deploy-contour-provisioner:
-	kubectl apply -f https://projectcontour.io/quickstart/contour-gateway-provisioner.yaml
+	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.24/examples/gateway-provisioner/00-common.yaml
+	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.24/examples/gateway-provisioner/01-roles.yaml
+	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.24/examples/gateway-provisioner/02-rolebindings.yaml
+	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.24/examples/gateway-provisioner/03-gateway-provisioner.yaml
 	kubectl apply -f test-data/contour-gatewayclass.yaml
 
 #################
