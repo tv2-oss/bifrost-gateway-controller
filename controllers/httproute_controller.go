@@ -239,7 +239,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 		// If we haven't already decided to requeue, then requeue if not all templates could render (possibly a missing dependency)
 		requeue = requeue || (renderedNum != len(templates))
-		logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "requeue", requeue)
+		logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "totalNum", len(templates), "requeue", requeue)
 
 		// FIXME errors in templating and status of sub-resources in general should set status conditions
 

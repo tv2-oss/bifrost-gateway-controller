@@ -18,6 +18,13 @@ spec:
 
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
+    status:
+      template: |
+        addresses:
+        {{ range .Resources.loadBalancer.status.loadBalancer.ingress }}
+        - type: IPAddress
+          value: {{ .ip }}
+        {{ end }}
     resourceTemplates:
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
@@ -102,7 +109,7 @@ spec:
           {{ range .HTTPRoute.spec.parentRefs }}
           - kind: {{ .kind }}
             name: {{ .name }}-child
-            {{ if .namespace }}
+            {{ if get . "namespace" }}
             namespace: {{ .namespace }}
             {{ end }}
           {{ end }}

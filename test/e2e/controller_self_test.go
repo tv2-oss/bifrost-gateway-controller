@@ -60,8 +60,13 @@ metadata:
   name: default-gateway-class
 spec:
   gatewayTemplate:
+    status:
+      template: |
+        addresses:
+        - type: IPAddress
+          value: {{ .Resources.configMapTestSource.data.testIPAddress }}
     resourceTemplates:
-      istioShadowGw: |
+      childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: Gateway
         metadata:
@@ -73,9 +78,17 @@ spec:
           gatewayClassName: istio
           listeners:
             {{- toYaml .Gateway.spec.listeners | nindent 6 }}
+      configMapTestSource: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: source-configmap
+          namespace: {{ .Gateway.metadata.namespace }}
+        data:
+          testIPAddress: 4.5.6.7
   httpRouteTemplate:
     resourceTemplates:
-      shadowHttproute: |
+      childHttproute: |
         apiVersion: gateway.networking.k8s.io/v1beta1
         kind: HTTPRoute
         metadata:
@@ -86,7 +99,7 @@ spec:
           {{ range .HTTPRoute.spec.parentRefs }}
           - kind: {{ .kind }}
             name: {{ .name }}-istio
-            {{ if .namespace }}
+            {{ if get . "namespace" }}
             namespace: {{ .namespace }}
             {{ end }}
           {{ end }}

@@ -74,12 +74,17 @@ type TemplateHostnameValues struct {
 	Union, Intersection []string
 }
 
-// Initialize TemplateResource slice by parsing templates
-func parseTemplates(resourceTemplates map[string]string) ([]*TemplateResource, error) {
-	var err error
+// Parse a single template with our additional functions added
+func parseSingleTemplate(tmplKey, tmpl string) (*template.Template, error) {
 	var funcs = template.FuncMap{
 		"toYaml": helperToYaml,
 	}
+	return template.New(tmplKey).Option("missingkey=error").Funcs(sprig.FuncMap()).Funcs(funcs).Parse(tmpl)
+}
+
+// Initialize TemplateResource slice by parsing templates
+func parseTemplates(resourceTemplates map[string]string) ([]*TemplateResource, error) {
+	var err error
 
 	templates := make([]*TemplateResource, 0, len(resourceTemplates))
 
@@ -87,7 +92,7 @@ func parseTemplates(resourceTemplates map[string]string) ([]*TemplateResource, e
 		r := TemplateResource{}
 		r.TemplateName = tmplKey
 		r.StringTemplate = tmpl
-		r.Template, err = template.New(tmplKey).Option("missingkey=error").Funcs(sprig.FuncMap()).Funcs(funcs).Parse(tmpl)
+		r.Template, err = parseSingleTemplate(tmplKey, tmpl)
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse template %q: %w", tmplKey, err)
 		}
@@ -111,10 +116,13 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 
 	for _, tmplRes := range templates {
 		if tmplRes.Resource == nil {
-			tmplRes.Resource, err = template2Unstructured(tmplRes, values)
+			tmplRes.Resource, err = template2Unstructured(tmplRes.Template, values)
 			if err != nil {
 				if isFinalAttempt {
 					logger.Error(err, "cannot render template", "templateName", tmplRes.TemplateName)
+					// FIXME: These are convenient, but we should have a better logging design, i.e. it should be possible to enable rendering errors only
+					fmt.Printf("Template:\n%s\n", tmplRes.StringTemplate)
+					fmt.Printf("Template values:\n%+v\n", values)
 				}
 				continue
 			}
@@ -227,12 +235,9 @@ func templateRender(tmpl *template.Template, templateValues *TemplateValues) (*b
 	return &buffer, nil
 }
 
-func template2Unstructured(tmplRes *TemplateResource, templateValues *TemplateValues) (*unstructured.Unstructured, error) {
-	renderBuffer, err := templateRender(tmplRes.Template, templateValues)
+func template2map(tmpl *template.Template, tmplValues *TemplateValues) (map[string]any, error) {
+	renderBuffer, err := templateRender(tmpl, tmplValues)
 	if err != nil {
-		// FIXME: These are convenient, but we should have a better logging design, i.e. it should be possible to enable rendering errors only
-		fmt.Printf("Template:\n%s\n", tmplRes.StringTemplate)
-		fmt.Printf("Template values:\n%+v\n", templateValues)
 		return nil, err
 	}
 
@@ -241,10 +246,15 @@ func template2Unstructured(tmplRes *TemplateResource, templateValues *TemplateVa
 	if err != nil {
 		return nil, err
 	}
+	return rawResource, nil
+}
 
-	unstruct := &unstructured.Unstructured{Object: rawResource}
-
-	return unstruct, nil
+func template2Unstructured(tmpl *template.Template, tmplValues *TemplateValues) (*unstructured.Unstructured, error) {
+	rawResource, err := template2map(tmpl, tmplValues)
+	if err != nil {
+		return nil, err
+	}
+	return &unstructured.Unstructured{Object: rawResource}, nil
 }
 
 // Prepare a resource like Gateway or HTTPRoute for use in templates
