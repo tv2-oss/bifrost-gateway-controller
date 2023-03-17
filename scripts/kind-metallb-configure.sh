@@ -11,7 +11,7 @@ BYTE12=`echo $CIDR | cut -d'.' -f1-2`
 CIDR_START="$BYTE12.255.200"
 CIDR_END="$BYTE12.255.250"
 
-cat | kubectl apply -f - <<EOF
+cat <<EOF | kubectl apply -f -
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
