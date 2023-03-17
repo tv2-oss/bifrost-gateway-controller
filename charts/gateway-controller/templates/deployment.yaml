@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "gateway-controller.fullname" . }}-controller-manager
+  name: {{ include "gateway-controller.fullname" . }}-manager
   labels:
     {{- include "gateway-controller.labels" . | nindent 4 }}
   {{- with .Values.controllerManager.annotations }}
@@ -12,14 +12,14 @@ spec:
   replicas: {{ .Values.controllerManager.replicas }}
   selector:
     matchLabels:
-      control-plane: controller-manager
+      control-plane: manager
     {{- include "gateway-controller.selectorLabels" . | nindent 6 }}
   strategy:
     {{- toYaml .Values.controllerManager.deploymentStrategy | nindent 4 }}
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        control-plane: manager
       {{- include "gateway-controller.selectorLabels" . | nindent 8 }}
       annotations:
         kubectl.kubernetes.io/default-container: manager
@@ -30,9 +30,9 @@ spec:
         command:
         - /gateway-controller
         {{- if (contains "sha256:" .Values.controllerManager.manager.image.tag) }}
-          image: "{{ .Values.controllerManager.manager.image.repository }}/{{ .Values.controllerManager.manager.image.name }}@{{ .Values.controllerManager.manager.image.tag }}"
+        image: "{{ .Values.controllerManager.manager.image.repository }}/{{ .Values.controllerManager.manager.image.name }}@{{ .Values.controllerManager.manager.image.tag }}"
           {{- else }}
-        image: {{ .Values.controllerManager.manager.image.repository }}/{{ .Values.controllerManager.manager.image.name }}:{{ .Values.controllerManager.manager.image.tag }}
+        image: "{{ .Values.controllerManager.manager.image.repository }}/{{ .Values.controllerManager.manager.image.name }}:{{ .Values.controllerManager.manager.image.tag }}"
           {{- end }}
         imagePullPolicy: {{ .Values.controllerManager.manager.image.pullPolicy }}
         name: manager
@@ -48,5 +48,5 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-      serviceAccountName: {{ include "gateway-controller.fullname" . }}-controller-manager
+      serviceAccountName: {{ include "gateway-controller.fullname" . }}-manager
       terminationGracePeriodSeconds: 10

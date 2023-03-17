@@ -1,6 +1,6 @@
 # gateway-controller
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.0.5](https://img.shields.io/badge/AppVersion-0.0.5-informational?style=flat-square)
+![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.0.5](https://img.shields.io/badge/AppVersion-0.0.5-informational?style=flat-square)
 
 Gateway API driven management of network infrastructure across Kubernetes and cloud infrastructure
 
@@ -18,6 +18,7 @@ Gateway API driven management of network infrastructure across Kubernetes and cl
 | controllerManager.manager.livenessProbe.httpGet.port | int | `8081` |  |
 | controllerManager.manager.livenessProbe.initialDelaySeconds | int | `15` |  |
 | controllerManager.manager.livenessProbe.periodSeconds | int | `20` |  |
+| controllerManager.manager.rbac.additionalPermissions | list | `[]` |  |
 | controllerManager.manager.readinessProbe.httpGet.path | string | `"/readyz"` |  |
 | controllerManager.manager.readinessProbe.httpGet.port | int | `8081` |  |
 | controllerManager.manager.readinessProbe.initialDelaySeconds | int | `5` |  |

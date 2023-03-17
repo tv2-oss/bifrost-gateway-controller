@@ -49,5 +49,5 @@ roleRef:
   name: '{{ include "gateway-controller.fullname" . }}-leader-election-role'
 subjects:
 - kind: ServiceAccount
-  name: '{{ include "gateway-controller.fullname" . }}-controller-manager'
+  name: '{{ include "gateway-controller.fullname" . }}-manager'
   namespace: '{{ .Release.Namespace }}'
