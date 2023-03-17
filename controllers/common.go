@@ -35,6 +35,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"golang.org/x/exp/maps"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -106,11 +107,11 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 	// Helper to parse and merge-overwrite values
 	mergeValues := func(src *apiextensionsv1.JSON, existing map[string]any) (map[string]any, error) {
 		if src != nil {
-			new := map[string]any{}
-			if err = json.Unmarshal(src.Raw, &new); err != nil {
+			newvals := map[string]any{}
+			if err = json.Unmarshal(src.Raw, &newvals); err != nil {
 				return nil, fmt.Errorf("cannot unmarshal values: %w", err)
 			}
-			maps.Copy(existing, new)
+			maps.Copy(existing, newvals) // FIXME: This overwrites at top-level. GEP-713 specifies deep merge
 		}
 		return existing, nil
 	}
