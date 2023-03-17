@@ -1,0 +1,3 @@
+controllerManager:
+  annotations:
+    tv2.dk/gateway-controller/annontations: true
