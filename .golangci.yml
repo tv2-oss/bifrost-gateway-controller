@@ -18,6 +18,8 @@ linters-settings:
   nolintlint:
     require-explanation: true
     require-specific: true
+  gocyclo:
+    min-complexity: 34
 
 linters:
   disable-all: true
