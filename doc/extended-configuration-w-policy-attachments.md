@@ -116,4 +116,5 @@ Increasing order of precedence:
   `GatewayClass`.
 
 If there are multiple policies targeting the same resource and setting
-the same variable, the result is undefined.
+the same variable, the result is undefined. Policies of type
+`GatewayConfig` may target both `Gateway` and `Namespace` resources.

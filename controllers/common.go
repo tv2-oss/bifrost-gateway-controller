@@ -142,10 +142,12 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 		return nil, err
 	}
 
-	// Select policies that target GatewayClass or parent resource, keeping GatewayClassConfig's ordered!
+	// Select policies that target GatewayClass, parent resource or namespace of parent resource
+	// Note, policies are kept ordered!
 	var gwccFiltered []*gwcapi.GatewayClassConfig
 	var gwcFiltered []*gwcapi.GatewayConfig
 
+	// Global GatewayClassConfig first
 	for idx := range gwccGlobal.Items {
 		gwcc := &gwccGlobal.Items[idx]
 		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
@@ -154,6 +156,7 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 			gwccFiltered = append(gwccFiltered, gwcc) // gwcc targets GatewayClass
 		}
 	}
+	// Namespace GatewayClassConfig second
 	for idx := range gwccLocal.Items {
 		gwcc := &gwccLocal.Items[idx]
 		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
@@ -162,6 +165,16 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 			gwccFiltered = append(gwccFiltered, gwcc) // gwcc targets GatewayClass
 		}
 	}
+	// Namespace GatewayConfig first
+	for idx := range gwcLocal.Items {
+		gwc := &gwcLocal.Items[idx]
+		if gwc.Spec.TargetRef.Kind == "Namespace" &&
+			gwc.Spec.TargetRef.Group == "" &&
+			string(gwc.Spec.TargetRef.Name) == gwNamespace {
+			gwcFiltered = append(gwcFiltered, gwc) // gwcc targets namespace of Gateway
+		}
+	}
+	// Parent resource GatewayConfig second
 	for idx := range gwcLocal.Items {
 		gwc := &gwcLocal.Items[idx]
 		if gwc.Spec.TargetRef.Kind == "Gateway" &&
@@ -184,7 +197,7 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 			return nil, fmt.Errorf("while processing %s: %w", pol.Name, err)
 		}
 	}
-	// GatewayConfig
+	// GatewayConfig, ordered, namespace-targeted first
 	for _, pol := range gwcFiltered {
 		if values, err = mergeValues(pol.Spec.Default, values); err != nil {
 			return nil, fmt.Errorf("while processing %s: %w", pol.Name, err)
@@ -193,10 +206,10 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 
 	// Process overrides
 
-	// GatewayConfig
-	for _, pol := range gwcFiltered {
-		if values, err = mergeValues(pol.Spec.Override, values); err != nil {
-			return nil, fmt.Errorf("while processing %s: %w", pol.Name, err)
+	// GatewayConfig, ordered, namespace-targeted is first i.e. reverse loop
+	for idx := len(gwcFiltered) - 1; idx >= 0; idx-- {
+		if values, err = mergeValues(gwcFiltered[idx].Spec.Override, values); err != nil {
+			return nil, fmt.Errorf("while processing %s: %w", gwcFiltered[idx].Name, err)
 		}
 	}
 

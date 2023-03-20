@@ -75,6 +75,7 @@ spec:
           someValue6: {{ .Values.someValue6 }}
           someValue7: {{ .Values.someValue7 }}
           someValue8: {{ .Values.someValue8 }}
+          someValue9: {{ .Values.someValue9 }}
 `
 
 const commonTestGlobalPolicy1Manifest string = `
@@ -119,6 +120,8 @@ metadata:
   namespace: default
 spec:
   override:
+    someValue2: config1-override2   # Overridden by GatewayClassConfig
+    someValue3: config1-override3   # Overridden by GatewayClassConfig
     someValue4: config1-override4
   default:
     someValue7: config1-default7
@@ -127,6 +130,21 @@ spec:
     kind: Gateway
     name: common-test
     namespace: default
+`
+
+const commonTestNsPolicy2Manifest string = `
+apiVersion: gateway.tv2.dk/v1alpha1
+kind: GatewayConfig
+metadata:
+  name: common-test-ns1
+  namespace: default
+spec:
+  default:
+    someValue9: ns-config1-default9
+  targetRef:
+    group: ""
+    kind: Namespace
+    name: default
 `
 
 var _ = Describe("Common functions", func() {
@@ -140,7 +158,7 @@ var _ = Describe("Common functions", func() {
 		gwc          *gatewayapi.GatewayClass
 		gwcb         *gwcapi.GatewayClassBlueprint
 		gwcc1, gwcc2 *gwcapi.GatewayClassConfig
-		gwc1         *gwcapi.GatewayConfig
+		gwc1, gwc2   *gwcapi.GatewayConfig
 		ctx          context.Context
 	)
 
@@ -150,6 +168,7 @@ var _ = Describe("Common functions", func() {
 		gwcc1 = &gwcapi.GatewayClassConfig{}
 		gwcc2 = &gwcapi.GatewayClassConfig{}
 		gwc1 = &gwcapi.GatewayConfig{}
+		gwc2 = &gwcapi.GatewayConfig{}
 		ctx = context.Background()
 		Expect(yaml.Unmarshal([]byte(commonTestGatewayClassManifest), gwc)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
@@ -161,6 +180,8 @@ var _ = Describe("Common functions", func() {
 		Expect(k8sClient.Create(ctx, gwcc2)).Should(Succeed())
 		Expect(yaml.Unmarshal([]byte(commonTestPolicy1Manifest), gwc1)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc1)).Should(Succeed())
+		Expect(yaml.Unmarshal([]byte(commonTestNsPolicy2Manifest), gwc2)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwc2)).Should(Succeed())
 	})
 
 	AfterEach(func() {
@@ -169,6 +190,7 @@ var _ = Describe("Common functions", func() {
 		Expect(k8sClient.Delete(ctx, gwcc1)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, gwcc2)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, gwc1)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, gwc2)).Should(Succeed())
 	})
 
 	When("Reconciling a parent Gateway", func() {
@@ -196,6 +218,8 @@ var _ = Describe("Common functions", func() {
 			Expect(cm.Data["someValue5"]).To(Equal("global-config1-default5"))
 			Expect(cm.Data["someValue6"]).To(Equal("global-config2-default6"))
 			Expect(cm.Data["someValue7"]).To(Equal("config1-default7"))
+			Expect(cm.Data["someValue8"]).To(Equal("blueprint-default8"))
+			Expect(cm.Data["someValue9"]).To(Equal("ns-config1-default9"))
 		})
 	})
 })
