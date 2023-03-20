@@ -11,6 +11,10 @@ spec:
         threshold: 2
         path: /healthz/ready
         port: 15021
+      ingressAcls:
+        cidrs:
+        - 0.0.0.0/0
+        port: 80
     # Values required by this blueprint without defaults:
     #   region: "example-region"
     #   vpcId:  "example-vpc"
@@ -188,14 +192,16 @@ spec:
             name: admin
           forProvider:
             cidrBlocks:
-              - 0.0.0.0/0
-            fromPort: 80
+              {{ range .Values.ingressAcls.cidrs -}}
+              - {{ . }}
+              {{- end }}
+            fromPort: {{ .Values.ingressAcls.port }}
             protocol: tcp
             region: {{ .Values.region }}
             securityGroupIdSelector:
               matchLabels:
                 tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-            toPort: 80
+            toPort: {{ .Values.ingressAcls.port }}
             type: ingress
       SecurityGroupRuleUpstreamIngress80: |
         apiVersion: ec2.aws.upbound.io/v1beta1

@@ -54,6 +54,11 @@ import (
 	selfapi "github.com/tv2-oss/gateway-controller/pkg/api"
 )
 
+var (
+	// The namespace the controller will watch for global policies
+	ControllerNamespace string
+)
+
 type ControllerClient interface {
 	Client() client.Client
 	Scheme() *runtime.Scheme
@@ -116,9 +121,8 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 		return existing, nil
 	}
 
-	// FIXME: Should not hardcode controller namespace
 	var gwccl gwcapi.GatewayClassConfigList
-	err = r.Client().List(ctx, &gwccl, client.InNamespace("gateway-controller"))
+	err = r.Client().List(ctx, &gwccl, client.InNamespace(ControllerNamespace))
 	if err != nil {
 		return nil, err
 	}
