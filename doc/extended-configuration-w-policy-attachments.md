@@ -114,3 +114,6 @@ Increasing order of precedence:
 - `GatewayClassConfig` in *gateway-controller* namespace when
   `Gateway` reference `GatewayClassConfig` indirectly through
   `GatewayClass`.
+
+If there are multiple policies targeting the same resource and setting
+the same variable, the result is undefined.

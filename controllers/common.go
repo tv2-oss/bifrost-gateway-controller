@@ -100,12 +100,15 @@ func lookupGatewayClassBlueprint(ctx context.Context, r ControllerClient, gwc *g
 }
 
 // Lookup values from GatewayClassConfig/GatewayConfig CRDs (eventually) and combine using precedence rules:
-// - Values from GatewayClassBlueprint (highest precedence)
-// - Values from GatewayClassConfig in controller namespace
-// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace (lowest precedence)
-// - Values from GatewayConfig in Gateway/HTTPRoute local namespace (lowest precedence)
+// - Values from GatewayClassBlueprint
+// - Values from GatewayClassConfig in controller namespace (aka. global policies)
+// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace
+// - Values from GatewayConfig in Gateway/HTTPRoute local namespace
 // Note, defaults are processed top-to-bottom, while overrides are bottom-to-top (see GEP-713)
-func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName string, gwcb *gwcapi.GatewayClassBlueprint, _ /*namespace*/ string) (map[string]any, error) {
+//
+// See also doc/extended-configuration-w-policy-attachments.md
+func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName string, gwcb *gwcapi.GatewayClassBlueprint,
+	gwNamespace string, gwName string) (map[string]any, error) {
 	values := map[string]any{}
 	var err error
 
@@ -121,32 +124,86 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 		return existing, nil
 	}
 
-	var gwccl gwcapi.GatewayClassConfigList
-	err = r.Client().List(ctx, &gwccl, client.InNamespace(ControllerNamespace))
+	var gwccGlobal gwcapi.GatewayClassConfigList
+	err = r.Client().List(ctx, &gwccGlobal, client.InNamespace(ControllerNamespace))
 	if err != nil {
 		return nil, err
 	}
+
+	// GatewayClassConfig and GatewayConfig in same namespace as parent resource (e.g. a Gateway resource)
+	var gwccLocal gwcapi.GatewayClassConfigList
+	err = r.Client().List(ctx, &gwccLocal, client.InNamespace(gwNamespace))
+	if err != nil {
+		return nil, err
+	}
+	var gwcLocal gwcapi.GatewayConfigList
+	err = r.Client().List(ctx, &gwcLocal, client.InNamespace(gwNamespace))
+	if err != nil {
+		return nil, err
+	}
+
+	// Select policies that target GatewayClass or parent resource, keeping GatewayClassConfig's ordered!
+	var gwccFiltered []*gwcapi.GatewayClassConfig
+	var gwcFiltered []*gwcapi.GatewayConfig
+
+	for idx := range gwccGlobal.Items {
+		gwcc := &gwccGlobal.Items[idx]
+		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
+			gwcc.Spec.TargetRef.Group == gatewayapi.GroupName &&
+			string(gwcc.Spec.TargetRef.Name) == gatewayClassName {
+			gwccFiltered = append(gwccFiltered, gwcc) // gwcc targets GatewayClass
+		}
+	}
+	for idx := range gwccLocal.Items {
+		gwcc := &gwccLocal.Items[idx]
+		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
+			gwcc.Spec.TargetRef.Group == gatewayapi.GroupName &&
+			string(gwcc.Spec.TargetRef.Name) == gatewayClassName {
+			gwccFiltered = append(gwccFiltered, gwcc) // gwcc targets GatewayClass
+		}
+	}
+	for idx := range gwcLocal.Items {
+		gwc := &gwcLocal.Items[idx]
+		if gwc.Spec.TargetRef.Kind == "Gateway" &&
+			gwc.Spec.TargetRef.Group == gatewayapi.GroupName &&
+			(gwc.Spec.TargetRef.Namespace == nil || string(*gwc.Spec.TargetRef.Namespace) == gwNamespace) &&
+			string(gwc.Spec.TargetRef.Name) == gwName {
+			gwcFiltered = append(gwcFiltered, gwc) // gwcc targets Gateway
+		}
+	}
+
+	// Process defaults
 
 	// Blueprint default values are first
 	if values, err = mergeValues(gwcb.Spec.Values.Default, values); err != nil {
 		return nil, fmt.Errorf("while processing blueprint default values for gatewayclass %s: %w", gatewayClassName, err)
 	}
-	// FIXME: Process other defaults
+	// GatewayClassConfig, ordered, global first
+	for _, pol := range gwccFiltered {
+		if values, err = mergeValues(pol.Spec.Default, values); err != nil {
+			return nil, fmt.Errorf("while processing %s: %w", pol.Name, err)
+		}
+	}
+	// GatewayConfig
+	for _, pol := range gwcFiltered {
+		if values, err = mergeValues(pol.Spec.Default, values); err != nil {
+			return nil, fmt.Errorf("while processing %s: %w", pol.Name, err)
+		}
+	}
 
-	// Process overrides in increasing order of precedence
+	// Process overrides
 
-	// FIXME: Use GatewayConfig and GatewayClassconfig from parent resource namespace (lowest override precedence)
+	// GatewayConfig
+	for _, pol := range gwcFiltered {
+		if values, err = mergeValues(pol.Spec.Override, values); err != nil {
+			return nil, fmt.Errorf("while processing %s: %w", pol.Name, err)
+		}
+	}
 
-	// GatewayClassConfig from controller namesapce
-	for idx := range gwccl.Items {
-		gwcc := &gwccl.Items[idx]
-		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
-			gwcc.Spec.TargetRef.Group == gatewayapi.GroupName &&
-			string(gwcc.Spec.TargetRef.Name) == gatewayClassName {
-			// gwcc targets gatewayclass
-			if values, err = mergeValues(gwcc.Spec.Override, values); err != nil {
-				return nil, fmt.Errorf("while processing %s: %w", gwcc.Name, err)
-			}
+	// GatewayClassConfig, ordered, global is first i.e. reverse loop
+	for idx := len(gwccFiltered) - 1; idx >= 0; idx-- {
+		if values, err = mergeValues(gwccFiltered[idx].Spec.Override, values); err != nil {
+			return nil, fmt.Errorf("while processing %s: %w", gwccFiltered[idx].Name, err)
 		}
 	}
 

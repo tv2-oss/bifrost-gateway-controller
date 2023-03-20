@@ -133,7 +133,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, fmt.Errorf("cannot convert gateway to map: %w", err)
 	}
 
-	values, err := lookupValues(ctx, r, gwc.Name, gwcb, gw.ObjectMeta.Namespace)
+	values, err := lookupValues(ctx, r, gwc.Name, gwcb, gw.ObjectMeta.Namespace, gw.ObjectMeta.Name)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("cannot lookup values: %w", err)
 	}

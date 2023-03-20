@@ -52,9 +52,6 @@ spec:
   values:
     override:
       someValue1: blueprint-override1
-      someValue2: blueprint-override2
-      someValue3: blueprint-override3
-      someValue4: blueprint-override4
     default:
       someValue5: blueprint-default5
       someValue6: blueprint-default6
@@ -97,12 +94,12 @@ spec:
     name: common-test
 `
 
-const commonTestGlobalPolicy2Manifest string = `
+const commonTestNsPolicy1Manifest string = `
 apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassConfig
 metadata:
-  name: common-test-global2
-  namespace: gateway-controller-system
+  name: common-test-ns1
+  namespace: default      # Note, same NS as Gateway
 spec:
   override:
     someValue3: global-config2-override3
@@ -129,7 +126,7 @@ spec:
     group: gateway.networking.k8s.io
     kind: Gateway
     name: common-test
-    name: default
+    namespace: default
 `
 
 var _ = Describe("Common functions", func() {
@@ -160,7 +157,7 @@ var _ = Describe("Common functions", func() {
 		Expect(k8sClient.Create(ctx, gwcb)).Should(Succeed())
 		Expect(yaml.Unmarshal([]byte(commonTestGlobalPolicy1Manifest), gwcc1)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwcc1)).Should(Succeed())
-		Expect(yaml.Unmarshal([]byte(commonTestGlobalPolicy2Manifest), gwcc2)).To(Succeed())
+		Expect(yaml.Unmarshal([]byte(commonTestNsPolicy1Manifest), gwcc2)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwcc2)).Should(Succeed())
 		Expect(yaml.Unmarshal([]byte(commonTestPolicy1Manifest), gwc1)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc1)).Should(Succeed())
@@ -198,7 +195,7 @@ var _ = Describe("Common functions", func() {
 			Expect(cm.Data["someValue4"]).To(Equal("config1-override4"))
 			Expect(cm.Data["someValue5"]).To(Equal("global-config1-default5"))
 			Expect(cm.Data["someValue6"]).To(Equal("global-config2-default6"))
-			Expect(cm.Data["someValue7"]).To(Equal("config-default7"))
+			Expect(cm.Data["someValue7"]).To(Equal("config1-default7"))
 		})
 	})
 })
