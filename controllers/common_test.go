@@ -52,11 +52,16 @@ spec:
   values:
     override:
       someValue1: blueprint-override1
+      nested:
+        someValue1: blueprint-nested-override1
     default:
       someValue5: blueprint-default5
       someValue6: blueprint-default6
       someValue7: blueprint-default7
       someValue8: blueprint-default8
+      nested:
+        someValue2: blueprint-nested-default2
+        someValue3: blueprint-nested-default3
 
   gatewayTemplate:
     resourceTemplates:
@@ -76,6 +81,9 @@ spec:
           someValue7: {{ .Values.someValue7 }}
           someValue8: {{ .Values.someValue8 }}
           someValue9: {{ .Values.someValue9 }}
+          someNestedValue1: {{ .Values.nested.someValue1 }}
+          someNestedValue2: {{ .Values.nested.someValue2 }}
+          someNestedValue3: {{ .Values.nested.someValue3 }}
 `
 
 const commonTestGlobalPolicy1Manifest string = `
@@ -123,6 +131,8 @@ spec:
     someValue2: config1-override2   # Overridden by GatewayClassConfig
     someValue3: config1-override3   # Overridden by GatewayClassConfig
     someValue4: config1-override4
+    nested:
+      someValue3: config1-nested-override3
   default:
     someValue7: config1-default7
   targetRef:
@@ -220,6 +230,9 @@ var _ = Describe("Common functions", func() {
 			Expect(cm.Data["someValue7"]).To(Equal("config1-default7"))
 			Expect(cm.Data["someValue8"]).To(Equal("blueprint-default8"))
 			Expect(cm.Data["someValue9"]).To(Equal("ns-config1-default9"))
+			Expect(cm.Data["someNestedValue1"]).To(Equal("blueprint-nested-override1"))
+			Expect(cm.Data["someNestedValue2"]).To(Equal("blueprint-nested-default2"))
+			Expect(cm.Data["someNestedValue3"]).To(Equal("config1-nested-override3"))
 		})
 	})
 })

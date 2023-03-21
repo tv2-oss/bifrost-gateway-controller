@@ -116,5 +116,7 @@ Increasing order of precedence:
   `GatewayClass`.
 
 If there are multiple policies targeting the same resource and setting
-the same variable, the result is undefined. Policies of type
-`GatewayConfig` may target both `Gateway` and `Namespace` resources.
+the same variable, the result is undefined (see also [Conflict
+Resolution](https://gateway-api.sigs.k8s.io/references/policy-attachment/#conflict-resolution)). Policies
+of type `GatewayConfig` may target both `Gateway` and `Namespace`
+resources.
