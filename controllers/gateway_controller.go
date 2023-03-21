@@ -34,6 +34,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -256,6 +257,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		progReason = string(gatewayapi.GatewayReasonProgrammed)
 	} else {
 		missing := statusExistingTemplates(templates)
+		sort.Strings(missing)
 		progMsg = fmt.Sprintf("missing %v resources: %s", len(templates)-existsNum, strings.Join(missing, ","))
 	}
 	meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
