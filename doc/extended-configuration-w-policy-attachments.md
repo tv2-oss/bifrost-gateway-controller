@@ -57,6 +57,18 @@ To keep the terminology from GEP-713, we will refer to these generic
 values as *policies* even though the scope is broader than merely
 *policies*.
 
+Policies will typically be attached to `GatewayClass`es even though
+the settings they contain are logically targeted for the
+`GatewayClassBlueprint`. This is because we intend to keep the
+`GatewayClassBlueprint` generic and the purpose of `GatewayClass` is
+to link blueprints with settings and naming the combination. The
+illustration below show how a common `GatewayClassBlueprint` is used
+together with two `GatewayClassConfig`s to create two
+`GatewayClass`es, one for internet exposed traffic and one for
+'internal' traffic.
+
+![One to many relationship towards GatewayClassBlueprints](images/blueprints-one-to-many.png)
+
 ## Using RBAC for Role-based Access
 
 Two different CRDs will be used to effectively attach policies to
