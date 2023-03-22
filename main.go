@@ -92,7 +92,7 @@ func main() {
 
 	syncPeriod, err := time.ParseDuration(syncPeriodArg)
 	if err != nil {
-		setupLog.Error(err, "unable to parse 'sync-period' argument: %w", err)
+		setupLog.Error(err, "unable to parse 'sync-period' argument")
 		os.Exit(1)
 	}
 
@@ -104,7 +104,7 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		SyncPeriod:             &syncPeriod,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "71264cc8.ccs.tv2.dk",
+		LeaderElectionID:       "71264cc8.gateway-controller.tv2.dk",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
