@@ -71,6 +71,7 @@ jobs:
           cache: true
 
       # Build release manifests and test against chart versions
+      - name: Check CRD status
         run: |
           rm -rf config/release
           make manifest-build
