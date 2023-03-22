@@ -61,3 +61,17 @@ jobs:
       - name: Run chart-testing (install)
         run: ct install
         if: steps.list-changed.outputs.changed == 'true'
+
+      # Check CRD update
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      # Build release manifests and test against chart versions
+        run: |
+          rm -rf config/release
+          make manifest-build
+          diff -q config/release/crds.yaml charts/gateway-controller/crds/crds.yaml

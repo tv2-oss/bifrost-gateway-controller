@@ -28,10 +28,9 @@ Gateway API driven management of network infrastructure across Kubernetes and cl
 | controllerManager.manager.resources.requests.cpu | string | `"10m"` |  |
 | controllerManager.manager.resources.requests.memory | string | `"64Mi"` |  |
 | controllerManager.replicas | int | `1` |  |
-| metricsService.ports[0].name | string | `"https"` |  |
-| metricsService.ports[0].port | int | `8443` |  |
+| metricsService.ports[0].name | string | `"http"` |  |
+| metricsService.ports[0].port | int | `8080` |  |
 | metricsService.ports[0].protocol | string | `"TCP"` |  |
-| metricsService.ports[0].targetPort | string | `"https"` |  |
 | metricsService.type | string | `"ClusterIP"` |  |
 | serviceAccount.annotations | object | `{}` |  |
 | serviceAccount.create | bool | `true` |  |
