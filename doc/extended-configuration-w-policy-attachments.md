@@ -62,9 +62,10 @@ the settings they contain are logically targeted for the
 `GatewayClassBlueprint`. This is because we intend to keep the
 `GatewayClassBlueprint` generic and the purpose of `GatewayClass` is
 to link blueprints with settings and naming the combination. The
-illustration below show how two `GatewayClass`es are defined from a
-common `GatewayClassBlueprint` to create two `GatewayClass`es, one for
-internet exposed traffic and one for 'internal' traffic.
+illustration below show how a common `GatewayClassBlueprint` is used
+together with two `GatewayClassConfig`s to create two
+`GatewayClass`es, one for internet exposed traffic and one for
+'internal' traffic.
 
 ![One to many relationship towards GatewayClassBlueprints](images/blueprints-one-to-many.png)
 
