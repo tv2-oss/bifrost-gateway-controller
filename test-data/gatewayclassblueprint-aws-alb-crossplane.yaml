@@ -3,16 +3,22 @@ kind: GatewayClassBlueprint
 metadata:
   name: aws-alb-crossplane
 spec:
-  # Values required by this blueprint:
-  #
-  # Values:
-  #   region: "example-region"
-  #   vpcId:  "example-vpc"
-  #   subnets:
-  #   - "example-subnet1"
-  #   - "example-subnet2"
-  #   - "example-subnet3"
-  #   upstreamSecurityGroup: "example-cluster-sg"
+  values:
+    default:
+      healthCheck:
+        interval: 5
+        timeout: 4
+        threshold: 2
+        path: /healthz/ready
+        port: 15021
+    # Values required by this blueprint without defaults:
+    #   region: "example-region"
+    #   vpcId:  "example-vpc"
+    #   subnets:
+    #   - "example-subnet1"
+    #   - "example-subnet2"
+    #   - "example-subnet3"
+    #   upstreamSecurityGroup: "example-cluster-sg"
 
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
@@ -69,8 +75,12 @@ spec:
             region: {{ .Values.region }}
             vpcId: {{ .Values.vpcId }}
             healthCheck:
-            - path: /healthz/ready
-              port: "15021"
+            - enabled: true
+              healthyThreshold: {{ .Values.healthCheck.threshold }}
+              interval: {{ .Values.healthCheck.interval }}
+              timeout: {{ .Values.healthCheck.timeout }}
+              path: {{ .Values.healthCheck.path }}
+              port: {{ .Values.healthCheck.port | quote }}
             port: 80
             protocol: HTTP
             targetType: ip

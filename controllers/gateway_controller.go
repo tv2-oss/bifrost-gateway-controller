@@ -38,6 +38,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,7 +52,7 @@ import (
 )
 
 // Used to requeue when a resource is missing a dependency
-var dependencyMissingRequeuePeriod = 5 * time.Second
+var dependencyMissingRequeuePeriod = 30 * time.Second
 
 // GatewayReconciler reconciles a Gateway object
 type GatewayReconciler struct {
@@ -149,7 +150,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	templates, err := parseTemplates(gwcb.Spec.GatewayTemplate.ResourceTemplates)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("cannot parse templates: %w", err)
 	}
 
 	// Resource templates may reference each other, with the
@@ -160,7 +161,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	var lastRenderedNum, renderedNum, existsNum int
 	lastRenderedNum = -1
 	for attempt := 0; attempt < len(templates); attempt++ {
-		logger.Info("start reconcile loop", "attempt", attempt)
+		logger.Info("reconcile loop", "attempt", attempt)
 		isFinalAttempt := attempt == len(templates)-1
 
 		templateValues.Resources = buildResourceValues(templates)
@@ -180,6 +181,8 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	requeue = (renderedNum != len(templates))
 	logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "totalNum", len(templates), "requeue", requeue)
+
+	beforeStatusUpdate := gw.DeepCopy()
 
 	// Update status.addresses field
 	tmplStr, found := gwcb.Spec.GatewayTemplate.Status["template"]
@@ -211,25 +214,30 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		requeue = true
 	}
 
-	// FIXME: Set real listener status conditions calculated from child resources
-	lStatus := make([]gatewayapi.ListenerStatus, 0, len(gw.Spec.Listeners))
+	// TODO: Consider if we can set listener status conditions calculated from child resources
 	for _, listener := range gw.Spec.Listeners {
-		status := gatewayapi.ListenerStatus{
-			Name: listener.Name,
-			SupportedKinds: []gatewayapi.RouteGroupKind{{
-				Group: (*gatewayapi.Group)(&gatewayapi.GroupVersion.Group),
-				Kind:  gatewayapi.Kind("HTTPRoute"),
-			}},
-			AttachedRoutes: int32(len(gwRoutes)),
+		var status *gatewayapi.ListenerStatus
+		for idx := range gw.Status.Listeners { // Locate existing status
+			if gw.Status.Listeners[idx].Name == listener.Name {
+				break
+			}
+		}
+		if status == nil {
+			status = &gatewayapi.ListenerStatus{ // Existing not found, create new
+				Name: listener.Name,
+				SupportedKinds: []gatewayapi.RouteGroupKind{{
+					Group: (*gatewayapi.Group)(&gatewayapi.GroupVersion.Group),
+					Kind:  gatewayapi.Kind("HTTPRoute"),
+				}},
+				AttachedRoutes: int32(len(gwRoutes)), // FIXME, not necessarily correct
+			}
 		}
 		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
 			Type:               string(gatewayapi.ListenerConditionAccepted),
 			Status:             metav1.ConditionTrue,
 			Reason:             string(gatewayapi.ListenerReasonAccepted),
 			ObservedGeneration: gw.ObjectMeta.Generation})
-		lStatus = append(lStatus, status)
 	}
-	gw.Status.Listeners = lStatus
 
 	// Gateway was accepted as 'ours'
 	meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
@@ -273,9 +281,11 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		Reason:             string(gatewayapi.GatewayReasonReady),
 		ObservedGeneration: gw.ObjectMeta.Generation})
 
-	if err := r.Client().Status().Update(ctx, &gw); err != nil {
-		logger.Error(err, "unable to update Gateway status")
-		return ctrl.Result{}, err
+	if !equality.Semantic.DeepEqual(beforeStatusUpdate.Status, gw.Status) {
+		if err := r.Client().Status().Update(ctx, &gw); err != nil {
+			logger.Error(err, "unable to update Gateway status")
+			return ctrl.Result{}, err
+		}
 	}
 
 	if requeue {

@@ -36,6 +36,8 @@ import (
 	"errors"
 	"fmt"
 
+	"golang.org/x/exp/maps"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -97,21 +99,21 @@ func lookupGatewayClassBlueprint(ctx context.Context, r ControllerClient, gwc *g
 // - Values from GatewayClassConfig in controller namespace
 // - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace (lowest precedence)
 // - Values from GatewayConfig in Gateway/HTTPRoute local namespace (lowest precedence)
+// Note, defaults are processed top-to-bottom, while overrides are bottom-to-top (see GEP-713)
 func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName string, gwcb *gwcapi.GatewayClassBlueprint, _ /*namespace*/ string) (map[string]any, error) {
-	var values map[string]any
+	values := map[string]any{}
 	var err error
 
 	// Helper to parse and merge-overwrite values
-	mergeValues := func(src *apiextensionsv1.JSON, _ /*existing*/ map[string]any) (map[string]any, error) {
+	mergeValues := func(src *apiextensionsv1.JSON, existing map[string]any) (map[string]any, error) {
 		if src != nil {
-			current := map[string]any{}
-			if err = json.Unmarshal(src.Raw, &current); err != nil {
+			newvals := map[string]any{}
+			if err = json.Unmarshal(src.Raw, &newvals); err != nil {
 				return nil, fmt.Errorf("cannot unmarshal values: %w", err)
 			}
-			// FIXME: Needs to properly merge values, newly read values from `src` should overwrite what is already in `existing`
-			values = current
+			maps.Copy(existing, newvals) // FIXME: This overwrites at top-level. GEP-713 specifies deep merge
 		}
-		return values, nil
+		return existing, nil
 	}
 
 	// FIXME: Should not hardcode controller namespace
@@ -121,7 +123,11 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 		return nil, err
 	}
 
-	// FIXME: Process defaults
+	// Blueprint default values are first
+	if values, err = mergeValues(gwcb.Spec.Values.Default, values); err != nil {
+		return nil, fmt.Errorf("while processing blueprint default values for gatewayclass %s: %w", gatewayClassName, err)
+	}
+	// FIXME: Process other defaults
 
 	// Process overrides in increasing order of precedence
 
@@ -140,9 +146,9 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 		}
 	}
 
-	// Blueprint values are last since they have highest precedence
+	// Blueprint override values are last since they have highest precedence
 	if values, err = mergeValues(gwcb.Spec.Values.Override, values); err != nil {
-		return nil, fmt.Errorf("while processing blueprint for gatewayclass %s: %w", gatewayClassName, err)
+		return nil, fmt.Errorf("while processing blueprint override values for gatewayclass %s: %w", gatewayClassName, err)
 	}
 
 	return values, nil
@@ -185,7 +191,7 @@ func unstructuredToGVR(r ControllerClient, u *unstructured.Unstructured) (*schem
 	}, isNamespaced, nil
 }
 
-// Apply an unstructured object using service-side apply
+// Apply an unstructured object using server-side apply
 func patchUnstructured(ctx context.Context, r ControllerDynClient, us *unstructured.Unstructured,
 	gvr *schema.GroupVersionResource, namespace *string) error {
 	jsonData, err := json.Marshal(us.Object)

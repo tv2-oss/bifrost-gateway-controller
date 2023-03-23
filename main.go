@@ -79,7 +79,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&syncPeriodArg, "sync-period", "30s", "The period between non event-driven resynchronizations")
+	flag.StringVar(&syncPeriodArg, "sync-period", "120s", "The period between non event-driven resynchronizations")
 	opts := zap.Options{
 		Development: true,
 	}
