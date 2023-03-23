@@ -3,6 +3,17 @@ entries:
   gateway-controller:
   - apiVersion: v2
     appVersion: 0.0.5
+    created: "2023-03-23T15:09:54.348175913Z"
+    description: Gateway API driven management of network infrastructure across Kubernetes
+      and cloud infrastructure
+    digest: 118bb84c8043eb1cfa7d719c08b043d956f9d8c9c4584dd5e805c13f7678ea68
+    name: gateway-controller
+    type: application
+    urls:
+    - https://github.com/tv2/gateway-controller/releases/download/gateway-controller-0.1.3/gateway-controller-0.1.3.tgz
+    version: 0.1.3
+  - apiVersion: v2
+    appVersion: 0.0.5
     created: "2023-03-17T11:36:22.26937728Z"
     description: Gateway API driven management of network infrastructure across Kubernetes
       and cloud infrastructure
@@ -23,4 +34,4 @@ entries:
     urls:
     - https://github.com/tv2/gateway-controller/releases/download/gateway-controller-0.1.0/gateway-controller-0.1.0.tgz
     version: 0.1.0
-generated: "2023-03-17T11:36:22.26938368Z"
+generated: "2023-03-23T15:09:54.348199913Z"
