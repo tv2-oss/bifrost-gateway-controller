@@ -63,8 +63,7 @@ serviceAccount:
 
 metricsService:
   ports:
-  - name: https
-    port: 8443
+  - name: http
+    port: 8080
     protocol: TCP
-    targetPort: https
   type: ClusterIP
