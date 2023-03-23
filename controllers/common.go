@@ -141,10 +141,14 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 	mergeValues := func(src *apiextensionsv1.JSON, existing map[string]any) (map[string]any, error) {
 		if src != nil {
 			newvals := map[string]any{}
+			var ok bool
 			if err = json.Unmarshal(src.Raw, &newvals); err != nil {
 				return nil, fmt.Errorf("cannot unmarshal values: %w", err)
 			}
-			existing = merge(existing, newvals).(map[string]any)
+			existing, ok = merge(existing, newvals).(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("cannot merge values: %w", err)
+			}
 		}
 		return existing, nil
 	}
