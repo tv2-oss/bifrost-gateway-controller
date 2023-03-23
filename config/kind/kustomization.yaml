@@ -13,7 +13,7 @@ patchesStrategicMerge:
         spec:
           containers:
             - name: manager
-              image: "controller:latest"
+              image: "ghcr.io/tv2-oss/gateway-controller:latest"
               imagePullPolicy: "Never"
   - |-
     apiVersion: rbac.authorization.k8s.io/v1
