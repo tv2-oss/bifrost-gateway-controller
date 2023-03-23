@@ -862,7 +862,7 @@ spec:
         - --leader-elect
         command:
         - /gateway-controller
-        image: controller:latest
+        image: ghcr.io/tv2-oss/gateway-controller:latest
         livenessProbe:
           httpGet:
             path: /healthz
