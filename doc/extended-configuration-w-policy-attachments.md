@@ -114,3 +114,9 @@ Increasing order of precedence:
 - `GatewayClassConfig` in *gateway-controller* namespace when
   `Gateway` reference `GatewayClassConfig` indirectly through
   `GatewayClass`.
+
+If there are multiple policies targeting the same resource and setting
+the same variable, the result is undefined (see also [Conflict
+Resolution](https://gateway-api.sigs.k8s.io/references/policy-attachment/#conflict-resolution)). Policies
+of type `GatewayConfig` may target both `Gateway` and `Namespace`
+resources.

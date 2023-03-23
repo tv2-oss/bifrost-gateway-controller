@@ -208,7 +208,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			continue
 		}
 
-		values, err := lookupValues(ctx, r, gwc.Name, gwcb, gw.Namespace)
+		values, err := lookupValues(ctx, r, gwc.Name, gwcb, gw.Namespace, gw.Name)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("cannot lookup values: %w", err)
 		}

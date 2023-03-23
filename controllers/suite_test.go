@@ -38,18 +38,19 @@ import (
 	"time"
 
 	gcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
-	ctrl "sigs.k8s.io/controller-runtime"
-	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -118,6 +119,11 @@ var _ = BeforeSuite(func() {
 	httprtctrl := NewHTTPRouteController(k8sManager, cfg)
 	err = httprtctrl.SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
+
+	// Namespace of the gateway controller
+	ns := corev1.Namespace{}
+	ns.Name = "gateway-controller-system"
+	Expect(k8sClient.Create(ctx, &ns)).Should(Succeed())
 
 	go func() {
 		defer GinkgoRecover()

@@ -80,6 +80,7 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&syncPeriodArg, "sync-period", "120s", "The period between non event-driven resynchronizations")
+	flag.StringVar(&controllers.ControllerNamespace, "controller-namespace", "gateway-controller-system", "The namespace the controller will watch for global policies")
 	opts := zap.Options{
 		Development: true,
 	}

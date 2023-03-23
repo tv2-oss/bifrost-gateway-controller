@@ -36,8 +36,6 @@ import (
 	"errors"
 	"fmt"
 
-	"golang.org/x/exp/maps"
-
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,6 +50,11 @@ import (
 
 	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	selfapi "github.com/tv2-oss/gateway-controller/pkg/api"
+)
+
+var (
+	// The namespace the controller will watch for global policies
+	ControllerNamespace string
 )
 
 type ControllerClient interface {
@@ -94,55 +97,156 @@ func lookupGatewayClassBlueprint(ctx context.Context, r ControllerClient, gwc *g
 	return &gwcb, nil
 }
 
-// Lookup values from GatewayClassConfig/GatewayConfig CRDs (eventually) and combine using precedence rules:
-// - Values from GatewayClassBlueprint (highest precedence)
-// - Values from GatewayClassConfig in controller namespace
-// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace (lowest precedence)
-// - Values from GatewayConfig in Gateway/HTTPRoute local namespace (lowest precedence)
-// Note, defaults are processed top-to-bottom, while overrides are bottom-to-top (see GEP-713)
-func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName string, gwcb *gwcapi.GatewayClassBlueprint, _ /*namespace*/ string) (map[string]any, error) {
+// Deep map merge, with 'b' overwriting values in 'a'.  On type conflicts precedence is given to 'a' i.e. no overwrite
+// x and y are concrete versions of a and b
+func merge(a, b any) any {
+	switch x := a.(type) {
+	case map[string]any:
+		y, ok := b.(map[string]any)
+		if !ok {
+			return a
+		}
+		for k, vy := range y { // Copy from 'b' (represented by 'y') into 'a'
+			if va, ok := x[k]; ok {
+				x[k] = merge(va, vy)
+			} else {
+				x[k] = vy
+			}
+		}
+	default:
+		return b
+	}
+	return a
+}
+
+// Lookup values from GatewayClassConfig/GatewayConfig CRDs and combine using precedence rules:
+// - Values from GatewayClassBlueprint
+// - Values from GatewayClassConfig in controller namespace (aka. global policies)
+// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace
+// - Values from GatewayConfig in Gateway/HTTPRoute local namespace, targeting namespace
+// - Values from GatewayConfig in Gateway/HTTPRoute local namespace, targeting Gateway/HTTPRoute resource
+// Note, defaults are processed top-to-bottom (i.e. later defaults overwrites earlier defaults), while overrides are bottom-to-top (see GEP-713)
+//
+// See also doc/extended-configuration-w-policy-attachments.md
+//
+// FIXME: Fully implement conflict resolution: https://gateway-api.sigs.k8s.io/references/policy-attachment/#conflict-resolution
+func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName string, gwcb *gwcapi.GatewayClassBlueprint,
+	gwNamespace string, gwName string) (map[string]any, error) {
 	values := map[string]any{}
 	var err error
 
-	// Helper to parse and merge-overwrite values
+	// Helper to parse and merge-overwrite values. IMPORTANT: All
+	// values from GatewayClassConfig and GatewayConfigs are
+	// Unmarshalled and hence we will not be modifying original
+	// K8s resources
 	mergeValues := func(src *apiextensionsv1.JSON, existing map[string]any) (map[string]any, error) {
 		if src != nil {
 			newvals := map[string]any{}
+			var ok bool
 			if err = json.Unmarshal(src.Raw, &newvals); err != nil {
 				return nil, fmt.Errorf("cannot unmarshal values: %w", err)
 			}
-			maps.Copy(existing, newvals) // FIXME: This overwrites at top-level. GEP-713 specifies deep merge
+			existing, ok = merge(existing, newvals).(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("cannot merge values: %w", err)
+			}
 		}
 		return existing, nil
 	}
 
-	// FIXME: Should not hardcode controller namespace
-	var gwccl gwcapi.GatewayClassConfigList
-	err = r.Client().List(ctx, &gwccl, client.InNamespace("gateway-controller"))
+	var gwccGlobal gwcapi.GatewayClassConfigList
+	err = r.Client().List(ctx, &gwccGlobal, client.InNamespace(ControllerNamespace))
 	if err != nil {
 		return nil, err
 	}
+
+	// GatewayClassConfig and GatewayConfig in same namespace as parent resource (e.g. a Gateway resource)
+	var gwccLocal gwcapi.GatewayClassConfigList
+	err = r.Client().List(ctx, &gwccLocal, client.InNamespace(gwNamespace))
+	if err != nil {
+		return nil, err
+	}
+	var gwcLocal gwcapi.GatewayConfigList
+	err = r.Client().List(ctx, &gwcLocal, client.InNamespace(gwNamespace))
+	if err != nil {
+		return nil, err
+	}
+
+	// Select policies that target GatewayClass, parent resource or namespace of parent resource
+	// Note, policies are kept ordered!
+	var gwccFiltered []*gwcapi.GatewayClassConfig
+	var gwcFiltered []*gwcapi.GatewayConfig
+
+	// Global GatewayClassConfig first
+	for idx := range gwccGlobal.Items {
+		gwcc := &gwccGlobal.Items[idx]
+		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
+			gwcc.Spec.TargetRef.Group == gatewayapi.GroupName &&
+			string(gwcc.Spec.TargetRef.Name) == gatewayClassName {
+			gwccFiltered = append(gwccFiltered, gwcc) // gwcc targets GatewayClass
+		}
+	}
+	// Namespace GatewayClassConfig second
+	for idx := range gwccLocal.Items {
+		gwcc := &gwccLocal.Items[idx]
+		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
+			gwcc.Spec.TargetRef.Group == gatewayapi.GroupName &&
+			string(gwcc.Spec.TargetRef.Name) == gatewayClassName {
+			gwccFiltered = append(gwccFiltered, gwcc) // gwcc targets GatewayClass
+		}
+	}
+	// Namespace GatewayConfig first
+	for idx := range gwcLocal.Items {
+		gwc := &gwcLocal.Items[idx]
+		if gwc.Spec.TargetRef.Kind == "Namespace" &&
+			gwc.Spec.TargetRef.Group == "" &&
+			string(gwc.Spec.TargetRef.Name) == gwNamespace {
+			gwcFiltered = append(gwcFiltered, gwc) // gwcc targets namespace of Gateway
+		}
+	}
+	// Parent resource GatewayConfig second
+	for idx := range gwcLocal.Items {
+		gwc := &gwcLocal.Items[idx]
+		if gwc.Spec.TargetRef.Kind == "Gateway" &&
+			gwc.Spec.TargetRef.Group == gatewayapi.GroupName &&
+			(gwc.Spec.TargetRef.Namespace == nil || string(*gwc.Spec.TargetRef.Namespace) == gwNamespace) &&
+			string(gwc.Spec.TargetRef.Name) == gwName {
+			gwcFiltered = append(gwcFiltered, gwc) // gwcc targets Gateway
+		}
+	}
+
+	// Process defaults
 
 	// Blueprint default values are first
 	if values, err = mergeValues(gwcb.Spec.Values.Default, values); err != nil {
 		return nil, fmt.Errorf("while processing blueprint default values for gatewayclass %s: %w", gatewayClassName, err)
 	}
-	// FIXME: Process other defaults
+	// GatewayClassConfig, ordered, global first
+	for _, pol := range gwccFiltered {
+		if values, err = mergeValues(pol.Spec.Default, values); err != nil {
+			return nil, fmt.Errorf("while processing %s: %w", pol.Name, err)
+		}
+	}
+	// GatewayConfig, ordered, namespace-targeted first
+	for _, pol := range gwcFiltered {
+		if values, err = mergeValues(pol.Spec.Default, values); err != nil {
+			return nil, fmt.Errorf("while processing %s: %w", pol.Name, err)
+		}
+	}
 
-	// Process overrides in increasing order of precedence
+	// Process overrides
 
-	// FIXME: Use GatewayConfig and GatewayClassconfig from parent resource namespace (lowest override precedence)
+	// GatewayConfig, ordered, namespace-targeted is first i.e. reverse loop
+	for idx := len(gwcFiltered) - 1; idx >= 0; idx-- {
+		if values, err = mergeValues(gwcFiltered[idx].Spec.Override, values); err != nil {
+			return nil, fmt.Errorf("while processing %s: %w", gwcFiltered[idx].Name, err)
+		}
+	}
 
-	// GatewayClassConfig from controller namesapce
-	for idx := range gwccl.Items {
-		gwcc := &gwccl.Items[idx]
-		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
-			gwcc.Spec.TargetRef.Group == gatewayapi.GroupName &&
-			string(gwcc.Spec.TargetRef.Name) == gatewayClassName {
-			// gwcc targets gatewayclass
-			if values, err = mergeValues(gwcc.Spec.Override, values); err != nil {
-				return nil, fmt.Errorf("while processing %s: %w", gwcc.Name, err)
-			}
+	// GatewayClassConfig, ordered, global is first i.e. reverse loop
+	for idx := len(gwccFiltered) - 1; idx >= 0; idx-- {
+		if values, err = mergeValues(gwccFiltered[idx].Spec.Override, values); err != nil {
+			return nil, fmt.Errorf("while processing %s: %w", gwccFiltered[idx].Name, err)
 		}
 	}
 
