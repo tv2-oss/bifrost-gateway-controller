@@ -123,7 +123,8 @@ func merge(a, b any) any {
 // - Values from GatewayClassBlueprint
 // - Values from GatewayClassConfig in controller namespace (aka. global policies)
 // - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace
-// - Values from GatewayConfig in Gateway/HTTPRoute local namespace
+// - Values from GatewayConfig in Gateway/HTTPRoute local namespace, targeting namespace
+// - Values from GatewayConfig in Gateway/HTTPRoute local namespace, targeting Gateway/HTTPRoute resource
 // Note, defaults are processed top-to-bottom (i.e. later defaults overwrites earlier defaults), while overrides are bottom-to-top (see GEP-713)
 //
 // See also doc/extended-configuration-w-policy-attachments.md
