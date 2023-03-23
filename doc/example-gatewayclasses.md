@@ -46,6 +46,9 @@ This definition also includes the following Kubernetes infrastructure:
   to the AWS ALB target group. This links the Kubernetes internal and
   AWS infrastructure.
 
+**Note** the ALB terminates TLS and forwards traffic un-encrypted to
+the Istio ingress gateway.
+
 This definition is provided in the following files:
 
 - [`gatewayclassblueprint-aws-alb-crossplane.yaml`](../test-data/gatewayclassblueprint-aws-alb-crossplane.yaml) blueprint for infrastructure implementation
