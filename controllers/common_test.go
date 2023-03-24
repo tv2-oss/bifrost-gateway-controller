@@ -81,6 +81,7 @@ spec:
           someValue7: {{ .Values.someValue7 }}
           someValue8: {{ .Values.someValue8 }}
           someValue9: {{ .Values.someValue9 }}
+          someValue10: {{ .Values.someValue10 }}
           someNestedValue1: {{ .Values.nested.someValue1 }}
           someNestedValue2: {{ .Values.nested.someValue2 }}
           someNestedValue3: {{ .Values.nested.someValue3 }}
@@ -120,6 +121,21 @@ spec:
     name: common-test
 `
 
+const commonTestNsPolicy2Manifest string = `
+apiVersion: gateway.tv2.dk/v1alpha1
+kind: GatewayClassConfig
+metadata:
+  name: common-test-ns2
+  namespace: default      # Note, same NS as Gateway
+spec:
+  override:
+    someValue10: global-config3-override10
+  targetRef:
+    group: ""
+    kind: Namespace
+    name: default
+`
+
 const commonTestPolicy1Manifest string = `
 apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayConfig
@@ -142,7 +158,7 @@ spec:
     namespace: default
 `
 
-const commonTestNsPolicy2Manifest string = `
+const commonTestNsPolicy3Manifest string = `
 apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayConfig
 metadata:
@@ -165,11 +181,11 @@ var _ = Describe("Common functions", func() {
 	)
 
 	var (
-		gwc          *gatewayapi.GatewayClass
-		gwcb         *gwcapi.GatewayClassBlueprint
-		gwcc1, gwcc2 *gwcapi.GatewayClassConfig
-		gwc1, gwc2   *gwcapi.GatewayConfig
-		ctx          context.Context
+		gwc                 *gatewayapi.GatewayClass
+		gwcb                *gwcapi.GatewayClassBlueprint
+		gwcc1, gwcc2, gwcc3 *gwcapi.GatewayClassConfig
+		gwc1, gwc2          *gwcapi.GatewayConfig
+		ctx                 context.Context
 	)
 
 	BeforeEach(func() {
@@ -177,6 +193,7 @@ var _ = Describe("Common functions", func() {
 		gwcb = &gwcapi.GatewayClassBlueprint{}
 		gwcc1 = &gwcapi.GatewayClassConfig{}
 		gwcc2 = &gwcapi.GatewayClassConfig{}
+		gwcc3 = &gwcapi.GatewayClassConfig{}
 		gwc1 = &gwcapi.GatewayConfig{}
 		gwc2 = &gwcapi.GatewayConfig{}
 		ctx = context.Background()
@@ -188,9 +205,11 @@ var _ = Describe("Common functions", func() {
 		Expect(k8sClient.Create(ctx, gwcc1)).Should(Succeed())
 		Expect(yaml.Unmarshal([]byte(commonTestNsPolicy1Manifest), gwcc2)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwcc2)).Should(Succeed())
+		Expect(yaml.Unmarshal([]byte(commonTestNsPolicy2Manifest), gwcc3)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwcc3)).Should(Succeed())
 		Expect(yaml.Unmarshal([]byte(commonTestPolicy1Manifest), gwc1)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc1)).Should(Succeed())
-		Expect(yaml.Unmarshal([]byte(commonTestNsPolicy2Manifest), gwc2)).To(Succeed())
+		Expect(yaml.Unmarshal([]byte(commonTestNsPolicy3Manifest), gwc2)).To(Succeed())
 		Expect(k8sClient.Create(ctx, gwc2)).Should(Succeed())
 	})
 
@@ -199,6 +218,7 @@ var _ = Describe("Common functions", func() {
 		Expect(k8sClient.Delete(ctx, gwcb)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, gwcc1)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, gwcc2)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, gwcc3)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, gwc1)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, gwc2)).Should(Succeed())
 	})
@@ -230,6 +250,7 @@ var _ = Describe("Common functions", func() {
 			Expect(cm.Data["someValue7"]).To(Equal("config1-default7"))
 			Expect(cm.Data["someValue8"]).To(Equal("blueprint-default8"))
 			Expect(cm.Data["someValue9"]).To(Equal("ns-config1-default9"))
+			Expect(cm.Data["someValue10"]).To(Equal("global-config3-override10"))
 			Expect(cm.Data["someNestedValue1"]).To(Equal("blueprint-nested-override1"))
 			Expect(cm.Data["someNestedValue2"]).To(Equal("blueprint-nested-default2"))
 			Expect(cm.Data["someNestedValue3"]).To(Equal("config1-nested-override3"))

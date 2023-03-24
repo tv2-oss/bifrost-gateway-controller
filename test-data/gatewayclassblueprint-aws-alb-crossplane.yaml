@@ -15,6 +15,7 @@ spec:
         cidrs:
         - 0.0.0.0/0
         port: 443
+      tags: []
     # Values required by this blueprint without defaults:
     #   region: "example-region"
     #   vpcId:  "example-vpc"
@@ -41,6 +42,7 @@ spec:
           namespace: {{ .Gateway.metadata.namespace }}
           annotations:
             networking.istio.io/service-type: ClusterIP
+            {{ toYaml .Values.tags | nindent 4 }}
         spec:
           gatewayClassName: istio
           listeners:
@@ -73,6 +75,8 @@ spec:
               {{ range .Values.subnets }}
               - subnetId: {{ . }}
               {{ end }}
+            tags:
+              {{- toYaml .Values.tags | nindent 6 }}
       LBTargetGroup: |
         apiVersion: elbv2.aws.upbound.io/v1beta1
         kind: LBTargetGroup
@@ -96,6 +100,8 @@ spec:
               port: {{ .Values.healthCheck.port | quote }}
             port: 80
             protocol: HTTP
+            tags:
+              {{- toYaml .Values.tags | nindent 6 }}
             targetType: ip
       LBListener: |
         apiVersion: elbv2.aws.upbound.io/v1beta1
@@ -120,12 +126,16 @@ spec:
             loadBalancerArnSelector:
               matchLabels:
                 tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+            tags:
+              {{- toYaml .Values.tags | nindent 6 }}
       TargetGroupBinding: |
         apiVersion: elbv2.k8s.aws/v1beta1
         kind: TargetGroupBinding
         metadata:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
           namespace: {{ .Gateway.metadata.namespace }}
+          annotations:
+            {{- toYaml .Values.tags | nindent 4 }}
         spec:
           targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
           targetType: ip
@@ -144,9 +154,11 @@ spec:
             name: admin
           forProvider:
             description: "SG for ALB"
-            region: {{ .Values.region }}
-            vpcId: {{ .Values.vpcId}}
             name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+            region: {{ .Values.region }}
+            tags:
+              {{- toYaml .Values.tags | nindent 6 }}
+            vpcId: {{ .Values.vpcId}}
       SecurityGroupRuleEgress80: |
         apiVersion: ec2.aws.upbound.io/v1beta1
         kind: SecurityGroupRule
@@ -267,6 +279,9 @@ spec:
         metadata:
           name: {{ .HTTPRoute.metadata.name }}-child
           namespace: {{ .HTTPRoute.metadata.namespace }}
+          annotations:
+            tags:
+              {{- toYaml .Values.tags | nindent 4 }}
         spec:
           parentRefs:
           {{ range .HTTPRoute.spec.parentRefs -}}

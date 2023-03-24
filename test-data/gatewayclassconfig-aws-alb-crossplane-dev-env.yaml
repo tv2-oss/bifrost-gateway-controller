@@ -13,6 +13,8 @@ spec:
     - subnet-0e6f13b058d3c3729
     upstreamSecurityGroup: sg-0c5b5ae07d31da906
     internal: false
+    tags:
+      gateway-controller/gatewayclass: aws-alb-crossplane-public
   targetRef:
     group: gateway.networking.k8s.io
     kind: GatewayClass
@@ -33,6 +35,8 @@ spec:
     - subnet-099f1b955e66e1a4a
     upstreamSecurityGroup: sg-0c5b5ae07d31da906
     internal: true
+    tags:
+      gateway-controller/gatewayclass: aws-alb-crossplane-public
   targetRef:
     group: gateway.networking.k8s.io
     kind: GatewayClass
