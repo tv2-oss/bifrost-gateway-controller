@@ -122,7 +122,8 @@ func merge(a, b any) any {
 // Lookup values from GatewayClassConfig/GatewayConfig CRDs and combine using precedence rules:
 // - Values from GatewayClassBlueprint
 // - Values from GatewayClassConfig in controller namespace (aka. global policies)
-// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace
+// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace targeting namespace
+// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace targeting Gateway/HTTPRoute
 // - Values from GatewayConfig in Gateway/HTTPRoute local namespace, targeting namespace
 // - Values from GatewayConfig in Gateway/HTTPRoute local namespace, targeting Gateway/HTTPRoute resource
 // Note, defaults are processed top-to-bottom (i.e. later defaults overwrites earlier defaults), while overrides are bottom-to-top (see GEP-713)
@@ -186,7 +187,16 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 			gwccFiltered = append(gwccFiltered, gwcc) // gwcc targets GatewayClass
 		}
 	}
-	// Namespace GatewayClassConfig second
+	// Namespace GatewayClassConfig targeting namespace second
+	for idx := range gwccLocal.Items {
+		gwcc := &gwccLocal.Items[idx]
+		if gwcc.Spec.TargetRef.Kind == "Namespace" &&
+			gwcc.Spec.TargetRef.Group == "" &&
+			string(gwcc.Spec.TargetRef.Name) == gwNamespace {
+			gwccFiltered = append(gwccFiltered, gwcc) // gwcc targets namespace
+		}
+	}
+	// Namespace GatewayClassConfig targeting Gateway/HTTPRoute third
 	for idx := range gwccLocal.Items {
 		gwcc := &gwccLocal.Items[idx]
 		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&
