@@ -7,10 +7,9 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/onsi/ginkgo/v2 v2.9.1
 	github.com/onsi/gomega v1.27.4
-	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 	k8s.io/api v0.26.2
 	k8s.io/apiextensions-apiserver v0.26.2
-	k8s.io/apimachinery v0.26.2
+	k8s.io/apimachinery v0.26.3
 	k8s.io/client-go v0.26.2
 	sigs.k8s.io/cli-utils v0.34.0
 	sigs.k8s.io/controller-runtime v0.14.5
