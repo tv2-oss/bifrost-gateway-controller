@@ -276,5 +276,11 @@ spec:
             namespace: {{ .namespace }}
             {{ end -}}
           {{ end }}
+          {{ if get .HTTPRoute.spec "hostnames" }}
+          hostnames:
+            {{- toYaml .HTTPRoute.spec.hostnames | nindent 4 }}
+          {{ end }}
+          {{ if get .HTTPRoute.spec "rules" }}
           rules:
             {{- toYaml .HTTPRoute.spec.rules | nindent 4 }}
+          {{ end }}
