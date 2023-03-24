@@ -206,7 +206,7 @@ spec:
             cidrBlocks:
               {{ range .Values.ingressAcls.cidrs -}}
               - {{ . }}
-              {{- end }}
+              {{ end }}
             fromPort: {{ .Values.ingressAcls.port }}
             protocol: tcp
             region: {{ .Values.region }}
