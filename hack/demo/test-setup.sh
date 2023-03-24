@@ -3,13 +3,13 @@
 echo ""
 echo "-------------------------------------------------------------------"
 read -p "Press enter to deploy GatewayClassBlueprint + GatewayClass'es"
-kubectl apply -f test-data/gatewayclassblueprint-aws-alb-crossplane.yaml
-kubectl apply -f test-data/gatewayclass-aws-alb-crossplane.yaml
+kubectl apply -f hack/demo/gatewayclassblueprint-aws-alb-crossplane.yaml
+kubectl apply -f hack/demo/gatewayclass-aws-alb-crossplane.yaml
 
 echo ""
 echo "-------------------------------------------------------------------"
 read -p "Press enter to deploy GatewayClassConfig's"
-kubectl apply -f test-data/gatewayclassconfig-aws-alb-crossplane-dev-env.yaml
+kubectl apply -f hack/demo/gatewayclassconfig-aws-alb-crossplane-dev-env.yaml
 
 echo ""
 echo "-------------------------------------------------------------------"
