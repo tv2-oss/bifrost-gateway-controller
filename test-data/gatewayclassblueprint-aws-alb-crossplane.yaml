@@ -14,7 +14,7 @@ spec:
       ingressAcls:
         cidrs:
         - 0.0.0.0/0
-        port: 80
+        port: 443
     # Values required by this blueprint without defaults:
     #   region: "example-region"
     #   vpcId:  "example-vpc"
@@ -23,6 +23,7 @@ spec:
     #   - "example-subnet2"
     #   - "example-subnet3"
     #   upstreamSecurityGroup: "example-cluster-sg"
+    #   certificateArn: "example-cert-arn"
 
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
@@ -43,7 +44,14 @@ spec:
         spec:
           gatewayClassName: istio
           listeners:
-            {{- toYaml .Gateway.spec.listeners | nindent 6 }}
+          {{- range .Gateway.spec.listeners }}
+          - name: {{ .name }}
+            port: 80
+            protocol: HTTP
+            {{ if get . "hostname" }}
+            hostname: {{ .hostname | quote }}
+            {{ end -}}
+          {{- end }}
       LB: |
         apiVersion: elbv2.aws.upbound.io/v1beta1
         kind: LB
@@ -57,6 +65,7 @@ spec:
           forProvider:
             name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             region: {{ .Values.region }}
+            internal: {{ .Values.internal }}
             securityGroupSelector:
               matchLabels:
                 tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
@@ -100,8 +109,9 @@ spec:
             name: admin
           forProvider:
             region: {{ .Values.region }}
-            port: 80
-            protocol: HTTP
+            port: 443
+            protocol: HTTPS
+            certificateArn: {{ .Values.certificateArn }}
             defaultAction:
             - targetGroupArnSelector:
                 matchLabels:
@@ -148,6 +158,7 @@ spec:
           providerConfigRef:
             name: admin
           forProvider:
+            description: "Traffic towards Istio ingress gateway"
             cidrBlocks:
               - 0.0.0.0/0
             fromPort: 80
@@ -191,10 +202,11 @@ spec:
           providerConfigRef:
             name: admin
           forProvider:
+            description: "External traffic towards ALB"
             cidrBlocks:
               {{ range .Values.ingressAcls.cidrs -}}
               - {{ . }}
-              {{- end }}
+              {{ end }}
             fromPort: {{ .Values.ingressAcls.port }}
             protocol: tcp
             region: {{ .Values.region }}
@@ -264,5 +276,11 @@ spec:
             namespace: {{ .namespace }}
             {{ end -}}
           {{ end }}
+          {{ if get .HTTPRoute.spec "hostnames" }}
+          hostnames:
+            {{- toYaml .HTTPRoute.spec.hostnames | nindent 4 }}
+          {{ end }}
+          {{ if get .HTTPRoute.spec "rules" }}
           rules:
             {{- toYaml .HTTPRoute.spec.rules | nindent 4 }}
+          {{ end }}
