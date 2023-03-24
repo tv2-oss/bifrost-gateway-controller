@@ -131,6 +131,8 @@ func merge(a, b any) any {
 // See also doc/extended-configuration-w-policy-attachments.md
 //
 // FIXME: Fully implement conflict resolution: https://gateway-api.sigs.k8s.io/references/policy-attachment/#conflict-resolution
+//
+//nolint:gocyclo // This function have a repeating character and this not as complex as the number of ifs may indicate
 func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName string, gwcb *gwcapi.GatewayClassBlueprint,
 	gwNamespace string, gwName string) (map[string]any, error) {
 	values := map[string]any{}
