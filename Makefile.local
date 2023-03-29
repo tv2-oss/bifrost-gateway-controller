@@ -183,12 +183,7 @@ setup-getting-started-controller:
 
 .PHONY: setup-getting-started-controller-helm
 setup-getting-started-controller-helm:
-	# FIXME, REMOVE THESE, START
-	make build
-	make docker-build
-	make cluster-load-controller-image
-	# FIXME, REMOVE THESE, END
-	helm upgrade -i gateway-controller  charts/gateway-controller --values charts/gateway-controller/ci/gatewayclassblueprint-contour-istio.yaml --set controllerManager.manager.image.pullPolicy=Never -n gateway-controller-system --create-namespace
+	helm upgrade -i gateway-controller  charts/gateway-controller --values charts/gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n gateway-controller-system --create-namespace
 	kubectl apply -f test-data/gatewayclass-contour-istio-cert.yaml
 
 .PHONY: setup-getting-started-usecase
