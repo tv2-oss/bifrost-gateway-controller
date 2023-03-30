@@ -64,7 +64,7 @@ by the following sections.
 Deploying the controller using Helm can be sone as follows
 ```
 helm repo add tv2-oss https://tv2-oss.github.io/gateway-controller
-helm upgrade -i gateway-controller tv2-oss/gateway-controller --create-namespace
+helm upgrade -i gateway-controller tv2-oss/gateway-controller -n gateway-controller-system --create-namespace
 ```
 
 ### Deploy from Local-build and YAML Artifacts (recommended for end-to-end tests)
