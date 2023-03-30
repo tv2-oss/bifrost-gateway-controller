@@ -33,6 +33,7 @@ release:
     - `ghcr.io/{{ .Env.REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .Version }}`
   extra_files:
     - glob: config/release/*
+    - glob: blueprints/*
 
 dockers:
   - goarch: amd64

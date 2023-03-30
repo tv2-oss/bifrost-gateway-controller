@@ -11,7 +11,7 @@ infrastructure.
 
 - [Motivation and Overall Design](doc/motivation-and-overall-design.md)
 - [Getting Started using a KIND Cluster](doc/getting-started.md)
-- [Example GatewayClass Definitions](doc/example-gatewayclasses.md)
+- [Example GatewayClassBlueprints](blueprints/README.md)
 - [Creating GatewayClass Definitions](doc/creating-gatewayclass-definitions.md)
 - [Extending GatewayClass Definitions using Policy Attachments](doc/extended-configuration-w-policy-attachments.md)
 - [User Journeys](doc/user-journeys.md)

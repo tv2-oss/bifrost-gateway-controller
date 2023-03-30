@@ -1,0 +1,11 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: contour-istio-cert
+spec:
+  controllerName: "github.com/tv2-oss/gateway-controller"
+  description: "Contour-based load balancer+Istio ingress gateway+certificate"
+  parametersRef:
+    group: gateway.tv2.dk
+    kind: GatewayClassBlueprint
+    name: contour-istio-cert
