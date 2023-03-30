@@ -49,6 +49,11 @@ make setup-external-dns-test
 make deploy-cert-manager
 ```
 
+Alternatively the following make target wraps all of above commands:
+```
+make setup-getting-started-cluster
+```
+
 ## Deploy gateway-controller
 
 There are three alternative ways to deploy the controller as described
@@ -56,7 +61,11 @@ by the following sections.
 
 ### Deploy with Helm (recommended)
 
-TODO: We do not yet have a Helm chart
+Deploying the controller using Helm can be sone as follows
+```
+helm repo add tv2-oss https://tv2-oss.github.io/gateway-controller
+helm upgrade -i gateway-controller tv2-oss/gateway-controller --create-namespace
+```
 
 ### Deploy from Local-build and YAML Artifacts (recommended for end-to-end tests)
 
