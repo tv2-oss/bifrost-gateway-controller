@@ -7,4 +7,5 @@
 # in the repo. Unless a later match takes precedence,
 # this owner will be requested for review when someone
 # opens a pull request.
-*       @tv2/ccs
+*       mvillumsen
+*       MichaelVL
