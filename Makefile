@@ -98,19 +98,19 @@ e2e-test: envtest
 
 .PHONY: unit-test
 unit-test:
-	kubectl apply -f test-data/gatewayclass-contour-istio.yaml
+	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio.yaml -f blueprints/gatewayclass-contour-istio.yaml
 	(cd test/unit && USE_EXISTING_CLUSTER=true go test -test.v -gateway-class=contour-istio)
 
 ## Runs conformance tests against cluster with controller deployed. Flag `-test.v' can be used to increase logging
 
 .PHONY: conformance-test
 conformance-test: ## Only 'core' suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
-	kubectl apply -f test-data/gatewayclass-contour-istio.yaml
+	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio.yaml -f blueprints/gatewayclass-contour-istio.yaml
 	(cd test/conformance/gateway-api/ && USE_EXISTING_CLUSTER=true go test -gateway-class=contour-istio)
 
 .PHONY: conformance-test-full
 conformance-test-full: ## Full suite, see https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/utils/suite/suite.go
-	kubectl apply -f test-data/gatewayclass-contour-istio.yaml
+	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio.yaml -f blueprints/gatewayclass-contour-istio.yaml
 	(cd test/conformance/gateway-api/ && go test -gateway-class=contour-istio -supported-features=ReferenceGrant,TLSRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPResponseHeaderModification,RouteDestinationPortMatching,GatewayClassObservedGenerationBump,HTTPRoutePortRedirect,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite)
 
 ##@ Build
