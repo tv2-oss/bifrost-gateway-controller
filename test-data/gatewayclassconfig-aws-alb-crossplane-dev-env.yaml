@@ -6,12 +6,12 @@ metadata:
 spec:
   override:
     region: eu-central-1
-    vpcId: vpc-0e4501e0fbc404284
+    vpcId: vpc-0123456789abcdef0
     subnets:
-    - subnet-03b44b0d7d83febbc
-    - subnet-0844755379de6d6f8
-    - subnet-0e6f13b058d3c3729
-    upstreamSecurityGroup: sg-0c5b5ae07d31da906
+    - subnet-01234567890abcdef
+    - subnet-123456789abcdef01
+    - subnet-23456789abcdef012
+    upstreamSecurityGroup: sg-0123456789abcdef0
     internal: false
     tags:
       gateway-controller/gatewayclass: aws-alb-crossplane-public
@@ -28,12 +28,12 @@ metadata:
 spec:
   override:
     region: eu-central-1
-    vpcId: vpc-0e4501e0fbc404284
+    vpcId: vpc-123456789abcdef01
     subnets:
-    - subnet-045141a3fdf9d7bb9
-    - subnet-094508a77cf895ec9
-    - subnet-099f1b955e66e1a4a
-    upstreamSecurityGroup: sg-0c5b5ae07d31da906
+    - subnet-3456789abcdef0123
+    - subnet-456789abcdef01234
+    - subnet-56789abcdef012345
+    upstreamSecurityGroup: sg-0123456789abcdef0
     internal: true
     tags:
       gateway-controller/gatewayclass: aws-alb-crossplane-public
