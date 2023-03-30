@@ -36,7 +36,7 @@ spec:
     upstreamSecurityGroup: sg-0123456789abcdef0
     internal: true
     tags:
-      gateway-controller/gatewayclass: aws-alb-crossplane-public
+      gateway-controller/gatewayclass: aws-alb-crossplane-internal
   targetRef:
     group: gateway.networking.k8s.io
     kind: GatewayClass
