@@ -110,7 +110,7 @@ func parseSingleTemplate(tmplKey, tmpl string) (*template.Template, error) {
 	var funcs = template.FuncMap{
 		"toYaml": helperToYaml,
 	}
-	return template.New(tmplKey).Option("missingkey=error").Funcs(sprig.FuncMap()).Funcs(funcs).Parse(tmpl)
+	return template.New(tmplKey).Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Funcs(funcs).Parse(tmpl)
 }
 
 // Initialize TemplateResource slice by parsing templates
