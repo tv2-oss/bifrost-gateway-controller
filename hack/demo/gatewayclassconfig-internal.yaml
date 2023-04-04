@@ -1,0 +1,23 @@
+apiVersion: gateway.tv2.dk/v1alpha1
+kind: GatewayClassConfig
+metadata:
+  name: aws-alb-crossplane-internal
+  namespace: bifrost-gateway-controller-system
+  annotations:
+    krm-apply-setters: "true"
+spec:
+  override:
+    region: eu-central-1
+    vpcId: "vpc-0f0a7248b68315eb0" # kpt-set: ${vpcId}
+    subnets: # kpt-set: ${privateSubnetIds}
+      - subnet-0908fcb4afac15c67
+      - subnet-067f253633e60287f
+      - subnet-0f1a74a3ac6bba47e
+    upstreamSecurityGroup: "sg-0a4c4eb536ac8bb09" # kpt-set: ${clusterNodeSecurityGroupId}
+    internal: true
+    tags:
+      bifrost-gateway-controller/gatewayclass: aws-alb-crossplane-internal
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: GatewayClass
+    name: aws-alb-crossplane-internal

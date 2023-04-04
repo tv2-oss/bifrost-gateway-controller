@@ -1,0 +1,17 @@
+apiVersion: gateway.tv2.dk/v1alpha1
+kind: GatewayConfig
+metadata:
+  name: foo-gateway-custom-acl
+  namespace: foo-infra
+spec:
+  override:
+    ingressAcls:
+      cidrs:
+      - 1.2.3.4/32
+    tags:
+      foo: bar123
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: foo-gateway
+    namespace: foo-infra

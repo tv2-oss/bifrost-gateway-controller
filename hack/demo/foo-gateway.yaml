@@ -1,0 +1,18 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: foo-gateway
+  namespace: foo-infra
+spec:
+  gatewayClassName: aws-alb-crossplane-public
+  listeners:
+  - name: web
+    port: 80
+    protocol: HTTP
+    hostname: "foo.kubecon23.tv2dev.dk"
+    allowedRoutes:
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            allowGateway: foo
