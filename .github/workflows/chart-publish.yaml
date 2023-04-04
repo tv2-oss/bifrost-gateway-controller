@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'charts/gateway-controller/**'
 
 jobs:
   release:
