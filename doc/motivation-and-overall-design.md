@@ -55,11 +55,13 @@ gateways to Kubernetes services. This API is fast becoming the
 standard API and is [widely
 supported](https://gateway-api.sigs.k8s.io/implementations/).
 
-**The *gateway-controller* presents the gateway API to users as
-the sole interface for network datapath definition.** This is the only
+**The *gateway-controller* presents the gateway API to users as the
+sole interface for network datapath definition.** This is the only
 interface users need to know and it fully supports a GitOps-based
 workflow. Users do not need to work with Terraform or generally know
-how the Gateway API is implemented by the platform.
+how the Gateway API is implemented by the platform. For features
+beyond the core gateway API, the *gateway-controller* applies [GEP-713
+policy attachments](https://gateway-api.sigs.k8s.io/geps/gep-713)
 
 The Gateway API does not cover concerns such as DNS or web application
 firewall (WAF) configuration. **The *gateway-controller*
