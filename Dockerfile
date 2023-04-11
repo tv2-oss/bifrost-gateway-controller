@@ -31,7 +31,7 @@
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY gateway-controller /gateway-controller
+COPY bifrost-gateway-controller /bifrost-gateway-controller
 USER 65532:65532
 
-ENTRYPOINT ["/gateway-controller"]
+ENTRYPOINT ["/bifrost-gateway-controller"]

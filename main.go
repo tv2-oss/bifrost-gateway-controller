@@ -48,8 +48,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	gatewaytv2dkv1a1 "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
-	"github.com/tv2-oss/gateway-controller/controllers"
+	gatewaytv2dkv1a1 "github.com/tv2-oss/bifrost-gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	"github.com/tv2-oss/bifrost-gateway-controller/controllers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -80,7 +80,7 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&syncPeriodArg, "sync-period", "120s", "The period between non event-driven resynchronizations")
-	flag.StringVar(&controllers.ControllerNamespace, "controller-namespace", "gateway-controller-system", "The namespace the controller will watch for global policies")
+	flag.StringVar(&controllers.ControllerNamespace, "controller-namespace", "bifrost-gateway-controller-system", "The namespace the controller will watch for global policies")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -88,7 +88,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-	setupLog.Info("gateway-controller", "version", version, "build-date", date, "commit", commit)
+	setupLog.Info("bifrost-gateway-controller", "version", version, "build-date", date, "commit", commit)
 
 	syncPeriod, err := time.ParseDuration(syncPeriodArg)
 	if err != nil {
@@ -104,7 +104,7 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		SyncPeriod:             &syncPeriod,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "71264cc8.gateway-controller.tv2.dk",
+		LeaderElectionID:       "71264cc8.bifrost-gateway-controller.tv2.dk",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

@@ -80,7 +80,7 @@ deploy-istio:
 #################
 .PHONY: cluster-load-controller-image
 cluster-load-controller-image:
-	kind load docker-image ghcr.io/tv2-oss/gateway-controller:latest --name kind-gwc-dev-cluster
+	kind load docker-image ghcr.io/tv2-oss/bifrost-gateway-controller:latest --name kind-gwc-dev-cluster
 
 #################
 .PHONY: deploy-etcd
@@ -183,8 +183,8 @@ setup-getting-started-controller:
 
 .PHONY: setup-getting-started-controller-helm
 setup-getting-started-controller-helm:
-	helm repo add tv2-oss https://tv2-oss.github.io/gateway-controller
-	helm upgrade -i gateway-controller tv2-oss/gateway-controller --values charts/gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n gateway-controller-system --create-namespace
+	helm repo add tv2-oss https://tv2-oss.github.io/bifrost-gateway-controller
+	helm upgrade -i bifrost-gateway-controller tv2-oss/bifrost-gateway-controller --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n bifrost-gateway-controller-system --create-namespace
 	kubectl apply -f test-data/gatewayclass-contour-istio-cert.yaml
 
 .PHONY: setup-getting-started-usecase

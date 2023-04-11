@@ -96,11 +96,11 @@ Kubernetes namespace, i.e. infrastructure providers create
 e.g. specific tagging rules are defined.
 
 A special case is namespaced `GatewayClassConfig` definitions in the
-*gateway-controller* namespace - these are considered as
+*bifrost-gateway-controller* namespace - these are considered as
 infrastructure global and applies to `Gateway`s defined in any
 namespace.
 
-The *gateway-controller* merges values before rendering templates
+The *bifrost-gateway-controller* merges values before rendering templates
 using the following order of precedence (aka. as *hierarchy* in
 GEP-713):
 
@@ -111,7 +111,7 @@ Increasing order of precedence:
 - `GatewayClassConfig` in the same namespace as `Gateway` when `Gateway`
   reference `GatewayClassConfig` indirectly through `GatewayClass`.
 
-- `GatewayClassConfig` in *gateway-controller* namespace when
+- `GatewayClassConfig` in *bifrost-gateway-controller* namespace when
   `Gateway` reference `GatewayClassConfig` indirectly through
   `GatewayClass`.
 

@@ -1,6 +1,6 @@
 # Getting Started using a KIND Cluster
 
-This guide describes how to exercise the *gateway-controller*
+This guide describes how to exercise the *bifrost-gateway-controller*
 using a KIND cluster, i.e. this guide does not require a cloud
 account. Instead, some resources that typically are allocated from a
 cloud provider are instead simulated inside the KIND
@@ -54,7 +54,7 @@ Alternatively the following make target wraps all of above commands:
 make setup-getting-started-cluster
 ```
 
-## Deploy gateway-controller
+## Deploy bifrost-gateway-controller
 
 There are three alternative ways to deploy the controller as described
 by the following sections.
@@ -63,8 +63,8 @@ by the following sections.
 
 Deploying the controller using Helm can be sone as follows
 ```
-helm repo add tv2-oss https://tv2-oss.github.io/gateway-controller
-helm upgrade -i gateway-controller tv2-oss/gateway-controller -n gateway-controller-system --create-namespace
+helm repo add tv2-oss https://tv2-oss.github.io/bifrost-gateway-controller
+helm upgrade -i bifrost-gateway-controller tv2-oss/bifrost-gateway-controller -n bifrost-gateway-controller-system --create-namespace
 ```
 
 ### Deploy from Local-build and YAML Artifacts (recommended for end-to-end tests)

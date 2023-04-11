@@ -5,7 +5,7 @@ normalized before any resources are created.
 
 ## Motivation
 
-The *gateway-controller* cannot simply create resources as plain
+The *bifrost-gateway-controller* cannot simply create resources as plain
 copies of the Gateway API resources defining a data path because there
 is not necessary a 1:1 correspondence between these 'specifying'
 resources and the resources that are needed to define the data path
@@ -45,7 +45,7 @@ listeners [intersect (see gateway API
 spec)](https://gateway-api.sigs.k8s.io/references/spec/#gateway.networking.k8s.io%2fv1beta1.Listener)
 with the `HTTPRoute` hostname(s).
 
-The *gateway-controller* will normalize the 'defining resources'
+The *bifrost-gateway-controller* will normalize the 'defining resources'
 such that it can (depending on the actual data path definition
 specified in the applied `GatewayClass`) create Cloud resources like
 TLS certificate and DNS entry as well as a Kubernetes-internal

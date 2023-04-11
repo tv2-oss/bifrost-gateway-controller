@@ -75,4 +75,4 @@ jobs:
         run: |
           rm -rf config/release
           make manifest-build
-          diff -q config/release/crds.yaml charts/gateway-controller/crds/crds.yaml
+          diff -q config/release/crds.yaml charts/bifrost-gateway-controller/crds/crds.yaml
