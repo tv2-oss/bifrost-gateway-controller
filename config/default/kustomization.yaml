@@ -1,5 +1,5 @@
-namespace: gateway-controller-system
-namePrefix: gateway-controller-
+namespace: bifrost-gateway-controller-system
+namePrefix: bifrost-gateway-controller-
 
 # Labels to add to all resources and selectors.
 #labels:

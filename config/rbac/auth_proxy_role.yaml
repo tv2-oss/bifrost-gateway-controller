@@ -5,8 +5,8 @@ metadata:
     app.kubernetes.io/name: clusterrole
     app.kubernetes.io/instance: proxy-role
     app.kubernetes.io/component: kube-rbac-proxy
-    app.kubernetes.io/created-by: gateway-controller
-    app.kubernetes.io/part-of: gateway-controller
+    app.kubernetes.io/created-by: bifrost-gateway-controller
+    app.kubernetes.io/part-of: bifrost-gateway-controller
     app.kubernetes.io/managed-by: kustomize
   name: proxy-role
 rules:
