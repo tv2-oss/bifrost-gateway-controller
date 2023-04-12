@@ -60,7 +60,7 @@ the sole interface for network datapath definition.** This is the only
 interface users need to know and it fully supports a GitOps-based
 workflow. Users do not need to work with Terraform or generally know
 how the Gateway API is implemented by the platform. For features
-beyond the core gateway API, the *bifrost-gateway-controller* applies [GEP-713
+beyond the core Gateway API, the *bifrost-gateway-controller* applies [GEP-713
 policy attachments](https://gateway-api.sigs.k8s.io/geps/gep-713)
 
 The Gateway API does not cover concerns such as DNS or web application
