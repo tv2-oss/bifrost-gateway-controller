@@ -53,6 +53,10 @@ spec:
             {{ if get . "hostname" }}
             hostname: {{ .hostname | quote }}
             {{ end -}}
+            {{ if get . "allowedRoutes" }}
+            allowedRoutes:
+              {{ toYaml .allowedRoutes | nindent 6 }}
+            {{ end -}}
           {{- end }}
       LB: |
         apiVersion: elbv2.aws.upbound.io/v1beta1
