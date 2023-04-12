@@ -1,5 +1,17 @@
 apiVersion: v1
 entries:
+  bifrost-gateway-controller:
+  - apiVersion: v2
+    appVersion: 0.0.5
+    created: "2023-04-12T05:59:04.842621476Z"
+    description: Gateway API driven management of network infrastructure across Kubernetes
+      and cloud infrastructure
+    digest: e2f4fae0491ffa157e3e244436e2b09e0465ec4bef87a41d4316b470a65dde12
+    name: bifrost-gateway-controller
+    type: application
+    urls:
+    - https://github.com/tv2-oss/gateway-controller/releases/download/bifrost-gateway-controller-0.1.3/bifrost-gateway-controller-0.1.3.tgz
+    version: 0.1.3
   gateway-controller:
   - apiVersion: v2
     appVersion: 0.0.5
@@ -34,4 +46,4 @@ entries:
     urls:
     - https://github.com/tv2/gateway-controller/releases/download/gateway-controller-0.1.0/gateway-controller-0.1.0.tgz
     version: 0.1.0
-generated: "2023-03-23T15:09:54.348199913Z"
+generated: "2023-04-12T05:59:04.842631176Z"
