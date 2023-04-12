@@ -1,4 +1,4 @@
-# gateway-controller
+# bifrost-gateway-controller
 
 ![Version: 0.1.3](https://img.shields.io/badge/Version-0.1.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.0.5](https://img.shields.io/badge/AppVersion-0.0.5-informational?style=flat-square)
 
@@ -10,7 +10,7 @@ Gateway API driven management of network infrastructure across Kubernetes and cl
 |-----|------|---------|-------------|
 | controllerManager.annotations | object | `{}` |  |
 | controllerManager.deploymentStrategy.type | string | `"Recreate"` |  |
-| controllerManager.manager.image.name | string | `"gateway-controller"` |  |
+| controllerManager.manager.image.name | string | `"bifrost-gateway-controller"` |  |
 | controllerManager.manager.image.pullPolicy | string | `"IfNotPresent"` |  |
 | controllerManager.manager.image.repository | string | `"ghcr.io/tv2-oss"` |  |
 | controllerManager.manager.image.tag | string | `"latest"` |  |

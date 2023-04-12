@@ -1,4 +1,4 @@
-# Default values for gateway-controller
+# Default values for bifrost-gateway-controller
 
 controllerManager:
   # controller-manager deployment configuration
@@ -6,7 +6,7 @@ controllerManager:
 
     image:
       repository: ghcr.io/tv2-oss
-      name: gateway-controller
+      name: bifrost-gateway-controller
       tag: latest
       pullPolicy: IfNotPresent
 

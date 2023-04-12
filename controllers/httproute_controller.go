@@ -46,7 +46,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	selfapi "github.com/tv2-oss/gateway-controller/pkg/api"
+	selfapi "github.com/tv2-oss/bifrost-gateway-controller/pkg/api"
 )
 
 type HTTPRouteReconciler struct {

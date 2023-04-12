@@ -62,13 +62,13 @@ spec:
 ```
 
 With these two resources, the datapath illustrated above will be
-created by the *gateway-controller* and the 'small team'
+created by the *bifrost-gateway-controller* and the 'small team'
 SRE/developer persona do not need to perform any additional actions.
 
-## Implementation by *gateway-controller*
+## Implementation by *bifrost-gateway-controller*
 
 The definitions above are generic Gateway API definitions. To
-illustrate how the *gateway-controller* implements this datapath
+illustrate how the *bifrost-gateway-controller* implements this datapath
 we will assume the `GatewayClass` specified (`public-class`)
 defines an implementation with an Istio service-mesh inside Kubernetes
 and ingress through an Istio ingress-gateway. Additionally we assume
@@ -84,7 +84,7 @@ distribution being one example of this.
 
 ### Creating Istio Ingress Gateway
 
-To create the Istio ingress-gateway, the *gateway-controller*
+To create the Istio ingress-gateway, the *bifrost-gateway-controller*
 create a copy of the `foo-gateway` `Gateway` resource specifying an
 `istio` class instead of `public-class`:
 
@@ -134,7 +134,7 @@ The cloud infrastructure resources are provisioned through Crossplane
 using basic AWS resources. For this example, the `GatewayClass`
 `public-class` define an AWS ALB based network path exposed
 to the Internet through public subnets. Thus, the
-*gateway-controller* creates the AWS ALB using the following
+*bifrost-gateway-controller* creates the AWS ALB using the following
 resources. Note how the port and protocol are propagated from the
 `Gateway` resource to the `Listener` resource:
 
@@ -166,10 +166,10 @@ spec:
   forProvider:
     port: 80
     protocol: HTTP
-    loadBalancerArn: <inserted by gateway-controller when known>
+    loadBalancerArn: <inserted by bifrost-gateway-controller when known>
     defaultActions:
     - actionType: forward
-      targetGroupArn: <inserted by gateway-controller when known>
+      targetGroupArn: <inserted by bifrost-gateway-controller when known>
 ```
 
 Note, that in the above resource, there are inter-resource
@@ -190,7 +190,7 @@ kind: TargetGroupBinding
 metadata:
   name: foo-gateway
 spec:
-  targetGroupARN: <inserted by gateway-controller when known>
+  targetGroupARN: <inserted by bifrost-gateway-controller when known>
   targetType: ip
   serviceRef:
     name: foo-gateway-istio    # Load balancer targets are Istio ingress-gw Pods

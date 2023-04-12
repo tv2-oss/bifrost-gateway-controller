@@ -6,8 +6,8 @@ metadata:
     app.kubernetes.io/name: namespace
     app.kubernetes.io/instance: system
     app.kubernetes.io/component: manager
-    app.kubernetes.io/created-by: gateway-controller
-    app.kubernetes.io/part-of: gateway-controller
+    app.kubernetes.io/created-by: bifrost-gateway-controller
+    app.kubernetes.io/part-of: bifrost-gateway-controller
     app.kubernetes.io/managed-by: kustomize
   name: system
 ---
@@ -21,8 +21,8 @@ metadata:
     app.kubernetes.io/name: deployment
     app.kubernetes.io/instance: controller-manager
     app.kubernetes.io/component: manager
-    app.kubernetes.io/created-by: gateway-controller
-    app.kubernetes.io/part-of: gateway-controller
+    app.kubernetes.io/created-by: bifrost-gateway-controller
+    app.kubernetes.io/part-of: bifrost-gateway-controller
     app.kubernetes.io/managed-by: kustomize
 spec:
   selector:
@@ -62,7 +62,7 @@ spec:
           type: RuntimeDefault
       containers:
       - command:
-        - /gateway-controller
+        - /bifrost-gateway-controller
         args:
         - --leader-elect
         image: controller:latest

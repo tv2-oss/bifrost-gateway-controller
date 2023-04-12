@@ -3,7 +3,7 @@
 This document describes how to create new `GatewayClass`
 definitions. See also [Example GatewayClass
 Definitions](example-gatewayclasses.md) for the definitions provided
-with the *gateway-controller*.
+with the *bifrost-gateway-controller*.
 
 Before preparing new `GatewayClass` definitions, it is important to
 understand the normalization implemented by the controller, since
@@ -34,7 +34,7 @@ kind: GatewayClass
 metadata:
   name: example
 spec:
-  controllerName: "github.com/tv2-oss/gateway-controller"
+  controllerName: "github.com/tv2-oss/bifrost-gateway-controller"
   parametersRef:
     group: v1alpha1
     kind: GatewayClassBlueprint

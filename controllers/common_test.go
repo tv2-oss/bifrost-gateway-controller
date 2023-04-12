@@ -8,7 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gwcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	gwcapi "github.com/tv2-oss/bifrost-gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -21,7 +21,7 @@ kind: GatewayClass
 metadata:
   name: common-test
 spec:
-  controllerName: "github.com/tv2-oss/gateway-controller"
+  controllerName: "github.com/tv2-oss/bifrost-gateway-controller"
   parametersRef:
     group: gateway.tv2.dk
     kind: GatewayClassBlueprint
@@ -92,7 +92,7 @@ apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassConfig
 metadata:
   name: common-test-global1
-  namespace: gateway-controller-system
+  namespace: bifrost-gateway-controller-system
 spec:
   override:
     someValue2: global-config1-override2

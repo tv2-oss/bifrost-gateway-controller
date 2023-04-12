@@ -30,7 +30,7 @@
 include Makefile.local
 
 # Image URL to use all building/pushing image targets
-IMG ?= ghcr.io/tv2-oss/gateway-controller:latest
+IMG ?= ghcr.io/tv2-oss/bifrost-gateway-controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.25.0
 
@@ -120,7 +120,7 @@ BUILD_COMMIT = $(shell git describe --match="" --always --abbrev=20 --dirty)
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
 	# The 'GOOS=linux GOARCH=amd64' ensures this also works on non-Linux/x86, e.g. Mac/Colima
-	HEAD_SHA=$(shell git describe --match="" --always --abbrev=7 --dirty) GOOS=linux GOARCH=amd64 goreleaser build --single-target --clean --snapshot --output $(PWD)/gateway-controller
+	HEAD_SHA=$(shell git describe --match="" --always --abbrev=7 --dirty) GOOS=linux GOARCH=amd64 goreleaser build --single-target --clean --snapshot --output $(PWD)/bifrost-gateway-controller
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.

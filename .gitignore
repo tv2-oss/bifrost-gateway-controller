@@ -19,6 +19,6 @@ bin/
 # vendor/
 
 dist/
-gateway-controller
-!charts/gateway-controller
+bifrost-gateway-controller
+!charts/bifrost-gateway-controller
 

@@ -37,7 +37,7 @@ import (
 	"testing"
 	"time"
 
-	gcapi "github.com/tv2-oss/gateway-controller/apis/gateway.tv2.dk/v1alpha1"
+	gcapi "github.com/tv2-oss/bifrost-gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -122,7 +122,7 @@ var _ = BeforeSuite(func() {
 
 	// Namespace of the gateway controller
 	ns := corev1.Namespace{}
-	ns.Name = "gateway-controller-system"
+	ns.Name = "bifrost-gateway-controller-system"
 	Expect(k8sClient.Create(ctx, &ns)).Should(Succeed())
 
 	go func() {
