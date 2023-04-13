@@ -65,11 +65,10 @@ jobs:
 
       # This repo both have a Helm chart and a controller with
       # separate tagging. Filter tags to tell GoReleaser which tag to
-      # use for the controller. We ignore `bifrost-gateway-controller-`
-      # and `v` prefixed tags.
+      # use for the controller. We ignore non semver tags.
       - name: Set GoReleaser GORELEASER_PREVIOUS_TAG
         run: |
-          echo "GORELEASER_PREVIOUS_TAG=$(git tag -l --sort=-version:refname | grep -v -E '^bifrost-gateway-controller-.*' | grep -v -E '^v.*' | head -n 2 | tail -n 1)" >> ${GITHUB_ENV}
+          echo "GORELEASER_PREVIOUS_TAG=$(git tag -l --sort=-version:refname | grep -E '^[0-9]+\..*' | head -n 2 | tail -n 1)" >> ${GITHUB_ENV}
 
       # Build release manifests - not to release these, but to force a failure
       # below if repo does not already contain updated manifests
