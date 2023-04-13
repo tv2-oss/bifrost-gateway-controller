@@ -104,16 +104,15 @@ The *bifrost-gateway-controller* merges values before rendering templates
 using the following order of precedence (aka. as *hierarchy* in
 GEP-713):
 
-Increasing order of precedence:
+Increasing order of precedence for defaults, decreasing order of
+precedence for override's as defined by GEP-713:
 
-- `GatewayConfig` in same namespace as `Gateway`
-
-- `GatewayClassConfig` in the same namespace as `Gateway` when `Gateway`
-  reference `GatewayClassConfig` indirectly through `GatewayClass`.
-
-- `GatewayClassConfig` in *bifrost-gateway-controller* namespace when
-  `Gateway` reference `GatewayClassConfig` indirectly through
-  `GatewayClass`.
+- Values from `GatewayClassBlueprint`
+- Values from `GatewayClassConfig` in controller namespace (aka. global policies)
+- Values from `GatewayClassConfig` in `Gateway`/`HTTPRoute` local namespace targeting namespace
+- Values from `GatewayClassConfig` in `Gateway`/`HTTPRoute` local namespace targeting Gateway/HTTPRoute
+- Values from `GatewayConfig` in `Gateway`/`HTTPRoute` local namespace, targeting namespace
+- Values from `GatewayConfig` in `Gateway`/`HTTPRoute` local namespace, targeting `Gateway`/`HTTPRoute` resource
 
 If there are multiple policies targeting the same resource and setting
 the same variable, the result is undefined (see also [Conflict
