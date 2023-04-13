@@ -2,7 +2,7 @@
 
 This document describes how to create new `GatewayClass`
 definitions. See also [Example GatewayClass
-Definitions](example-gatewayclasses.md) for the definitions provided
+Definitions](../blueprints/README.md) for the definitions provided
 with the *bifrost-gateway-controller*.
 
 Before preparing new `GatewayClass` definitions, it is important to
