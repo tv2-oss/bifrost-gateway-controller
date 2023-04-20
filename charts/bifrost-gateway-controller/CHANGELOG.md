@@ -4,6 +4,11 @@
 
 - Example text, replace with PR info according to example below.
 
+
+## [0.1.5]
+
+- Bump version as part of name change. ([#125](https://github.com/tv2-oss/gateway-controller/pull/125)) [@michaelvl](https://github.com/michaelvl)
+
 ## [0.1.4]
 
 - Add issue templates and PR template. ([#121](https://github.com/tv2-oss/gateway-controller/pull/121)) [@michaelvl](https://github.com/michaelvl)
