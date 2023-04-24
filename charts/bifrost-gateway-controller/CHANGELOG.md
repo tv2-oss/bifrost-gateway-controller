@@ -2,7 +2,7 @@
 
 ## [UNRELEASED]
 
-- Example text, replace with PR info according to example below.
+- Example text, replace with PR info according to example below. Do not bump chart version in Chart.yaml.
 
 
 ## [0.1.5]

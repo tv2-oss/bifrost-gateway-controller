@@ -1,16 +1,21 @@
-name: Release Charts
+name: Chart Release
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'charts/gateway-controller/**'
+      - 'charts/bifrost-gateway-controller/Chart.yaml'
+
+env:
+  CHART: bifrost-gateway-controller
 
 jobs:
-  release:
+  release-helm:
     permissions:
-      contents: write
+      contents: read
+      packages: write
+      id-token: none
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,15 +23,66 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
       - name: Install Helm
         uses: azure/setup-helm@v3
+        with:
+          version: v3.11.3
 
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.5.0
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - name: login to ghcr.io using helm
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io/${{ github.repository }}-helm --username ${{ github.repository_owner }} --password-stdin
+
+      - name: save helm chart to local registry
+        run: |
+          helm package charts/$CHART
+
+      - name: publish chart to ghcr.io
+        id: chart-push
+        run: |
+          VERSION=$(cat charts/$CHART/Chart.yaml | awk -F "[, ]+" '/version/{print $NF}')
+          helm push "$CHART-helm-$VERSION.tgz" oci://ghcr.io/${{github.repository_owner}} 2>&1 | tee helm-push-out.txt
+          echo "chartVersion=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Chart meta
+        id: meta
+        run: |
+          DIGEST=$(cat helm-push-out.txt | awk -F "[, ]+" '/Digest/{print $NF}')
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+          CHART=$(echo ghcr.io/${{ github.repository }}-helm | tr '[:upper:]' '[:lower:]')
+          echo "chart=$CHART@$DIGEST" >> $GITHUB_OUTPUT
+
+    outputs:
+      chartVersion: ${{ steps.chart-push.outputs.chartVersion }}
+      digest: ${{ steps.meta.outputs.digest }}
+      chart: ${{ steps.meta.outputs.chart }}
+
+  sign-helm:
+    needs: release-helm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: none
+      packages: write
+      id-token: write
+
+    steps:
+    - name: Log in to the Container registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: sigstore/cosign-installer@c3667d99424e7e6047999fb6246c0da843953c65 # tag=v3.0.1
+
+    - name: Sign chart
+      run: cosign sign --yes -a "chartVersion=${{ needs.release-helm.outputs.chartVersion }}" ${{ needs.release-helm.outputs.chart }}
+
+  verify-helm:
+    needs: [ release-helm, sign-helm ]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: sigstore/cosign-installer@c3667d99424e7e6047999fb6246c0da843953c65 # tag=v3.0.1
+
+    - name: Verify signature
+      run: cosign verify --certificate-identity-regexp 'https://github.com/${{ github.repository }}/.github/workflows/chart-publish.yaml@refs/.*' --certificate-oidc-issuer https://token.actions.githubusercontent.com ${{ needs.release-helm.outputs.chart }}
