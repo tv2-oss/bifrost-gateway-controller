@@ -2,8 +2,11 @@
 
 ## [UNRELEASED]
 
-- Example text, replace with PR info according to example below. Do not bump chart version in Chart.yaml.
+- Example text, add your PR info according to example below below this line. Do not bump chart version in Chart.yaml.
 
+## [0.1.6]
+
+- Refactor chart release action. ([#143](https://github.com/tv2-oss/bifrost-gateway-controller/pull/143)) [@michaelvl](https://github.com/michaelvl)
 
 ## [0.1.5]
 
