@@ -1,6 +1,6 @@
 apiVersion: v2
-name: bifrost-gateway-controller
+name: bifrost-gateway-controller-helm
 description: Gateway API driven management of network infrastructure across Kubernetes and cloud infrastructure
 type: application
-version: 0.1.5
+version: 0.1.6
 appVersion: "0.0.13"
