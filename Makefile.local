@@ -193,6 +193,51 @@ undeploy-crossplane-aws-provider:
 	kubectl delete -f crossplane-aws-provider.yaml
 
 #################
+BIFROST_VERSION ?= 0.1.6
+
+.PHONY: deploy-controller-helm
+deploy-controller-helm:
+	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version ${BIFROST_VERSION} --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n bifrost-gateway-controller-system --create-namespace
+
+.PHONY: deploy-controller-aws-helm
+deploy-controller-aws-helm:
+	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version ${BIFROST_VERSION} --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml -n bifrost-gateway-controller-system --create-namespace
+
+.PHONY: undeploy-controller
+undeploy-controller:
+	helm uninstall -n bifrost-gateway-controller-system bifrost-gateway-controller-helm
+
+#################
+BIFROST_BLUEPRINTS_VERSION ?= 0.0.18
+
+.PHONY: deploy-controller-blueprint
+setup-getting-started-controller-blueprint:
+	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclassblueprint-contour-istio-cert.yaml
+	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclass-contour-istio-cert.yaml
+
+.PHONY: deploy-controller-blueprint-local
+deploy-controller-blueprint-local:
+	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio-cert.yaml -f blueprints/gatewayclass-contour-istio-cert.yaml
+
+.PHONY: deploy-aws-istio-blueprint
+deploy-aws-istio-blueprint:
+	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclassblueprint-aws-alb-crossplane.yaml
+	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclass-aws-alb-crossplane.yaml
+
+.PHONY: undeploy-aws-istio-blueprint
+undeploy-aws-istio-blueprint:
+	kubectl delete -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclassblueprint-aws-alb-crossplane.yaml
+	kubectl delete -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclass-aws-alb-crossplane.yaml
+
+.PHONY: deploy-aws-istio-blueprint-local
+deploy-aws-istio-blueprint-local:
+	kubectl apply -f blueprints/gatewayclassblueprint-aws-alb-crossplane.yaml -f blueprints/gatewayclass-aws-alb-crossplane.yaml
+
+.PHONY: undeploy-aws-istio-blueprint-local
+undeploy-aws-istio-blueprint-local:
+	kubectl delete -f blueprints/gatewayclassblueprint-aws-alb-crossplane.yaml -f blueprints/gatewayclass-aws-alb-crossplane.yaml
+
+#################
 # See 'doc/getting-started.md'
 .PHONY: setup-getting-started
 setup-getting-started: setup-getting-started-cluster setup-getting-started-controller setup-getting-started-controller-blueprint setup-getting-started-usecase
@@ -214,55 +259,22 @@ setup-getting-started-controller:
 	make cluster-load-controller-image
 	make deploy
 
-BIFROST_VERSION ?= 0.1.6
-
-.PHONY: setup-getting-started-controller-helm
-setup-getting-started-controller-helm:
-	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version ${BIFROST_VERSION} --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n bifrost-gateway-controller-system --create-namespace
-
-.PHONY: setup-getting-started-controller-aws-helm
-setup-getting-started-controller-aws-helm:
-	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version ${BIFROST_VERSION} --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml -n bifrost-gateway-controller-system --create-namespace
-
-.PHONY: undeploy-controller
-undeploy-controller:
-	helm uninstall -n bifrost-gateway-controller-system bifrost-gateway-controller-helm
-
-.PHONY: setup-getting-started-controller-blueprint
-setup-getting-started-controller-blueprint:
-	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio-cert.yaml -f blueprints/gatewayclass-contour-istio-cert.yaml
-
-BIFROST_BLUEPRINTS_VERSION ?= 0.0.18
-
-.PHONY: deploy-aws-istio-blueprint
-deploy-aws-istio-blueprint:
-	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclassblueprint-aws-alb-crossplane.yaml
-	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclass-aws-alb-crossplane.yaml
-
-.PHONY: undeploy-aws-istio-blueprint
-undeploy-aws-istio-blueprint:
-	kubectl delete -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclassblueprint-aws-alb-crossplane.yaml
-	kubectl delete -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclass-aws-alb-crossplane.yaml
-
-.PHONY: deploy-aws-istio-blueprint-local
-deploy-aws-istio-blueprint-local:
-	kubectl apply -f blueprints/gatewayclassblueprint-aws-alb-crossplane.yaml -f blueprints/gatewayclass-aws-alb-crossplane.yaml
-
-.PHONY: undeploy-aws-istio-blueprint-local
-undeploy-aws-istio-blueprint-local:
-	kubectl delete -f blueprints/gatewayclassblueprint-aws-alb-crossplane.yaml -f blueprints/gatewayclass-aws-alb-crossplane.yaml
-
 GATEWAY_CLASS_NAME ?= contour-istio-cert
+DOMAIN ?= foo.example.com
 
 .PHONY: setup-getting-started-usecase
 setup-getting-started-usecase:
 	kubectl apply -f test-data/getting-started/foo-namespaces.yaml
-	cat test-data/getting-started/foo-gateway.yaml | GATEWAY_CLASS_NAME=${GATEWAY_CLASS_NAME} envsubst | kubectl apply -f -
+	cat test-data/getting-started/foo-gateway.yaml | GATEWAY_CLASS_NAME=${GATEWAY_CLASS_NAME} DOMAIN=${DOMAIN} envsubst | kubectl apply -f -
 	kubectl -n foo-site apply -f test-data/getting-started/app-foo-site.yaml
 	kubectl -n foo-site apply -f test-data/getting-started/foo-site-httproute.yaml
 	kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v1.yaml
 	kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v2.yaml
 	kubectl -n foo-store apply -f test-data/getting-started/foo-store-httproute.yaml
+
+.PHONY: deploy-namespace-gatewayclassconfig
+deploy-namespace-gatewayclassconfig:
+	cat hack/demo/namespace-gatewayclassconfig.yaml | CERTIFICATE_ARN=${CERTIFICATE_ARN} envsubst | kubectl apply -f -
 
 .PHONY: wait-ready-getting-started-usecase
 wait-ready-getting-started-usecase:

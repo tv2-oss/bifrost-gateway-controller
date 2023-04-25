@@ -129,7 +129,7 @@ The cluster-operator/SRE also creates the common `Gateway` using the
 `GatewayClass` created previously:
 
 ```
-cat test-data/getting-started/foo-gateway.yaml | GATEWAY_CLASS_NAME=contour-istio-cert envsubst | kubectl apply -f -
+cat test-data/getting-started/foo-gateway.yaml | GATEWAY_CLASS_NAME=contour-istio-cert DOMAIN=foo.example.com envsubst | kubectl apply -f -
 ```
 
 ### Developer of 'Site' Application

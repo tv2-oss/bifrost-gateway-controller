@@ -5,7 +5,7 @@ metadata:
   namespace: foo-infra
 spec:
   override:
-    certificateArn: arn:aws:acm:eu-central-1:123456789012:certificate/33ce4a38-aff0-4ad7-bc7c-275fe99556e1
+    certificateArn: $CERTIFICATE_ARN
     tags:
       tenant: foo-tenant
   targetRef:
