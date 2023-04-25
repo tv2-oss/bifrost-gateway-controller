@@ -240,7 +240,7 @@ undeploy-aws-istio-blueprint-local:
 #################
 # See 'doc/getting-started.md'
 .PHONY: setup-getting-started
-setup-getting-started: setup-getting-started-cluster setup-getting-started-controller setup-getting-started-controller-blueprint setup-getting-started-usecase
+setup-getting-started: setup-getting-started-cluster setup-getting-started-controller setup-getting-started-controller-blueprint deploy-getting-started-usecase
 
 .PHONY: setup-getting-started-cluster
 setup-getting-started-cluster:
@@ -262,8 +262,8 @@ setup-getting-started-controller:
 GATEWAY_CLASS_NAME ?= contour-istio-cert
 DOMAIN ?= foo.example.com
 
-.PHONY: setup-getting-started-usecase
-setup-getting-started-usecase:
+.PHONY: deploy-getting-started-usecase
+deploy-getting-started-usecase:
 	kubectl apply -f test-data/getting-started/foo-namespaces.yaml
 	cat test-data/getting-started/foo-gateway.yaml | GATEWAY_CLASS_NAME=${GATEWAY_CLASS_NAME} DOMAIN=${DOMAIN} envsubst | kubectl apply -f -
 	kubectl -n foo-site apply -f test-data/getting-started/app-foo-site.yaml
@@ -271,6 +271,10 @@ setup-getting-started-usecase:
 	kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v1.yaml
 	kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v2.yaml
 	kubectl -n foo-store apply -f test-data/getting-started/foo-store-httproute.yaml
+
+.PHONY: undeploy-getting-started-usecase
+undeploy-getting-started-usecase:
+	kubectl delete -f test-data/getting-started/foo-namespaces.yaml
 
 .PHONY: deploy-namespace-gatewayclassconfig
 deploy-namespace-gatewayclassconfig:
