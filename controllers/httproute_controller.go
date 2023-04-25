@@ -229,10 +229,8 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		// Resource templates may reference each other, with
 		// the worst-case being a strictly linear DAG. This
 		// means that we may have to loop N times, with N
-		// being the number of resources. We break the loop
-		// when we no longer make progress.
-		var lastRenderedNum, renderedNum, existsNum int
-		lastRenderedNum = -1
+		// being the number of resources.
+		var renderedNum, existsNum int
 		for attempt := 0; attempt < len(templates); attempt++ {
 			logger.Info("start reconcile loop", "attempt", attempt)
 			isFinalAttempt := attempt == len(templates)-1
@@ -242,19 +240,13 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			renderedNum, existsNum = renderTemplates(ctx, r, &rt, templates, &templateValues, isFinalAttempt)
 			logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
 
-			if renderedNum == lastRenderedNum {
-				logger.Info("breaking render/apply loop", "renderedNum", renderedNum, "totalNum", len(templates))
-				break
-			}
-
 			if err := applyTemplates(ctx, r, &rt, templates); err != nil {
 				return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 			}
-			lastRenderedNum = renderedNum
 		}
 		// If we haven't already decided to requeue, then requeue if not all templates could render (possibly a missing dependency)
 		requeue = requeue || (renderedNum != len(templates))
-		logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "totalNum", len(templates), "requeue", requeue)
+		logger.Info("ending reconcile loop", "renderedNum", renderedNum, "totalNum", len(templates), "requeue", requeue)
 
 		// FIXME errors in templating and status of sub-resources in general should set status conditions
 
