@@ -55,5 +55,5 @@ This definition is provided in the following files:
 - [`gatewayclassblueprint-aws-alb-crossplane.yaml`](gatewayclassblueprint-aws-alb-crossplane.yaml) blueprint for infrastructure implementation
 - [`gatewayclass-aws-alb-crossplane.yaml`](gatewayclass-aws-alb-crossplane.yaml) definitions of `GatewayClass`es referencing the above `GatewayClassBlueprint`. Two `GatewayClass`es are created, one that is intended for internet exposed gateways, and one for non internet exposed gateways.
 - [`gatewayclassconfig-aws-alb-crossplane-dev-env.yaml`](../test-data/gatewayclassconfig-aws-alb-crossplane-dev-env.yaml) example settings for the two `GatewayClass`es defined in `gatewayclass-aws-alb-crossplane.yaml`, i.e. with different subnet settings for the internet-exposed and non internet-exposed `GatewayClass'es.
-[`gatewayclassblueprint-crossplane-aws-alb-values.yaml`](../charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml)
-(RBAC for bifrost-gateway-controller Helm deployment suited for the `aws-alb-crossplane` blueprint).
+- [`gatewayclassblueprint-crossplane-aws-alb-values.yaml`](../charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml)
+RBAC for bifrost-gateway-controller Helm deployment suited for the `aws-alb-crossplane` blueprint.

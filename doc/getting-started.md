@@ -125,10 +125,11 @@ that is out out-of-scope for this guide):
 kubectl apply -f test-data/getting-started/foo-namespaces.yaml
 ```
 
-The cluster-operator/SRE also creates the common `Gateway`:
+The cluster-operator/SRE also creates the common `Gateway` using the
+`GatewayClass` created previously:
 
 ```
-kubectl apply -f test-data/getting-started/foo-gateway.yaml
+cat test-data/getting-started/foo-gateway.yaml | GATEWAY_CLASS_NAME=contour-istio-cert envsubst | kubectl apply -f -
 ```
 
 ### Developer of 'Site' Application

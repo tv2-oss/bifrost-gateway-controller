@@ -1,0 +1,5 @@
+clusterName: $CLUSTERNAME
+serviceAccount:
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: $AWS_LOAD_BALANCER_CONTROLLER_IAM_ROLE_ARN
