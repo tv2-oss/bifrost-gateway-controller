@@ -17,6 +17,7 @@ shareable blueprints. This makes it cloud-agnostic and extensible.
 - [Creating GatewayClass Definitions](doc/creating-gatewayclass-definitions.md)
 - [Extending GatewayClass Definitions using Policy Attachments (GEP-713)](doc/extended-configuration-w-policy-attachments.md)
 - [User Journeys](doc/user-journeys.md)
+- [Installing the Controller](doc/installing.md)
 - [About the Bifrost Name](doc/bifrost-name.md)
 
 ## TL;DR

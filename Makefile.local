@@ -183,9 +183,8 @@ setup-getting-started-controller:
 
 .PHONY: setup-getting-started-controller-helm
 setup-getting-started-controller-helm:
-	helm repo add tv2-oss https://tv2-oss.github.io/bifrost-gateway-controller
-	helm upgrade -i bifrost-gateway-controller tv2-oss/bifrost-gateway-controller --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n bifrost-gateway-controller-system --create-namespace
-	kubectl apply -f test-data/gatewayclass-contour-istio-cert.yaml
+	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version 0.1.6 --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n bifrost-gateway-controller-system --create-namespace
+	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio-cert.yaml -f blueprints/gatewayclass-contour-istio-cert.yaml
 
 .PHONY: setup-getting-started-usecase
 setup-getting-started-usecase:

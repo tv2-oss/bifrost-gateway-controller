@@ -78,13 +78,10 @@ includes support for the 100+ functions from the [Sprig
 library](http://masterminds.github.io/sprig) as well as a `toYaml`
 function.
 
-Templated resources are always created in the namespace of the parent
-resource, e.g. a resource defined under `gatewayTemplate` will be
-created in the namespace of the parent `Gateway` resource.
-
-
-TBD. More details on the templating format.
-
+Namespace-scoped templated resources are always created in the
+namespace of the parent resource, e.g. a resource defined under
+`gatewayTemplate` will be created in the namespace of the parent
+`Gateway` resource.
 
 ## Inter-resource References
 
@@ -125,6 +122,11 @@ spec:
           # And here we use the value 'status.atProvider.arn' from the 'LBTargetGroup' resource
           targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
 ```
+
+The following figure illustrates variables available to templates,
+including normalization and inter-resource variables:
+
+![Template variables](doc/images/template-variables.png)
 
 ## Available Templating Variables
 

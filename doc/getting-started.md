@@ -61,10 +61,10 @@ by the following sections.
 
 ### Deploy with Helm (recommended)
 
-Deploying the controller using Helm can be sone as follows
+Deploying the controller using Helm can be done as follows:
+
 ```
-helm repo add tv2-oss https://tv2-oss.github.io/bifrost-gateway-controller
-helm upgrade -i bifrost-gateway-controller tv2-oss/bifrost-gateway-controller -n bifrost-gateway-controller-system --create-namespace
+helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm -n bifrost-gateway-controller-system --create-namespace
 ```
 
 ### Deploy from Local-build and YAML Artifacts (recommended for end-to-end tests)
