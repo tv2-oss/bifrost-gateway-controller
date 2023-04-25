@@ -1,8 +1,9 @@
 #! /bin/bash
 
+DOMAIN=$1
+
 ADDR=`kubectl -n foo-infra get gateway foo-gateway -o jsonpath='{.status.addresses[0].value}'`
 IP=`dig "$ADDR" +short | head -n1`
-DOMAIN=foo.kubecon23.tv2dev.dk
 
 echo "-------------------------------------------------------------------"
 echo "Skipping DNS, using $DOMAIN = $IP"
