@@ -7,9 +7,9 @@ updates:
     ignore:
       # The version of client-go and api should approximately match target Kubernetes version, i.e. only update semver-patch version
       # Minor version updates then becomes a manual procedure. Security updates are not ignored by this
-      - dependency-name: "k8s-io/client-go"
+      - dependency-name: "k8s.io/client-go"
         versions: ["version-update:semver-minor"]
-      - dependency-name: "k8s-io/api"
+      - dependency-name: "k8s.io/api"
         versions: ["version-update:semver-minor"]
 
   - package-ecosystem: "github-actions"
