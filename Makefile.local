@@ -278,6 +278,7 @@ undeploy-getting-started-usecase:
 
 .PHONY: deploy-namespace-gatewayclassconfig
 deploy-namespace-gatewayclassconfig:
+	kubectl apply -f test-data/getting-started/foo-namespaces.yaml
 	cat hack/demo/namespace-gatewayclassconfig.yaml | CERTIFICATE_ARN=${CERTIFICATE_ARN} envsubst | kubectl apply -f -
 
 .PHONY: wait-ready-getting-started-usecase
