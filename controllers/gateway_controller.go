@@ -157,10 +157,8 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Resource templates may reference each other, with the
 	// worst-case being a strictly linear DAG. This means that we
 	// may have to loop N times, with N being the number of
-	// resources. We break the loop when we no longer make
-	// progress.
-	var lastRenderedNum, renderedNum, existsNum int
-	lastRenderedNum = -1
+	// resources.
+	var renderedNum, existsNum int
 	for attempt := 0; attempt < len(templates); attempt++ {
 		logger.Info("reconcile loop", "attempt", attempt)
 		isFinalAttempt := attempt == len(templates)-1
@@ -170,18 +168,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		renderedNum, existsNum = renderTemplates(ctx, r, &gw, templates, &templateValues, isFinalAttempt)
 		logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
 
-		if renderedNum == lastRenderedNum {
-			logger.Info("breaking render/apply loop", "renderedNum", renderedNum, "totalNum", len(templates))
-			break
-		}
-
 		if err = applyTemplates(ctx, r, &gw, templates); err != nil {
 			return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
 		}
-		lastRenderedNum = renderedNum
 	}
 	requeue = (renderedNum != len(templates))
-	logger.Info("ending reconcile loop", "renderedNum", renderedNum, "lastRenderedNum", lastRenderedNum, "totalNum", len(templates), "requeue", requeue)
+	logger.Info("ending reconcile loop", "renderedNum", renderedNum, "totalNum", len(templates), "requeue", requeue)
 
 	beforeStatusUpdate := gw.DeepCopy()
 
