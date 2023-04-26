@@ -6,8 +6,9 @@ metadata:
 spec:
   override:
     certificateArn: $CERTIFICATE_ARN
-    tags:
-      tenant: foo-tenant
+    providerConfigName: admin
+    #tags:
+    #  tenant: foo-tenant
   targetRef:
     group: ""
     kind: Namespace
