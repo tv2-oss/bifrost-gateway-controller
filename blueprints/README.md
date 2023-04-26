@@ -57,3 +57,16 @@ This definition is provided in the following files:
 - [`gatewayclassconfig-aws-alb-crossplane-dev-env.yaml`](../test-data/gatewayclassconfig-aws-alb-crossplane-dev-env.yaml) example settings for the two `GatewayClass`es defined in `gatewayclass-aws-alb-crossplane.yaml`, i.e. with different subnet settings for the internet-exposed and non internet-exposed `GatewayClass'es.
 - [`gatewayclassblueprint-crossplane-aws-alb-values.yaml`](../charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml)
 RBAC for bifrost-gateway-controller Helm deployment suited for the `aws-alb-crossplane` blueprint.
+
+### Compatibility
+
+This blueprint use AWS Crossplane resources through the [Upbound AWS
+Provider](https://marketplace.upbound.io/providers/upbound/provider-aws). The
+following compatibility between Crossplane providers and blueprint
+releases has been verified:
+
+| Upbound Provider Version | Bifrost blueprint release | Status |
+| ------------- | ------------- |
+| `v0.28.0` | `0.0.18` | :heavy_check_mark: |
+| `v0.32.1` | `0.0.18` | :x: |
+| `v0.33.0` | `0.0.19` | :heavy_check_mark: |
