@@ -5,7 +5,7 @@ set -x
 SCOPE=${1:-""}
 
 if [ -z "$SCOPE" ] || [ "$SCOPE" == "bifrost" ]; then
-    helm uninstall -n bifrost-gateway-controller-system bifrost-gateway-controller
+    helm uninstall -n bifrost-gateway-controller-system bifrost-gateway-controller-helm
 fi
 
 if [ -z "$SCOPE" ] || [ "$SCOPE" == "app" ]; then

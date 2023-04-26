@@ -4,12 +4,12 @@ metadata:
   name: foo-gateway
   namespace: foo-infra
 spec:
-  gatewayClassName: contour-istio-cert
+  gatewayClassName: $GATEWAY_CLASS_NAME
   listeners:
   - name: web
     port: 80
     protocol: HTTP
-    hostname: "foo.example.com"
+    hostname: $DOMAIN
     allowedRoutes:
       namespaces:
         from: Selector

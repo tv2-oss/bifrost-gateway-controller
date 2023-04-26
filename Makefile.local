@@ -43,9 +43,7 @@ wait-ready-external-dns-test:
 	until kubectl wait pods -l app.kubernetes.io/instance=external-dns --for condition=Ready --timeout=120s     ; do echo "."; sleep 1; done
 
 #################
-ifeq ($(GATEWAY_API_VERSION),)
-GATEWAY_API_VERSION=v0.6.0
-endif
+GATEWAY_API_VERSION ?= v0.6.0
 
 .PHONY: gateway-api-upstream-get
 gateway-api-upstream-get:
@@ -72,10 +70,16 @@ delete-cluster:
 	kind delete cluster --name kind-gwc-dev-cluster
 
 #################
+ISTIO_VERSION ?= 1.16.1
+
 .PHONY: deploy-istio
 deploy-istio:
-	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts base base     --version 1.16.1 -n istio-system --create-namespace
-	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts istiod istiod --version 1.16.1 -n istio-system
+	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts base base     --version ${ISTIO_VERSION} -n istio-system --create-namespace
+	helm upgrade -i --repo https://istio-release.storage.googleapis.com/charts istiod istiod --version ${ISTIO_VERSION} -n istio-system
+
+.PHONY: undeploy-istio
+undeploy-istio:
+	helm uninstall -n istio-system istiod
 
 #################
 .PHONY: cluster-load-controller-image
@@ -143,25 +147,100 @@ ca-cert-secret-create:
 	kubectl -n cert-manager create secret tls ca-key-pair --cert=foo-example-com.crt --key=foo-example-com.key
 
 #################
+AWS_LOAD_BALANCER_CONTROLLER_VERSION ?= v2.4.5
+AWS_LOAD_BALANCER_CONTROLLER_CHART_VERSION ?= v1.4.6
+# Note, template also require CLUSTERNAME and AWS_LOAD_BALANCER_CONTROLLER_IAM_ROLE_ARN
+
 .PHONY: deploy-aws-load-balancer-controller-crds
 deploy-aws-load-balancer-controller-crds:
-	kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.4.5/helm/aws-load-balancer-controller/crds/crds.yaml
+	kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/${AWS_LOAD_BALANCER_CONTROLLER_VERSION}/helm/aws-load-balancer-controller/crds/crds.yaml
+
+.PHONY: deploy-aws-load-balancer-controller
+deploy-aws-load-balancer-controller:
+	cat test-data/aws-load-balancer-controller-values.yaml_tpl | envsubst > aws-load-balancer-controller-values.yaml
+	helm upgrade -i --repo https://aws.github.io/eks-charts aws-load-balancer-controller aws-load-balancer-controller --version ${AWS_LOAD_BALANCER_CONTROLLER_CHART_VERSION} -n kube-system --set installCRDs=false --values aws-load-balancer-controller-values.yaml
+
+.PHONY: undeploy-aws-load-balancer-controller
+undeploy-aws-load-balancer-controller:
+	helm uninstall -n kube-system aws-load-balancer-controller
 
 #################
+CROSSPLANE_VERSION ?= v1.11.0
+
 .PHONY: deploy-crossplane
 deploy-crossplane:
-	helm upgrade -i --repo https://charts.crossplane.io/stable crossplane crossplane --version v1.11.0 -n crossplane-system --create-namespace
+	helm upgrade -i --repo https://charts.crossplane.io/stable crossplane crossplane --version ${CROSSPLANE_VERSION} -n crossplane-system --create-namespace
+
+.PHONY: undeploy-crossplane
+undeploy-crossplane:
+	helm uninstall crossplane -n crossplane-system
+
+CROSSPLANE_AWS_PROVIDER_VERSION ?= v0.28.0
+# Note, templates also require CROSSPLANE_INITIAL_IAM_ROLE_ARN and CROSSPLANE_IAM_ROLE_ARN
 
 .PHONY: deploy-crossplane-aws-provider
 deploy-crossplane-aws-provider:
-	kubectl apply -f test-data/crossplane-aws-provider.yaml
+	cat test-data/crossplane-aws-provider.yaml_tpl | CROSSPLANE_AWS_PROVIDER_VERSION=${CROSSPLANE_AWS_PROVIDER_VERSION} CROSSPLANE_INITIAL_IAM_ROLE_ARN=${CROSSPLANE_INITIAL_IAM_ROLE_ARN} envsubst > crossplane-aws-provider.yaml
+	cat test-data/crossplane-aws-provider-config.yaml_tpl | CROSSPLANE_IAM_ROLE_ARN=${CROSSPLANE_IAM_ROLE_ARN} envsubst > crossplane-aws-provider-config.yaml
+	kubectl apply -f crossplane-aws-provider.yaml
 	kubectl wait "providers.pkg.crossplane.io/provider-aws" --for=condition=Installed --timeout=180s
 	kubectl wait "providers.pkg.crossplane.io/provider-aws" --for=condition=Healthy --timeout=180s
+	kubectl apply -f crossplane-aws-provider-config.yaml
+
+.PHONY: undeploy-crossplane-aws-provider
+undeploy-crossplane-aws-provider:
+	kubectl delete -f crossplane-aws-provider-config.yaml
+	kubectl delete -f crossplane-aws-provider.yaml
+
+#################
+BIFROST_VERSION ?= 0.1.6
+
+.PHONY: deploy-controller-helm
+deploy-controller-helm:
+	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version ${BIFROST_VERSION} --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n bifrost-gateway-controller-system --create-namespace
+
+.PHONY: deploy-controller-aws-helm
+deploy-controller-aws-helm:
+	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version ${BIFROST_VERSION} --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml -n bifrost-gateway-controller-system --create-namespace
+
+.PHONY: undeploy-controller
+undeploy-controller:
+	helm uninstall -n bifrost-gateway-controller-system bifrost-gateway-controller-helm
+
+#################
+BIFROST_BLUEPRINTS_VERSION ?= 0.0.18
+
+.PHONY: deploy-controller-blueprint
+setup-getting-started-controller-blueprint:
+	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclassblueprint-contour-istio-cert.yaml
+	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclass-contour-istio-cert.yaml
+
+.PHONY: deploy-controller-blueprint-local
+deploy-controller-blueprint-local:
+	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio-cert.yaml -f blueprints/gatewayclass-contour-istio-cert.yaml
+
+.PHONY: deploy-aws-istio-blueprint
+deploy-aws-istio-blueprint:
+	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclassblueprint-aws-alb-crossplane.yaml
+	kubectl apply -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclass-aws-alb-crossplane.yaml
+
+.PHONY: undeploy-aws-istio-blueprint
+undeploy-aws-istio-blueprint:
+	kubectl delete -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclassblueprint-aws-alb-crossplane.yaml
+	kubectl delete -f https://github.com/tv2-oss/bifrost-gateway-controller/releases/download/${BIFROST_BLUEPRINTS_VERSION}/gatewayclass-aws-alb-crossplane.yaml
+
+.PHONY: deploy-aws-istio-blueprint-local
+deploy-aws-istio-blueprint-local:
+	kubectl apply -f blueprints/gatewayclassblueprint-aws-alb-crossplane.yaml -f blueprints/gatewayclass-aws-alb-crossplane.yaml
+
+.PHONY: undeploy-aws-istio-blueprint-local
+undeploy-aws-istio-blueprint-local:
+	kubectl delete -f blueprints/gatewayclassblueprint-aws-alb-crossplane.yaml -f blueprints/gatewayclass-aws-alb-crossplane.yaml
 
 #################
 # See 'doc/getting-started.md'
 .PHONY: setup-getting-started
-setup-getting-started: setup-getting-started-cluster setup-getting-started-controller setup-getting-started-usecase
+setup-getting-started: setup-getting-started-cluster setup-getting-started-controller setup-getting-started-controller-blueprint deploy-getting-started-usecase
 
 .PHONY: setup-getting-started-cluster
 setup-getting-started-cluster:
@@ -179,22 +258,28 @@ setup-getting-started-controller:
 	make docker-build
 	make cluster-load-controller-image
 	make deploy
-	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio-cert.yaml -f blueprints/gatewayclass-contour-istio-cert.yaml
 
-.PHONY: setup-getting-started-controller-helm
-setup-getting-started-controller-helm:
-	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version 0.1.6 --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n bifrost-gateway-controller-system --create-namespace
-	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio-cert.yaml -f blueprints/gatewayclass-contour-istio-cert.yaml
+GATEWAY_CLASS_NAME ?= contour-istio-cert
+DOMAIN ?= foo.example.com
 
-.PHONY: setup-getting-started-usecase
-setup-getting-started-usecase:
+.PHONY: deploy-getting-started-usecase
+deploy-getting-started-usecase:
 	kubectl apply -f test-data/getting-started/foo-namespaces.yaml
-	kubectl apply -f test-data/getting-started/foo-gateway.yaml
+	cat test-data/getting-started/foo-gateway.yaml | GATEWAY_CLASS_NAME=${GATEWAY_CLASS_NAME} DOMAIN=${DOMAIN} envsubst | kubectl apply -f -
 	kubectl -n foo-site apply -f test-data/getting-started/app-foo-site.yaml
 	kubectl -n foo-site apply -f test-data/getting-started/foo-site-httproute.yaml
 	kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v1.yaml
 	kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v2.yaml
 	kubectl -n foo-store apply -f test-data/getting-started/foo-store-httproute.yaml
+
+.PHONY: undeploy-getting-started-usecase
+undeploy-getting-started-usecase:
+	kubectl delete -f test-data/getting-started/foo-namespaces.yaml
+
+.PHONY: deploy-namespace-gatewayclassconfig
+deploy-namespace-gatewayclassconfig:
+	kubectl apply -f test-data/getting-started/foo-namespaces.yaml
+	cat hack/demo/namespace-gatewayclassconfig.yaml | CERTIFICATE_ARN=${CERTIFICATE_ARN} envsubst | kubectl apply -f -
 
 .PHONY: wait-ready-getting-started-usecase
 wait-ready-getting-started-usecase:

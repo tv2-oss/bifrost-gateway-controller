@@ -55,5 +55,19 @@ This definition is provided in the following files:
 - [`gatewayclassblueprint-aws-alb-crossplane.yaml`](gatewayclassblueprint-aws-alb-crossplane.yaml) blueprint for infrastructure implementation
 - [`gatewayclass-aws-alb-crossplane.yaml`](gatewayclass-aws-alb-crossplane.yaml) definitions of `GatewayClass`es referencing the above `GatewayClassBlueprint`. Two `GatewayClass`es are created, one that is intended for internet exposed gateways, and one for non internet exposed gateways.
 - [`gatewayclassconfig-aws-alb-crossplane-dev-env.yaml`](../test-data/gatewayclassconfig-aws-alb-crossplane-dev-env.yaml) example settings for the two `GatewayClass`es defined in `gatewayclass-aws-alb-crossplane.yaml`, i.e. with different subnet settings for the internet-exposed and non internet-exposed `GatewayClass'es.
-[`gatewayclassblueprint-crossplane-aws-alb-values.yaml`](../charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml)
-(RBAC for bifrost-gateway-controller Helm deployment suited for the `aws-alb-crossplane` blueprint).
+- [`gatewayclassblueprint-crossplane-aws-alb-values.yaml`](../charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml)
+RBAC for bifrost-gateway-controller Helm deployment suited for the `aws-alb-crossplane` blueprint.
+
+### Compatibility
+
+This blueprint use AWS Crossplane resources through the [Upbound AWS
+Provider](https://marketplace.upbound.io/providers/upbound/provider-aws). The
+following compatibility between this blueprint, Crossplane, Crossplane
+Upbound AWS provider and Istio versions has been verified:
+
+| Blueprint | AWS Provider | Crossplane | Istio | Status |
+| ------------- | ------------- |
+| `0.0.18` | `v0.28.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |
+| `0.0.18` | `v0.32.1` | `v1.11.0` | `1.16.1` | :x: |
+| `0.0.18` | `v0.33.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |
+| `0.0.19` | `v0.33.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |

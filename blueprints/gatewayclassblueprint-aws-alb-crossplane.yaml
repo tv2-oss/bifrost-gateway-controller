@@ -17,6 +17,7 @@ spec:
         port: 443
       tags: []
     # Values required by this blueprint without defaults:
+    #   providerConfigName: "example-crossplane-provider-name"
     #   region: "example-region"
     #   vpcId:  "example-vpc"
     #   subnets:
@@ -42,7 +43,9 @@ spec:
           namespace: {{ .Gateway.metadata.namespace }}
           annotations:
             networking.istio.io/service-type: ClusterIP
+            {{ if .Values.tags }}
             {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
         spec:
           gatewayClassName: istio
           listeners:
@@ -67,7 +70,7 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
         spec:
           providerConfigRef:
-            name: admin
+            name: {{ .Values.providerConfigName }}
           forProvider:
             name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             region: {{ .Values.region }}
@@ -79,8 +82,10 @@ spec:
               {{ range .Values.subnets }}
               - subnetId: {{ . }}
               {{ end }}
+            {{ if .Values.tags }}
             tags:
               {{- toYaml .Values.tags | nindent 6 }}
+            {{ end }}
       LBTargetGroup: |
         apiVersion: elbv2.aws.upbound.io/v1beta1
         kind: LBTargetGroup
@@ -90,7 +95,7 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
         spec:
           providerConfigRef:
-            name: admin
+            name: {{ .Values.providerConfigName }}
           forProvider:
             name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             region: {{ .Values.region }}
@@ -104,8 +109,10 @@ spec:
               port: {{ .Values.healthCheck.port | quote }}
             port: 80
             protocol: HTTP
+            {{ if .Values.tags }}
             tags:
               {{- toYaml .Values.tags | nindent 6 }}
+            {{ end }}
             targetType: ip
       LBListener: |
         apiVersion: elbv2.aws.upbound.io/v1beta1
@@ -116,7 +123,7 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
         spec:
           providerConfigRef:
-            name: admin
+            name: {{ .Values.providerConfigName }}
           forProvider:
             region: {{ .Values.region }}
             port: 443
@@ -130,16 +137,20 @@ spec:
             loadBalancerArnSelector:
               matchLabels:
                 tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+            {{ if .Values.tags }}
             tags:
               {{- toYaml .Values.tags | nindent 6 }}
+            {{ end }}
       TargetGroupBinding: |
         apiVersion: elbv2.k8s.aws/v1beta1
         kind: TargetGroupBinding
         metadata:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
           namespace: {{ .Gateway.metadata.namespace }}
+          {{ if .Values.tags }}
           annotations:
             {{- toYaml .Values.tags | nindent 4 }}
+          {{ end }}
         spec:
           targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
           targetType: ip
@@ -155,13 +166,15 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
         spec:
           providerConfigRef:
-            name: admin
+            name: {{ .Values.providerConfigName }}
           forProvider:
             description: "SG for ALB"
             name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             region: {{ .Values.region }}
+            {{ if .Values.tags }}
             tags:
               {{- toYaml .Values.tags | nindent 6 }}
+            {{ end }}
             vpcId: {{ .Values.vpcId}}
       SecurityGroupRuleEgress80: |
         apiVersion: ec2.aws.upbound.io/v1beta1
@@ -172,7 +185,7 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-egress80
         spec:
           providerConfigRef:
-            name: admin
+            name: {{ .Values.providerConfigName }}
           forProvider:
             description: "Traffic towards Istio ingress gateway"
             cidrBlocks:
@@ -194,7 +207,7 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-egress15021
         spec:
           providerConfigRef:
-            name: admin
+            name: {{ .Values.providerConfigName }}
           forProvider:
             description: "Healthcheck towards Istio ingress gateway"
             cidrBlocks:
@@ -216,7 +229,7 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-ingress
         spec:
           providerConfigRef:
-            name: admin
+            name: {{ .Values.providerConfigName }}
           forProvider:
             description: "External traffic towards ALB"
             cidrBlocks:
@@ -240,7 +253,7 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-upstream80
         spec:
           providerConfigRef:
-            name: admin
+            name: {{ .Values.providerConfigName }}
           forProvider:
             description: {{ printf "Ingress from gw-%s-%s" .Gateway.metadata.namespace .Gateway.metadata.name }}
             fromPort: 80
@@ -261,7 +274,7 @@ spec:
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}-upstream15021
         spec:
           providerConfigRef:
-            name: admin
+            name: {{ .Values.providerConfigName }}
           forProvider:
             description: {{ printf "Healthcheck ingress from gw-%s-%s" .Gateway.metadata.namespace .Gateway.metadata.name }}
             fromPort: 15021
@@ -284,8 +297,10 @@ spec:
           name: {{ .HTTPRoute.metadata.name }}-child
           namespace: {{ .HTTPRoute.metadata.namespace }}
           annotations:
+            {{ if .Values.tags }}
             tags:
               {{- toYaml .Values.tags | nindent 4 }}
+            {{ end }}
         spec:
           parentRefs:
           {{ range .HTTPRoute.spec.parentRefs -}}
