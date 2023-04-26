@@ -157,7 +157,7 @@ deploy-aws-load-balancer-controller-crds:
 
 .PHONY: deploy-aws-load-balancer-controller
 deploy-aws-load-balancer-controller:
-	cat test-data/aws-load-balancer-controller-values.yaml_tpl | envsubst > aws-load-balancer-controller-values.yaml
+	cat test-data/aws-load-balancer-controller-values.yaml_tpl | AWS_LOAD_BALANCER_CONTROLLER_IAM_ROLE_ARN=${AWS_LOAD_BALANCER_CONTROLLER_IAM_ROLE_ARN} envsubst > aws-load-balancer-controller-values.yaml
 	helm upgrade -i --repo https://aws.github.io/eks-charts aws-load-balancer-controller aws-load-balancer-controller --version ${AWS_LOAD_BALANCER_CONTROLLER_CHART_VERSION} -n kube-system --set installCRDs=false --values aws-load-balancer-controller-values.yaml
 
 .PHONY: undeploy-aws-load-balancer-controller
