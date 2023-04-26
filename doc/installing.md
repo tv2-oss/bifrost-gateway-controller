@@ -39,4 +39,4 @@ helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-ga
 
 In addition to the *bifrost-gateway-controller*, you will need
 blueprints defining datapath implementations. See [Example
-GatewayClassBlueprints](blueprints/README.md).
+GatewayClassBlueprints](../blueprints/README.md).
