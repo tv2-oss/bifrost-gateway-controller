@@ -113,9 +113,6 @@ spec:
             tags:
               {{- toYaml .Values.tags | nindent 6 }}
             {{ end }}
-            targetFailover: # Only applicable to GWALB, but provider requires these
-            - onDeregistration: no_rebalance
-              onUnhealthy: no_rebalance
             targetType: ip
       LBListener: |
         apiVersion: elbv2.aws.upbound.io/v1beta1
