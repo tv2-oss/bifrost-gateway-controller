@@ -62,11 +62,12 @@ RBAC for bifrost-gateway-controller Helm deployment suited for the `aws-alb-cros
 
 This blueprint use AWS Crossplane resources through the [Upbound AWS
 Provider](https://marketplace.upbound.io/providers/upbound/provider-aws). The
-following compatibility between Crossplane providers and blueprint
-releases has been verified:
+following compatibility between this blueprint, Crossplane, Crossplane
+Upbound AWS provider and Istio versions has been verified:
 
-| Upbound Provider Version | Bifrost blueprint release | Status |
+| Blueprint | AWS Provider | Crossplane | Istio | Status |
 | ------------- | ------------- |
-| `v0.28.0` | `0.0.18` | :heavy_check_mark: |
-| `v0.32.1` | `0.0.18` | :x: |
-| `v0.33.0` | `0.0.19` | :heavy_check_mark: |
+| `0.0.18` | `v0.28.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |
+| `0.0.18` | `v0.32.1` | `v1.11.0` | `1.16.1` | :x: |
+| `0.0.18` | `v0.33.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |
+| `0.0.19` | `v0.33.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |
