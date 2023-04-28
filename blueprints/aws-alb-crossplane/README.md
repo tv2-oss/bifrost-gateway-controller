@@ -75,7 +75,7 @@ BIFROST_VERSION=0.1.6              make deploy-controller-aws-helm
 BIFROST_BLUEPRINTS_VERSION=0.0.18  make deploy-aws-istio-blueprint
 ```
 
-Note, there is also a `deploy-aws-istio-blueprint-local` to deploy
+Note, there is also a `deploy-aws-istio-blueprint-local` make target to deploy
 local repository blueprint version which is useful when developing
 blueprints.
 
