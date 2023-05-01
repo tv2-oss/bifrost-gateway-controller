@@ -43,14 +43,14 @@ wait-ready-external-dns-test:
 	until kubectl wait pods -l app.kubernetes.io/instance=external-dns --for condition=Ready --timeout=120s     ; do echo "."; sleep 1; done
 
 #################
-GATEWAY_API_VERSION ?= v0.6.0
+GATEWAY_API_VERSION ?= v0.6.2
 
 .PHONY: gateway-api-upstream-get
 gateway-api-upstream-get:
 	mkdir -p upstream-gateway-api/crds upstream-gateway-api/webhook
 	kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api/crds/crds.yaml
 	#kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
-	(cd upstream-gateway-api/webhook && for manifestfile in 0-namespace.yaml admission_webhook.yaml certificate_config.yaml; do curl -sL -O https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/main/config/webhook/$$manifestfile; done)
+	(cd upstream-gateway-api/webhook && for manifestfile in 0-namespace.yaml admission_webhook.yaml certificate_config.yaml; do curl -sL -O https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/$(GATEWAY_API_VERSION)/config/webhook/$$manifestfile; done)
 
 .PHONY: deploy-gateway-api
 deploy-gateway-api:
