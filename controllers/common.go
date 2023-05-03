@@ -123,7 +123,7 @@ func merge(a, b any) any {
 // - Values from GatewayClassBlueprint
 // - Values from GatewayClassConfig in controller namespace (aka. global policies)
 // - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace targeting namespace
-// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace targeting Gateway/HTTPRoute
+// - Values from GatewayClassConfig in Gateway/HTTPRoute local namespace targeting GatewayClass
 // - Values from GatewayConfig in Gateway/HTTPRoute local namespace, targeting namespace
 // - Values from GatewayConfig in Gateway/HTTPRoute local namespace, targeting Gateway/HTTPRoute resource
 // Note, defaults are processed top-to-bottom (i.e. later defaults overwrites earlier defaults), while overrides are bottom-to-top (see GEP-713)
@@ -198,7 +198,7 @@ func lookupValues(ctx context.Context, r ControllerClient, gatewayClassName stri
 			gwccFiltered = append(gwccFiltered, gwcc) // gwcc targets namespace
 		}
 	}
-	// Namespace GatewayClassConfig targeting Gateway/HTTPRoute third
+	// Namespace GatewayClassConfig targeting GatewayClass third
 	for idx := range gwccLocal.Items {
 		gwcc := &gwccLocal.Items[idx]
 		if gwcc.Spec.TargetRef.Kind == "GatewayClass" &&

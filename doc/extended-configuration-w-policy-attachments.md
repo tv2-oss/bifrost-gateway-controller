@@ -110,7 +110,7 @@ precedence for override's as defined by GEP-713:
 - Values from `GatewayClassBlueprint`
 - Values from `GatewayClassConfig` in controller namespace (aka. global policies)
 - Values from `GatewayClassConfig` in `Gateway`/`HTTPRoute` local namespace targeting namespace
-- Values from `GatewayClassConfig` in `Gateway`/`HTTPRoute` local namespace targeting Gateway/HTTPRoute
+- Values from `GatewayClassConfig` in `Gateway`/`HTTPRoute` local namespace targeting GatewayClass
 - Values from `GatewayConfig` in `Gateway`/`HTTPRoute` local namespace, targeting namespace
 - Values from `GatewayConfig` in `Gateway`/`HTTPRoute` local namespace, targeting `Gateway`/`HTTPRoute` resource
 
