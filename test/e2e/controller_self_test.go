@@ -128,6 +128,8 @@ kind: Gateway
 metadata:
   name: foo-gateway
   namespace: default
+  labels:
+    external-dns/export: "true"
 spec:
   gatewayClassName: cloud-gw
   listeners:
