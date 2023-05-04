@@ -25,7 +25,18 @@ spec:
         spec:
           gatewayClassName: istio
           listeners:
-            {{- toYaml .Gateway.spec.listeners | nindent 6 }}
+          {{- range .Gateway.spec.listeners }}
+          - name: {{ .name }}
+            port: 80
+            protocol: HTTP
+            {{ if get . "hostname" }}
+            hostname: {{ .hostname | quote }}
+            {{ end -}}
+            {{ if get . "allowedRoutes" }}
+            allowedRoutes:
+              {{ toYaml .allowedRoutes | nindent 6 }}
+            {{ end -}}
+          {{- end }}
       loadBalancer: |
         apiVersion: networking.k8s.io/v1
         kind: Ingress
