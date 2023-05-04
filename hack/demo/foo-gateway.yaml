@@ -3,6 +3,8 @@ kind: Gateway
 metadata:
   name: foo-gateway
   namespace: foo-infra
+  labels:
+    external-dns/export: "true"
 spec:
   gatewayClassName: aws-alb-crossplane-public
   listeners:
