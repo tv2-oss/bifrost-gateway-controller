@@ -122,11 +122,11 @@ spec:
           {{ toYaml .HTTPRoute.spec.rules | nindent 4 }}`
 
 // example.com does resolve to an IP address so it is not ideal for testing
-const gatewayManifest string = `
+const gatewayManifest1 string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
-  name: foo-gateway
+  name: foo1-gateway
   namespace: default
   labels:
     external-dns/export: "true"
@@ -136,21 +136,56 @@ spec:
   - name: prod-web
     port: 80
     protocol: HTTP
-    hostname: example-foo4567.com`
+    hostname: foo1.example-foo4567.com`
 
-const httprouteManifest string = `
+const httprouteManifest1 string = `
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: foo-site
+  name: foo1-site
   namespace: default
 spec:
   parentRefs:
   - kind: Gateway
-    name: foo-gateway
+    name: foo1-gateway
   rules:
   - backendRefs:
-    - name: foo-site
+    - name: foo1-site
+      port: 80`
+
+// Hostname is on HTTPRoute instead of on Gateway
+const gatewayManifest2 string = `
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: foo2-gateway
+  namespace: default
+  labels:
+    external-dns/export: "true"
+spec:
+  gatewayClassName: cloud-gw
+  listeners:
+  - name: prod-web
+    port: 80
+    protocol: HTTP`
+
+const httprouteManifest2 string = `
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: foo2-site
+  namespace: default
+  labels:
+    external-dns/export: "true"
+spec:
+  hostnames:
+  - foo2.example-foo4567.com
+  parentRefs:
+  - kind: Gateway
+    name: foo2-gateway
+  rules:
+  - backendRefs:
+    - name: foo2-site
       port: 80`
 
 var _ = Describe("GatewayClass", func() {
@@ -237,13 +272,22 @@ var _ = Describe("Gateway addresses", func() {
 			By("Assigning an address to the Gateway")
 
 			gw := &gatewayapi.Gateway{}
-			Expect(yaml.Unmarshal([]byte(gatewayManifest), gw)).To(Succeed())
+			Expect(yaml.Unmarshal([]byte(gatewayManifest1), gw)).To(Succeed())
 			Expect(k8sClient.Create(ctx, gw)).To(Succeed())
 
 			rt := &gatewayapi.HTTPRoute{}
-			Expect(yaml.Unmarshal([]byte(httprouteManifest), rt)).To(Succeed())
+			Expect(yaml.Unmarshal([]byte(httprouteManifest1), rt)).To(Succeed())
 			Expect(k8sClient.Create(ctx, rt)).To(Succeed())
 
+			gw2 := &gatewayapi.Gateway{}
+			Expect(yaml.Unmarshal([]byte(gatewayManifest2), gw2)).To(Succeed())
+			Expect(k8sClient.Create(ctx, gw2)).To(Succeed())
+
+			rt2 := &gatewayapi.HTTPRoute{}
+			Expect(yaml.Unmarshal([]byte(httprouteManifest2), rt2)).To(Succeed())
+			Expect(k8sClient.Create(ctx, rt2)).To(Succeed())
+
+			// Test external-dns integration with hostname via Gateway resource
 			lookupKey := types.NamespacedName{Name: gw.ObjectMeta.Name, Namespace: gw.ObjectMeta.Namespace}
 			gwRead := &gatewayapi.Gateway{}
 
@@ -259,7 +303,7 @@ var _ = Describe("Gateway addresses", func() {
 				return true
 			}, fixmeExtendedTimeout, interval).Should(BeTrue())
 
-			By("Assigning status and address such that external-dns accepts and propagates the address")
+			By("Assigning status and address such that external-dns accepts and propagates the address (hostname via Gateway)")
 			Eventually(func() bool {
 				stdout := new(bytes.Buffer)
 				err := ExecCmdInPodBySelector(k8sClient, restClient, cfg, client.MatchingLabels{"app": "multitool"}, "default",
@@ -271,6 +315,36 @@ var _ = Describe("Gateway addresses", func() {
 				foundDNSLookup := strings.TrimRight(stdout.String(), "\n")
 				GinkgoT().Logf("foundDNSLookup: %s, gateway has %s", foundDNSLookup, gwRead.Status.Addresses[0].Value)
 				return gwRead.Status.Addresses[0].Value == foundDNSLookup
+			}, externalDNSTimeout, interval).Should(BeTrue())
+
+			// Test external-dns integration with hostname via HTTPRoute resource
+			lookupKey2 := types.NamespacedName{Name: gw2.ObjectMeta.Name, Namespace: gw2.ObjectMeta.Namespace}
+			gw2Read := &gatewayapi.Gateway{}
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, lookupKey2, gw2Read)
+				GinkgoT().Logf("gw2Read: %+v", gw2Read)
+				if err != nil ||
+					len(gw2Read.Status.Addresses) != 1 ||
+					(*gw2Read.Status.Addresses[0].Type == gatewayapi.IPAddressType && !ip4AddressRe.MatchString(gw2Read.Status.Addresses[0].Value)) ||
+					(*gw2Read.Status.Addresses[0].Type == gatewayapi.HostnameAddressType && !hostnameRe.MatchString(gw2Read.Status.Addresses[0].Value)) {
+					return false
+				}
+				return true
+			}, fixmeExtendedTimeout, interval).Should(BeTrue())
+
+			By("Assigning status and address such that external-dns accepts and propagates the address (hostname via HTTPRoute)")
+			Eventually(func() bool {
+				stdout := new(bytes.Buffer)
+				err := ExecCmdInPodBySelector(k8sClient, restClient, cfg, client.MatchingLabels{"app": "multitool"}, "default",
+					fmt.Sprintf("dig @coredns-test-only-coredns %s +short", rt2.Spec.Hostnames[0]),
+					nil, stdout, nil)
+				if err != nil {
+					return false
+				}
+				foundDNSLookup := strings.TrimRight(stdout.String(), "\n")
+				GinkgoT().Logf("foundDNSLookup: %s, gateway2 has %s", foundDNSLookup, gw2Read.Status.Addresses[0].Value)
+				return gw2Read.Status.Addresses[0].Value == foundDNSLookup
 			}, externalDNSTimeout, interval).Should(BeTrue())
 
 			By("Setting a status condition on the HTTPRoute")
