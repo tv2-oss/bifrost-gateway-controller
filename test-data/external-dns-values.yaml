@@ -13,3 +13,4 @@ sources:
 logLevel: debug
 extraArgs:
 - --gateway-label-filter=external-dns/export==true
+- --domain-filter=example-foo4567.com
