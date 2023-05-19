@@ -74,7 +74,7 @@ type ResourceTemplateState struct {
 	Template *template.Template
 
 	// Resource information, rendered and current
-	Resource    ResourceComposite   // FIXME, refactoring - delete and replace with below
+	OldResource ResourceComposite   // FIXME, refactoring - delete and replace with below
 	NewResource []ResourceComposite // FIXME, refactoring temp name
 
 	// Name of template (from template key in GatewayClassBlueprint, not Kubernetes resource name)
@@ -156,42 +156,45 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 	logger := log.FromContext(ctx)
 	ns := parent.GetNamespace()
 
-	for _, tmplRes := range templates {
-		if tmplRes.Resource.Rendered == nil {
-			//tmplRes.Resource.Rendered, err = template2Unstructured(tmplRes.Template, values)    // FIXME
+	for _, tmpl := range templates {
+		if len(tmpl.NewResource) == 0 {
+			tmpl.NewResource, err = template2Composite(r, tmpl.Template, values)
 			if err != nil {
 				if isFinalAttempt {
-					logger.Error(err, "cannot render template", "templateName", tmplRes.TemplateName)
+					logger.Error(err, "cannot render template", "templateName", tmpl.TemplateName)
 					// FIXME: These are convenient, but we should have a better logging design, i.e. it should be possible to enable rendering errors only
-					fmt.Printf("Template:\n%s\n", tmplRes.StringTemplate)
+					fmt.Printf("Template:\n%s\n", tmpl.StringTemplate)
 					fmt.Printf("Template values:\n%+v\n", values)
 				}
 				continue
 			}
 		}
-		if tmplRes.Resource.GVR == nil {
-			tmplRes.Resource.GVR, tmplRes.Resource.IsNamespaced, err = unstructuredToGVR(r, tmplRes.Resource.Rendered)
-			if err != nil {
-				logger.Error(err, "cannot detect GVR for resource", "templateName", tmplRes.TemplateName)
-				continue
-			}
-		}
+		// FIXME, remove
+		// if tmplRes.Resource.GVR == nil {
+		// 	tmplRes.Resource.GVR, tmplRes.Resource.IsNamespaced, err = unstructuredToGVR(r, tmplRes.Resource.Rendered)
+		// 	if err != nil {
+		// 		logger.Error(err, "cannot detect GVR for resource", "templateName", tmplRes.TemplateName)
+		// 		continue
+		// 	}
+		// }
 		rendered++
-		if tmplRes.Resource.Current == nil {
-			var dynamicClient dynamic.ResourceInterface
-			if tmplRes.Resource.IsNamespaced {
-				dynamicClient = r.DynamicClient().Resource(*tmplRes.Resource.GVR).Namespace(ns)
+		for resIdx, res := range tmpl.NewResource {
+			if res.Current == nil {
+				var dynamicClient dynamic.ResourceInterface
+				if res.IsNamespaced {
+					dynamicClient = r.DynamicClient().Resource(*res.GVR).Namespace(ns)
+				} else {
+					dynamicClient = r.DynamicClient().Resource(*res.GVR)
+				}
+				res.Current, err = dynamicClient.Get(ctx, res.Rendered.GetName(), metav1.GetOptions{})
+				if err != nil {
+					logger.Error(err, "cannot get current resource", "templateName", tmpl.TemplateName, "resIdx", resIdx)
+					continue
+				}
+				logger.Info("update current", "templatename", tmpl.TemplateName, "current", res.Current)
 			} else {
-				dynamicClient = r.DynamicClient().Resource(*tmplRes.Resource.GVR)
+				logger.Info("already have update current", "templatename", tmpl.TemplateName, "current", res.Current)
 			}
-			tmplRes.Resource.Current, err = dynamicClient.Get(ctx, tmplRes.Resource.Rendered.GetName(), metav1.GetOptions{})
-			if err != nil {
-				logger.Error(err, "cannot get current resource", "templateName", tmplRes.TemplateName)
-				continue
-			}
-			logger.Info("update current", "templatename", tmplRes.TemplateName, "current", tmplRes.Resource.Current)
-		} else {
-			logger.Info("already have update current", "templatename", tmplRes.TemplateName, "current", tmplRes.Resource.Current)
 		}
 		exists++
 	}
@@ -205,8 +208,11 @@ func buildResourceValues(templates []*ResourceTemplateState) map[string]any {
 	resources := map[string]any{}
 
 	for _, tmpl := range templates {
-		if tmpl.Resource.Current != nil {
-			resources[tmpl.TemplateName] = tmpl.Resource.Current.UnstructuredContent()
+		resources[tmpl.TemplateName] = make([]map[string]any, 0)
+		for _, res := range tmpl.NewResource {
+			if res.Current != nil {
+				resources[tmpl.TemplateName] = append(resources[tmpl.TemplateName], res)
+			}
 		}
 	}
 	return resources
@@ -299,16 +305,34 @@ func template2maps(tmpl *template.Template, tmplValues *TemplateValues) ([]map[s
 	return resources, nil
 }
 
-func template2Unstructured(tmpl *template.Template, tmplValues *TemplateValues) ([]unstructured.Unstructured, error) {
+// FIXME delete replaced by template2Composite
+// func template2Unstructured(tmpl *template.Template, tmplValues *TemplateValues) ([]unstructured.Unstructured, error) {
+// 	rawResources, err := template2maps(tmpl, tmplValues)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	uu := make([]unstructured.Unstructured, 0, len(rawResources))
+// 	for _, r := range rawResources {
+// 		uu = append(uu, unstructured.Unstructured{Object: r})
+// 	}
+// 	return uu, nil
+// }
+
+func template2Composite(r ControllerClient, tmpl *template.Template, tmplValues *TemplateValues) ([]ResourceComposite, error) {
 	rawResources, err := template2maps(tmpl, tmplValues)
 	if err != nil {
 		return nil, err
 	}
-	uu := make([]unstructured.Unstructured, 0, len(rawResources))
+	composites := make([]ResourceComposite, 0, len(rawResources))
 	for _, r := range rawResources {
-		uu = append(uu, unstructured.Unstructured{Object: r})
+		c := ResourceComposite{}
+		c.Rendered = &unstructured.Unstructured{Object: r}
+		c.GVR, c.IsNamespaced, err = unstructuredToGVR(r, c.Rendered)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return uu, nil
+	return composites, nil
 }
 
 // Prepare a resource like Gateway or HTTPRoute for use in templates
