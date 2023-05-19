@@ -51,15 +51,10 @@ import (
 	sigsyaml "sigs.k8s.io/yaml"
 )
 
-// Rendering and applying templates is a multi-stage process. This
-// structure holds information about a rendered template between these
-// two stages
-type TemplateResource struct {
-	// Compiled template
-	Template *template.Template
-
+// Information about a resource, rendered format as well as actual in API server
+type Composite struct {
 	// The rendered resource
-	Resource *unstructured.Unstructured
+	Rendered *unstructured.Unstructured
 
 	// GVR for resource
 	GVR *schema.GroupVersionResource
@@ -67,14 +62,25 @@ type TemplateResource struct {
 	// Current resource fetch from API-server (or as close as our local caching allows)
 	Current *unstructured.Unstructured
 
+	// Whether resource is namespaced or not
+	IsNamespaced bool
+}
+
+// Rendering and applying templates is a multi-stage process. This
+// structure holds information about a rendered template between
+// stages
+type ResourceTemplateState struct {
+	// Compiled template
+	Template *template.Template
+
+	// Resource information, rendered and current
+	Resource Composite
+
 	// Name of rendered resource (from template key in GatewayClassBlueprint, not Kubernetes resource name)
 	TemplateName string
 
 	// Raw template for resource
 	StringTemplate string
-
-	// Whether resource is namespaced or not
-	IsNamespaced bool
 }
 
 // Parameters used when rendering templates
@@ -113,14 +119,14 @@ func parseSingleTemplate(tmplKey, tmpl string) (*template.Template, error) {
 	return template.New(tmplKey).Option("missingkey=error").Funcs(sprig.TxtFuncMap()).Funcs(funcs).Parse(tmpl)
 }
 
-// Initialize TemplateResource slice by parsing templates
-func parseTemplates(resourceTemplates map[string]string) ([]*TemplateResource, error) {
+// Initialize ResourceTemplateState slice by parsing templates
+func parseTemplates(resourceTemplates map[string]string) ([]*ResourceTemplateState, error) {
 	var err error
 
-	templates := make([]*TemplateResource, 0, len(resourceTemplates))
+	templates := make([]*ResourceTemplateState, 0, len(resourceTemplates))
 
 	for tmplKey, tmpl := range resourceTemplates {
-		r := TemplateResource{}
+		r := ResourceTemplateState{}
 		r.TemplateName = tmplKey
 		r.StringTemplate = tmpl
 		r.Template, err = parseSingleTemplate(tmplKey, tmpl)
@@ -139,15 +145,15 @@ func parseTemplates(resourceTemplates map[string]string) ([]*TemplateResource, e
 // render the template first. Rendering errors on final attempt are
 // logged as errors.
 func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Object,
-	templates []*TemplateResource, values *TemplateValues, isFinalAttempt bool) (rendered, exists int) {
+	templates []*ResourceTemplateState, values *TemplateValues, isFinalAttempt bool) (rendered, exists int) {
 	var err error
 
 	logger := log.FromContext(ctx)
 	ns := parent.GetNamespace()
 
 	for _, tmplRes := range templates {
-		if tmplRes.Resource == nil {
-			tmplRes.Resource, err = template2Unstructured(tmplRes.Template, values)
+		if tmplRes.Resource.Rendered == nil {
+			tmplRes.Resource.Rendered, err = template2Unstructured(tmplRes.Template, values)
 			if err != nil {
 				if isFinalAttempt {
 					logger.Error(err, "cannot render template", "templateName", tmplRes.TemplateName)
@@ -158,29 +164,29 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 				continue
 			}
 		}
-		if tmplRes.GVR == nil {
-			tmplRes.GVR, tmplRes.IsNamespaced, err = unstructuredToGVR(r, tmplRes.Resource)
+		if tmplRes.Resource.GVR == nil {
+			tmplRes.Resource.GVR, tmplRes.Resource.IsNamespaced, err = unstructuredToGVR(r, tmplRes.Resource.Rendered)
 			if err != nil {
 				logger.Error(err, "cannot detect GVR for resource", "templateName", tmplRes.TemplateName)
 				continue
 			}
 		}
 		rendered++
-		if tmplRes.Current == nil {
+		if tmplRes.Resource.Current == nil {
 			var dynamicClient dynamic.ResourceInterface
-			if tmplRes.IsNamespaced {
-				dynamicClient = r.DynamicClient().Resource(*tmplRes.GVR).Namespace(ns)
+			if tmplRes.Resource.IsNamespaced {
+				dynamicClient = r.DynamicClient().Resource(*tmplRes.Resource.GVR).Namespace(ns)
 			} else {
-				dynamicClient = r.DynamicClient().Resource(*tmplRes.GVR)
+				dynamicClient = r.DynamicClient().Resource(*tmplRes.Resource.GVR)
 			}
-			tmplRes.Current, err = dynamicClient.Get(ctx, tmplRes.Resource.GetName(), metav1.GetOptions{})
+			tmplRes.Resource.Current, err = dynamicClient.Get(ctx, tmplRes.Resource.Rendered.GetName(), metav1.GetOptions{})
 			if err != nil {
 				logger.Error(err, "cannot get current resource", "templateName", tmplRes.TemplateName)
 				continue
 			}
-			logger.Info("update current", "templatename", tmplRes.TemplateName, "current", tmplRes.Current)
+			logger.Info("update current", "templatename", tmplRes.TemplateName, "current", tmplRes.Resource.Current)
 		} else {
-			logger.Info("already have update current", "templatename", tmplRes.TemplateName, "current", tmplRes.Current)
+			logger.Info("already have update current", "templatename", tmplRes.TemplateName, "current", tmplRes.Resource.Current)
 		}
 		exists++
 	}
@@ -190,12 +196,12 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 // Build a map of values from current resources. Useful for
 // referencing values between resources, e.g. a status field from one
 // resource may be used to template another resource
-func buildResourceValues(templates []*TemplateResource) map[string]any {
+func buildResourceValues(templates []*ResourceTemplateState) map[string]any {
 	resources := map[string]any{}
 
 	for _, tmplRes := range templates {
-		if tmplRes.Current != nil {
-			resources[tmplRes.TemplateName] = tmplRes.Current.UnstructuredContent()
+		if tmplRes.Resource.Current != nil {
+			resources[tmplRes.TemplateName] = tmplRes.Resource.Current.UnstructuredContent()
 		}
 	}
 	return resources
@@ -203,33 +209,33 @@ func buildResourceValues(templates []*TemplateResource) map[string]any {
 
 // Apply a list of pre-rendered templates and set owner reference for
 // namespaced resources
-func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Object, templates []*TemplateResource) error {
+func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Object, templates []*ResourceTemplateState) error {
 	var err error
 	var errorCnt = 0
 
 	logger := log.FromContext(ctx)
 
 	for _, tmplRes := range templates {
-		if tmplRes.Resource == nil || tmplRes.GVR == nil {
+		if tmplRes.Resource.Rendered == nil || tmplRes.Resource.GVR == nil {
 			// We do not yet have enough information to render/apply this resource
 			continue
 		}
-		if tmplRes.IsNamespaced {
+		if tmplRes.Resource.IsNamespaced {
 			// Only namespaced objects can have namespaced object as owner
-			err = ctrl.SetControllerReference(parent, tmplRes.Resource, r.Scheme())
+			err = ctrl.SetControllerReference(parent, tmplRes.Resource.Rendered, r.Scheme())
 			if err != nil {
 				logger.Error(err, "cannot set owner for namespaced template", "templateName", tmplRes.TemplateName)
 				errorCnt++
 			} else {
 				ns := parent.GetNamespace()
-				err = patchUnstructured(ctx, r, tmplRes.Resource, tmplRes.GVR, &ns)
+				err = patchUnstructured(ctx, r, tmplRes.Resource.Rendered, tmplRes.Resource.GVR, &ns)
 				if err != nil {
 					logger.Error(err, "cannot apply namespaced template", "templateName", tmplRes.TemplateName)
 					errorCnt++
 				}
 			}
 		} else {
-			err = patchUnstructured(ctx, r, tmplRes.Resource, tmplRes.GVR, nil)
+			err = patchUnstructured(ctx, r, tmplRes.Resource.Rendered, tmplRes.Resource.GVR, nil)
 			if err != nil {
 				logger.Error(err, "cannot apply cluster-scoped template", "templateName", tmplRes.TemplateName)
 				errorCnt++

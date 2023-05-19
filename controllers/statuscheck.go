@@ -38,12 +38,12 @@ import (
 // Given a slice of template states, compute the overall
 // health/readiness status.  The general approach is to test for a
 // `Ready` status condition, which is implemented through kstatus.
-func statusIsReady(templates []*TemplateResource) (bool, error) {
+func statusIsReady(templates []*ResourceTemplateState) (bool, error) {
 	for _, tmplRes := range templates {
-		if tmplRes.Current == nil {
+		if tmplRes.Resource.Current == nil {
 			return false, nil
 		}
-		res, err := status.Compute(tmplRes.Current)
+		res, err := status.Compute(tmplRes.Resource.Current)
 		if err != nil {
 			return false, err
 		}
@@ -55,10 +55,10 @@ func statusIsReady(templates []*TemplateResource) (bool, error) {
 }
 
 // Build a list of template names which are not yet reconciled. Useful for status reporting
-func statusExistingTemplates(templates []*TemplateResource) []string {
+func statusExistingTemplates(templates []*ResourceTemplateState) []string {
 	var missing []string
 	for _, tmplRes := range templates {
-		if tmplRes.Current == nil {
+		if tmplRes.Resource.Current == nil {
 			missing = append(missing, tmplRes.TemplateName)
 		}
 	}
