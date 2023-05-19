@@ -36,6 +36,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -52,7 +53,7 @@ import (
 )
 
 // Information about a resource, rendered format as well as actual in API server
-type Composite struct {
+type ResourceComposite struct {
 	// The rendered resource
 	Rendered *unstructured.Unstructured
 
@@ -67,19 +68,19 @@ type Composite struct {
 }
 
 // Rendering and applying templates is a multi-stage process. This
-// structure holds information about a rendered template between
-// stages
+// structure holds information about a template between stages
 type ResourceTemplateState struct {
 	// Compiled template
 	Template *template.Template
 
 	// Resource information, rendered and current
-	Resource Composite
+	Resource    ResourceComposite   // FIXME, refactoring - delete and replace with below
+	NewResource []ResourceComposite // FIXME, refactoring temp name
 
-	// Name of rendered resource (from template key in GatewayClassBlueprint, not Kubernetes resource name)
+	// Name of template (from template key in GatewayClassBlueprint, not Kubernetes resource name)
 	TemplateName string
 
-	// Raw template for resource
+	// Raw template
 	StringTemplate string
 }
 
@@ -133,8 +134,12 @@ func parseTemplates(resourceTemplates map[string]string) ([]*ResourceTemplateSta
 		if err != nil {
 			return nil, fmt.Errorf("cannot parse template %q: %w", tmplKey, err)
 		}
+		r.NewResource = make([]ResourceComposite, 1)
 		templates = append(templates, &r)
 	}
+
+	// Sort to increase predictability
+	sort.SliceStable(templates, func(i, j int) bool { return templates[i].TemplateName < templates[j].TemplateName })
 
 	return templates, nil
 }
@@ -153,7 +158,7 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 
 	for _, tmplRes := range templates {
 		if tmplRes.Resource.Rendered == nil {
-			tmplRes.Resource.Rendered, err = template2Unstructured(tmplRes.Template, values)
+			//tmplRes.Resource.Rendered, err = template2Unstructured(tmplRes.Template, values)    // FIXME
 			if err != nil {
 				if isFinalAttempt {
 					logger.Error(err, "cannot render template", "templateName", tmplRes.TemplateName)
@@ -199,9 +204,9 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 func buildResourceValues(templates []*ResourceTemplateState) map[string]any {
 	resources := map[string]any{}
 
-	for _, tmplRes := range templates {
-		if tmplRes.Resource.Current != nil {
-			resources[tmplRes.TemplateName] = tmplRes.Resource.Current.UnstructuredContent()
+	for _, tmpl := range templates {
+		if tmpl.Resource.Current != nil {
+			resources[tmpl.TemplateName] = tmpl.Resource.Current.UnstructuredContent()
 		}
 	}
 	return resources
@@ -272,26 +277,38 @@ func templateRender(tmpl *template.Template, templateValues *TemplateValues) (*b
 	return &buffer, nil
 }
 
-func template2map(tmpl *template.Template, tmplValues *TemplateValues) (map[string]any, error) {
+func template2maps(tmpl *template.Template, tmplValues *TemplateValues) ([]map[string]any, error) {
 	renderBuffer, err := templateRender(tmpl, tmplValues)
 	if err != nil {
 		return nil, err
 	}
 
-	rawResource := map[string]any{}
-	err = yaml.Unmarshal(renderBuffer.Bytes(), &rawResource)
-	if err != nil {
-		return nil, err
+	rawSlice := bytes.SplitN(renderBuffer.Bytes(), []byte("---"), -1)
+	resources := make([]map[string]any, 0, len(rawSlice))
+	for _, raw := range rawSlice {
+		r := map[string]any{}
+		err = yaml.Unmarshal(raw, &r)
+		if err != nil {
+			return nil, err
+		}
+		if len(r) == 0 {
+			continue // Empty resource
+		}
+		resources = append(resources, r)
 	}
-	return rawResource, nil
+	return resources, nil
 }
 
-func template2Unstructured(tmpl *template.Template, tmplValues *TemplateValues) (*unstructured.Unstructured, error) {
-	rawResource, err := template2map(tmpl, tmplValues)
+func template2Unstructured(tmpl *template.Template, tmplValues *TemplateValues) ([]unstructured.Unstructured, error) {
+	rawResources, err := template2maps(tmpl, tmplValues)
 	if err != nil {
 		return nil, err
 	}
-	return &unstructured.Unstructured{Object: rawResource}, nil
+	uu := make([]unstructured.Unstructured, 0, len(rawResources))
+	for _, r := range rawResources {
+		uu = append(uu, unstructured.Unstructured{Object: r})
+	}
+	return uu, nil
 }
 
 // Prepare a resource like Gateway or HTTPRoute for use in templates

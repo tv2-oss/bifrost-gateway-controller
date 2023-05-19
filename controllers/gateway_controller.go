@@ -186,13 +186,13 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if tmpl, errs := parseSingleTemplate("status", tmplStr); errs != nil {
 			logger.Info("unable to parse status template", "temporary error", errs)
 		} else {
-			if statusMap, errs := template2map(tmpl, &templateValues); errs != nil {
+			if statusMap, errs := template2maps(tmpl, &templateValues); errs != nil {
 				logger.Info("unable to render status template", "temporary error", errs, "template", tmplStr, "values", templateValues)
 			} else {
 				gw.Status.Addresses = []gatewayapi.GatewayAddress{}
-				_, found := statusMap["addresses"]
+				_, found := statusMap[0]["addresses"] // FIXME, more addresses?
 				if found {
-					addresses := statusMap["addresses"]
+					addresses := statusMap[0]["addresses"]
 					if errs := mapstructure.Decode(addresses, &gw.Status.Addresses); errs != nil {
 						// This is probably not a temporary error
 						logger.Error(errs, "unable to decode status data")
