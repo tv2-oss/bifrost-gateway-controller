@@ -217,7 +217,7 @@ setup-getting-started-controller-blueprint:
 
 .PHONY: deploy-controller-blueprint-local
 deploy-controller-blueprint-local:
-	kubectl apply -f blueprints/gatewayclassblueprint-contour-istio-cert.yaml -f blueprints/gatewayclass-contour-istio-cert.yaml
+	kubectl apply -f blueprints/contour-istio/gatewayclassblueprint-contour-istio-cert.yaml -f blueprints/contour-istio/gatewayclass-contour-istio-cert.yaml
 
 .PHONY: deploy-aws-istio-blueprint
 deploy-aws-istio-blueprint:

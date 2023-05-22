@@ -64,7 +64,7 @@ by the following sections.
 Deploying the controller using Helm can be done as follows:
 
 ```
-helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm -n bifrost-gateway-controller-system --create-namespace
+helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm -n bifrost-gateway-controller-system --create-namespace --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml
 ```
 
 ### Deploy from Local-build and YAML Artifacts (recommended for end-to-end tests)
@@ -93,8 +93,8 @@ make run
 ### Deploy GatewayClass for KIND Datapath
 
 ```
-kubectl apply -f blueprints/gatewayclass-contour-istio-cert.yaml
-kubectl apply -f blueprints/gatewayclassblueprint-contour-istio-cert.yaml
+kubectl apply -f blueprints/contour-istio/gatewayclass-contour-istio-cert.yaml
+kubectl apply -f blueprints/contour-istio/gatewayclassblueprint-contour-istio-cert.yaml
 ```
 
 ## Create Datapath and Deploy Test Applications
