@@ -73,15 +73,14 @@ type ResourceTemplateState struct {
 	// Compiled template
 	Template *template.Template
 
-	// Resource information, rendered and current
-	OldResource  ResourceComposite   // FIXME, refactoring - delete and replace with below
-	NewResources []ResourceComposite // FIXME, refactoring temp name
-
 	// Name of template (from template key in GatewayClassBlueprint, not Kubernetes resource name)
 	TemplateName string
 
 	// Raw template
 	StringTemplate string
+
+	// Resource information, rendered and current
+	NewResources []ResourceComposite // FIXME, refactoring temp name
 }
 
 // Parameters used when rendering templates

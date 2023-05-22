@@ -79,7 +79,7 @@ spec:
       template: |
         addresses:
         - type: IPAddress
-          value: {{ .Resources.configMapTestSource.data.testIPAddress }}
+          value: {{ (index .Resources.configMapTestSource 0).data.testIPAddress }}
     resourceTemplates:
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1

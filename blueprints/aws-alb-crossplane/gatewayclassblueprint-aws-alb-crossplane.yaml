@@ -33,7 +33,7 @@ spec:
       template: |
         addresses:
         - type: Hostname
-          value: {{ .Resources.LB.status.atProvider.dnsName }}
+          value: {{ (index .Resources.LB 0).status.atProvider.dnsName }}
     resourceTemplates:
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
@@ -153,7 +153,7 @@ spec:
             {{- toYaml .Values.tags | nindent 4 }}
           {{ end }}
         spec:
-          targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
+          targetGroupARN: {{ (index .Resources.LBTargetGroup 0).status.atProvider.arn }}
           targetType: ip
           serviceRef:
             name: {{ .Gateway.metadata.name }}-child

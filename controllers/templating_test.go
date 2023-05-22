@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func TestParseSingleTemplate(t *testing.T) {
@@ -59,7 +60,7 @@ func TestParseTemplate(t *testing.T) {
 		t.Fatalf("Error parsing templates %v", err)
 	}
 	if len(tmpl) != 3 {
-		t.Fatalf("Template slice lenght mismatch, got %v, expected 3", len(tmpl))
+		t.Fatalf("Template slice length mismatch, got %v, expected 3", len(tmpl))
 	}
 	if tmpl[0].TemplateName != "t1" {
 		t.Fatalf("Template[0] name, got %v, expected t1", tmpl[0].TemplateName)
@@ -68,9 +69,12 @@ func TestParseTemplate(t *testing.T) {
 
 func TestTemplate2map(t *testing.T) {
 	tmpl, err := helperGetResourceState()
+	if err != nil {
+		t.Fatalf("Cannot get resource state: %v", err)
+	}
 	tmplValues := helperGetValues()
 	rawResources, err := template2maps(tmpl[0].Template, tmplValues)
-	if rawResources == nil {
+	if rawResources == nil || err != nil {
 		t.Fatalf("Cannot render template to map: %v", err)
 	}
 	if len(rawResources) != 1 {
