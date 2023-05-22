@@ -58,8 +58,8 @@ func TestParseTemplate(t *testing.T) {
 	if tmpl == nil || err != nil {
 		t.Fatalf("Error parsing templates %v", err)
 	}
-	if len(tmpl) != 2 {
-		t.Fatalf("Template slice lenght mismatch, got %v, expected 2", len(tmpl))
+	if len(tmpl) != 3 {
+		t.Fatalf("Template slice lenght mismatch, got %v, expected 3", len(tmpl))
 	}
 	if tmpl[0].TemplateName != "t1" {
 		t.Fatalf("Template[0] name, got %v, expected t1", tmpl[0].TemplateName)
@@ -92,28 +92,5 @@ func TestTemplate2map(t *testing.T) {
 	}
 	if len(rawResources) != 3 {
 		t.Fatalf("Error rendering multi-resource, got len %v, expected 3", len(rawResources))
-	}
-}
-
-func TestTemplate2Unstructured(t *testing.T) {
-	tmpl, err := helperGetResourceState()
-	tmplValues := helperGetValues()
-	u, err := template2Unstructured(tmpl[0].Template, tmplValues)
-	if u == nil {
-		t.Fatalf("Cannot render template to map: %v", err)
-	}
-	u, err = template2Unstructured(tmpl[1].Template, tmplValues)
-	if err != nil {
-		t.Fatalf("Error rendering empty resource, got err %v", err)
-	}
-	if len(u) != 0 {
-		t.Fatalf("Error rendering empty resource, got %v, expected 0", len(u))
-	}
-	u, err = template2Unstructured(tmpl[2].Template, tmplValues)
-	if err != nil {
-		t.Fatalf("Error rendering multi-resource, got err %v", err)
-	}
-	if len(u) != 3 {
-		t.Fatalf("Error rendering multi-resource, got len %v, expected 3", len(u))
 	}
 }

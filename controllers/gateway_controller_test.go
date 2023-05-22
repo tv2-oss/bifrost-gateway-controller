@@ -85,7 +85,7 @@ spec:
     status:
       template: |
         addresses:
-          {{ toYaml .Resources.childGateway.status.addresses | nindent 2}}
+          {{ toYaml (index .Resources.childGateway 0).status.addresses | nindent 2}}
     resourceTemplates:
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
@@ -116,7 +116,7 @@ spec:
           name: intermediate-configmap
           namespace: {{ .Gateway.metadata.namespace }}
         data:
-          valueIntermediate: {{ .Resources.configMapTestSource.data.valueToRead1 }}
+          valueIntermediate: {{ (index .Resources.configMapTestSource 0).data.valueToRead1 }}
       # Use references to multiple resources coupled with template pipeline and functions
       configMapTestDestination: |
         apiVersion: v1
@@ -125,7 +125,7 @@ spec:
           name: dst-configmap
           namespace: {{ .Gateway.metadata.namespace }}
         data:
-          valueRead: {{ printf "%s, %s" .Resources.configMapTestIntermediate.data.valueIntermediate .Resources.configMapTestSource.data.valueToRead2 | upper }}
+          valueRead: {{ printf "%s, %s" (index .Resources.configMapTestIntermediate 0).data.valueIntermediate (index .Resources.configMapTestSource 0).data.valueToRead2 | upper }}
   httpRouteTemplate:
     resourceTemplates:
       shadowHttproute: |
