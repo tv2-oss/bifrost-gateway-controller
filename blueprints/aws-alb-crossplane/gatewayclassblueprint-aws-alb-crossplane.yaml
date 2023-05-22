@@ -72,9 +72,10 @@ spec:
           providerConfigRef:
             name: {{ .Values.providerConfigName }}
           forProvider:
+            dropInvalidHeaderFields: true
+            internal: {{ .Values.internal }}
             name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
             region: {{ .Values.region }}
-            internal: {{ .Values.internal }}
             securityGroupSelector:
               matchLabels:
                 tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
