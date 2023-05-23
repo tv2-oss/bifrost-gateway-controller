@@ -124,14 +124,14 @@ spec:
         data:
           valueIntermediate: {{ (index .Resources.configMapTestSource 0).data.valueToRead1 }}
       configMapTestIntermediate2: |
-        {{ range .Values.configmap2SuffixData }}
+        {{ range $idx,$suffix := .Values.configmap2SuffixData }}
         apiVersion: v1
         kind: ConfigMap
         metadata:
-          name: intermediate2-configmap-{{ . }}
+          name: intermediate2-configmap-{{ $idx }}
           namespace: {{ $.Gateway.metadata.namespace }}
         data:
-          valueIntermediate: {{ (index $.Resources.configMapTestSource 0).data.valueToRead1 }}-{{ . }}
+          valueIntermediate: {{ (index $.Resources.configMapTestSource 0).data.valueToRead1 }}-{{ $suffix }}
         ---
         {{ end }}
       # Use references to multiple resources coupled with template pipeline and functions

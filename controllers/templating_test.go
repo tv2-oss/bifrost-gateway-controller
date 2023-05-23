@@ -22,8 +22,8 @@ t2: |
     name: {{ .Values.name2 }}
     {{ end }}
 t3: |
-    {{ range .Values.t3data }}
-    name: {{ $.Values.name3 }}-{{ . }}
+    {{ range $idx,$data := .Values.t3data }}
+    name: {{ $.Values.name3 }}-{{ $data }}-{{ $idx }}
     ---
     {{ end }}
 `
@@ -96,5 +96,8 @@ func TestTemplate2map(t *testing.T) {
 	}
 	if len(rawResources) != 3 {
 		t.Fatalf("Error rendering multi-resource, got len %v, expected 3", len(rawResources))
+	}
+	if rawResources[2]["name"] != "t3name-foo3-2" {
+		t.Fatalf("Rendered template error, got %v, expected 't3name-foo3-2'", rawResources[2]["name"])
 	}
 }
