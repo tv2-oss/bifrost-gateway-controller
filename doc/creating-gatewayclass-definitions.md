@@ -78,6 +78,25 @@ includes support for the 100+ functions from the [Sprig
 library](http://masterminds.github.io/sprig) as well as a `toYaml`
 function.
 
+Typically templates will result in a single resource, but conditionals
+and loops may result in templates rendering to zero or more than one
+resource. This is supported, but should be used wit caution.
+
+Consideration for multi-resource templates:
+
+- Resources should be separated by a line with `---` (like in Helm).
+
+- The template as a whole is single unit in the graph of resources,
+  i.e. individual resources in a template cannot refer to each other
+  using the `.Resources` method described below. References across
+  templates using multiple resources are supported.
+
+- It is supported to mix resource kinds in a single template, however,
+  consider if it would be more appropriate to use separate templates
+  in such cases.
+
+## Namespaced Resources
+
 Namespace-scoped templated resources are always created in the
 namespace of the parent resource, e.g. a resource defined under
 `gatewayTemplate` will be created in the namespace of the parent
@@ -95,12 +114,17 @@ When a resource template can be rendered without missing references,
 the rendered template will be used to retrieve the current version of
 the resource from the API server. These 'current resources' will be
 made available as template variables under `.Resources` and the name
-of the template.
+of the template. **Since a template may render to more than one
+resource, the `.Resources` variable is a list**.
 
 The following excerpt from a `GatewayClassBlueprint` illustrates how a
 value is read from the status field of one resource `LBTargetGroup`
 and how the `status.atProvider.arn` value is used in the template of
-`TargetGroupBinding` through `.Resources.LBTargetGroup`.
+`TargetGroupBinding` through `.Resources.LBTargetGroup`. The use of
+the `index` function is because we refer to the first resource
+rendered from the `LBTargetGroup` template. This is necessary even if
+we in this case know that there is always only a single resource
+rendered from the template.
 
 ```yaml
 ...
@@ -120,7 +144,7 @@ spec:
           ...
         spec:
           # And here we use the value 'status.atProvider.arn' from the 'LBTargetGroup' resource
-          targetGroupARN: {{ .Resources.LBTargetGroup.status.atProvider.arn }}
+          targetGroupARN: {{ (index .Resources.LBTargetGroup 0).status.atProvider.arn }}
 ```
 
 The following figure illustrates variables available to templates,
