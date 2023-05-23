@@ -240,7 +240,7 @@ undeploy-aws-istio-blueprint-local:
 #################
 # See 'doc/getting-started.md'
 .PHONY: setup-getting-started
-setup-getting-started: setup-getting-started-cluster setup-getting-started-controller setup-getting-started-controller-blueprint deploy-getting-started-usecase
+setup-getting-started: setup-getting-started-cluster setup-getting-started-controller deploy-controller-blueprint-local deploy-getting-started-usecase
 
 .PHONY: setup-getting-started-cluster
 setup-getting-started-cluster:
