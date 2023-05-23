@@ -173,7 +173,7 @@ spec:
     name: default
 `
 
-var _ = Describe("Common functions", func() {
+var _ = Describe("Attached policies and value precedence", func() {
 
 	const (
 		timeout  = time.Second * 10
