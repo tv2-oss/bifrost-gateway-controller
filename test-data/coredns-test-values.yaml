@@ -14,9 +14,7 @@ servers:
   - name: ready
   - name: reload
   - name: loadbalance
-  # Addition for local test
   - name: etcd
-    parameters: example-foo4567.com
     configBlock: |-
       stubzones
       path /skydns

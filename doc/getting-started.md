@@ -182,6 +182,20 @@ curl --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https:
 curl --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/store
 ```
 
+### Testing Integration with DNS
+
+The KIND cluster for the getting-started example includes a deployment
+of [external-dns](https://github.com/kubernetes-sigs/external-dns),
+configured to update a test-only CoreDNS instance. This CoreDNS
+instance can be quieried using the tooling container also deployed as
+part of the KIND cluster setup:
+
+```
+kubectl exec -it deploy/multitool -- dig @coredns-test-only-coredns example.com +short
+```
+
+The output should be the same IP address as reported from `kubectl get gateway -n foo-infra` in the `ADDRESS` column.
+
 ## Cleanup
 
 ```
