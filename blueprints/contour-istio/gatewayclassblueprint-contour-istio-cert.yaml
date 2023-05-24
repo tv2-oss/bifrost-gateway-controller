@@ -60,7 +60,7 @@ spec:
                 pathType: Prefix
                 backend:
                   service:
-                    name: {{ $.Gateway.metadata.name }}-child
+                    name: {{ $.Gateway.metadata.name }}-child-istio
                     port:
                       number: 80
           {{- end }}
