@@ -1,3 +1,4 @@
+# Settings owned by infrastructure provider, tenant cannot modify or override
 apiVersion: gateway.tv2.dk/v1alpha1
 kind: GatewayClassConfig
 metadata:
@@ -5,10 +6,23 @@ metadata:
   namespace: foo-infra
 spec:
   override:
-    certificateArn: $CERTIFICATE_ARN
     providerConfigName: admin
-    #tags:
-    #  tenant: foo-tenant
+    tags:
+      tenant: foo-tenant
+  targetRef:
+    group: ""
+    kind: Namespace
+    name: foo-infra
+---
+# Configuration owned by tenant
+apiVersion: gateway.tv2.dk/v1alpha1
+kind: GatewayConfig
+metadata:
+  name: foo-infra-tenant-defaults
+  namespace: foo-infra
+spec:
+  default:
+    certificateArn: $CERTIFICATE_ARN
   targetRef:
     group: ""
     kind: Namespace
