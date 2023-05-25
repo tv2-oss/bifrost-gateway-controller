@@ -81,11 +81,17 @@ kind: GatewayClassBlueprint
 metadata:
   name: default-gateway-class
 spec:
+  values:
+    default:
+      configmap2SuffixData:
+      - one
+      - two
+      - three
   gatewayTemplate:
     status:
       template: |
         addresses:
-          {{ toYaml .Resources.childGateway.status.addresses | nindent 2}}
+          {{ toYaml (index .Resources.childGateway 0).status.addresses | nindent 2}}
     resourceTemplates:
       childGateway: |
         apiVersion: gateway.networking.k8s.io/v1beta1
@@ -109,14 +115,25 @@ spec:
         data:
           valueToRead1: Hello
           valueToRead2: World
-      configMapTestIntermediate: |
+      configMapTestIntermediate1: |
         apiVersion: v1
         kind: ConfigMap
         metadata:
-          name: intermediate-configmap
+          name: intermediate1-configmap
           namespace: {{ .Gateway.metadata.namespace }}
         data:
-          valueIntermediate: {{ .Resources.configMapTestSource.data.valueToRead1 }}
+          valueIntermediate: {{ (index .Resources.configMapTestSource 0).data.valueToRead1 }}
+      configMapTestIntermediate2: |
+        {{ range $idx,$suffix := .Values.configmap2SuffixData }}
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: intermediate2-configmap-{{ $idx }}
+          namespace: {{ $.Gateway.metadata.namespace }}
+        data:
+          valueIntermediate: {{ (index $.Resources.configMapTestSource 0).data.valueToRead1 }}-{{ $suffix }}
+        ---
+        {{ end }}
       # Use references to multiple resources coupled with template pipeline and functions
       configMapTestDestination: |
         apiVersion: v1
@@ -125,7 +142,8 @@ spec:
           name: dst-configmap
           namespace: {{ .Gateway.metadata.namespace }}
         data:
-          valueRead: {{ printf "%s, %s" .Resources.configMapTestIntermediate.data.valueIntermediate .Resources.configMapTestSource.data.valueToRead2 | upper }}
+          valueRead: {{ printf "%s, %s" (index .Resources.configMapTestIntermediate1 0).data.valueIntermediate (index .Resources.configMapTestSource 0).data.valueToRead2 | upper }}
+          valueRead2: {{ printf "Testing, one two %s" (index .Resources.configMapTestIntermediate2 2).data.valueIntermediate | upper }}
   httpRouteTemplate:
     resourceTemplates:
       shadowHttproute: |
@@ -270,6 +288,7 @@ var _ = Describe("Gateway controller", func() {
 
 			By("Setting the content of the destination configmap")
 			Expect(cm.Data["valueRead"]).To(Equal("HELLO, WORLD"))
+			Expect(cm.Data["valueRead2"]).To(Equal("TESTING, ONE TWO HELLO-THREE"))
 		})
 	})
 })

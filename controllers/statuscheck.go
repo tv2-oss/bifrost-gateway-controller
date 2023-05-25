@@ -32,34 +32,40 @@ limitations under the License.
 package controllers
 
 import (
+	"fmt"
+
 	"sigs.k8s.io/cli-utils/pkg/kstatus/status"
 )
 
 // Given a slice of template states, compute the overall
 // health/readiness status.  The general approach is to test for a
 // `Ready` status condition, which is implemented through kstatus.
-func statusIsReady(templates []*TemplateResource) (bool, error) {
-	for _, tmplRes := range templates {
-		if tmplRes.Current == nil {
-			return false, nil
-		}
-		res, err := status.Compute(tmplRes.Current)
-		if err != nil {
-			return false, err
-		}
-		if res.Status != status.CurrentStatus {
-			return false, nil
+func statusIsReady(templates []*ResourceTemplateState) (bool, error) {
+	for _, tmpl := range templates {
+		for _, res := range tmpl.NewResources {
+			if res.Current == nil {
+				return false, nil
+			}
+			res, err := status.Compute(res.Current)
+			if err != nil {
+				return false, err
+			}
+			if res.Status != status.CurrentStatus {
+				return false, nil
+			}
 		}
 	}
 	return true, nil
 }
 
 // Build a list of template names which are not yet reconciled. Useful for status reporting
-func statusExistingTemplates(templates []*TemplateResource) []string {
+func statusExistingTemplates(templates []*ResourceTemplateState) []string {
 	var missing []string
-	for _, tmplRes := range templates {
-		if tmplRes.Current == nil {
-			missing = append(missing, tmplRes.TemplateName)
+	for _, tmpl := range templates {
+		for resIdx, res := range tmpl.NewResources {
+			if res.Current == nil {
+				missing = append(missing, fmt.Sprintf("%s[%d]", tmpl.TemplateName, resIdx))
+			}
 		}
 	}
 	return missing

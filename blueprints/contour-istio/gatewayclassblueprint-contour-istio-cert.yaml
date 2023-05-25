@@ -9,7 +9,7 @@ spec:
     status:
       template: |
         addresses:
-        {{ range .Resources.loadBalancer.status.loadBalancer.ingress }}
+        {{ range (index .Resources.loadBalancer 0).status.loadBalancer.ingress }}
         - type: IPAddress
           value: {{ .ip }}
         {{ end }}
