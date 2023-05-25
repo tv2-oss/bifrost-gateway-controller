@@ -6,7 +6,8 @@ infrastructure:
 - Application load balancer (ALB).
 - Security group for ALB, together with ingress and egress rules (for
   both data and healthchecks).
-- ALB target group and listener definitions.
+- ALB target group
+- ALB listener definitions for both terminating TLS (port 443) and redirecting HTTP (port 80) to HTTPS.
 
 This definition also includes the following Kubernetes infrastructure:
 
@@ -17,6 +18,8 @@ This definition also includes the following Kubernetes infrastructure:
   for propagating Kubernetes endpoints for the Istio ingress gateway
   to the AWS ALB target group. This links the Kubernetes internal and
   AWS infrastructure.
+- Optional HorizontalPodAutoscaler
+- Optional PodDisruptionBudget
 
 **Note** the ALB terminates TLS and forwards traffic un-encrypted to
 the Istio ingress gateway.
