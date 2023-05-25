@@ -80,13 +80,13 @@ function.
 
 Typically templates will result in a single resource, but conditionals
 and loops may result in templates rendering to zero or more than one
-resource. This is supported, but should be used wit caution.
+resource. This is supported but should be used with caution.
 
 Consideration for multi-resource templates:
 
 - Resources should be separated by a line with `---` (like in Helm).
 
-- The template as a whole is single unit in the graph of resources,
+- The template as a whole is a single unit in the graph of resources,
   i.e. individual resources in a template cannot refer to each other
   using the `.Resources` method described below. References across
   templates using multiple resources are supported.
