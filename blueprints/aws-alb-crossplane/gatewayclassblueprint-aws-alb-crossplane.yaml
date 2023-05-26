@@ -184,7 +184,9 @@ spec:
           namespace: {{ .Gateway.metadata.namespace }}
           {{ if .Values.tags }}
           annotations:
-            {{- toYaml .Values.tags | nindent 4 }}
+            {{ if .Values.tags }}
+            {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
           {{ end }}
         spec:
           targetGroupARN: {{ (index .Resources.LBTargetGroup 0).status.atProvider.arn }}
@@ -354,6 +356,10 @@ spec:
             tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
           namespace: {{ .Gateway.metadata.namespace }}
+          annotations:
+            {{ if .Values.tags }}
+            {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
         spec:
           scaleTargetRef:
             apiVersion: apps/v1
@@ -386,6 +392,10 @@ spec:
             tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
           name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
           namespace: {{ .Gateway.metadata.namespace }}
+          annotations:
+            {{ if .Values.tags }}
+            {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
         spec:
           {{ if get .Values.pdb "minAvailable" }}
           minAvailable: {{ .Values.pdb.minAvailable }}
