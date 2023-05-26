@@ -3,6 +3,16 @@ kind: GatewayClassBlueprint
 metadata:
   name: contour-istio
 spec:
+  values:
+    default:
+      hpa:
+        minReplicas: 1  # optional
+        maxReplicas: 3  # Optional, will default to minReplicas if minReplicas is defined
+        averageUtilization: 60
+      pdb:
+        minAvailable: "1"
+        maxUnavailable:
+      tags: []
 
   # The following are templates used to 'implement' a 'parent' Gateway
   gatewayTemplate:
@@ -15,6 +25,9 @@ spec:
           namespace: {{ .Gateway.metadata.namespace }}
           annotations:
             networking.istio.io/service-type: ClusterIP
+            {{ if .Values.tags }}
+            {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
         spec:
           gatewayClassName: istio
           listeners:
@@ -36,6 +49,10 @@ spec:
         metadata:
           name: {{ .Gateway.metadata.name }}
           namespace: {{ .Gateway.metadata.namespace }}
+          annotations:
+            {{ if .Values.tags }}
+            {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
         spec:
           ingressClassName: contour
           tls:
@@ -57,6 +74,67 @@ spec:
                     port:
                       number: 80
           {{- end }}
+      hpa: |
+        {{ if or (get .Values.hpa "minReplicas") (get .Values.hpa "maxReplicas") }}
+        apiVersion: autoscaling/v2
+        kind: HorizontalPodAutoscaler
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          namespace: {{ .Gateway.metadata.namespace }}
+          annotations:
+            {{ if .Values.tags }}
+            {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
+        spec:
+          scaleTargetRef:
+            apiVersion: apps/v1
+            kind: Deployment
+            name: {{ .Gateway.metadata.name }}-child-istio
+          {{ if get .Values.hpa "minReplicas" }}
+          minReplicas: {{ .Values.hpa.minReplicas }}
+          {{ end }}
+          {{ if get .Values.hpa "maxReplicas" }}
+          maxReplicas: {{ .Values.hpa.maxReplicas }}
+          {{ else }} # Ensure that max >= min
+            {{ if get .Values.hpa "minReplicas" }}
+          maxReplicas: {{ .Values.hpa.minReplicas }}
+            {{ end }}
+          {{ end }}
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: {{ .Values.hpa.averageUtilization }}
+        {{ end }}
+      pdb: |
+        {{ if or (get .Values.pdb "minAvailable") (get .Values.pdb "maxUnavailable") }}
+        apiVersion: policy/v1
+        kind: PodDisruptionBudget
+        metadata:
+          labels:
+            tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          namespace: {{ .Gateway.metadata.namespace }}
+          annotations:
+            {{ if .Values.tags }}
+            {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
+        spec:
+          {{ if get .Values.pdb "minAvailable" }}
+          minAvailable: {{ .Values.pdb.minAvailable }}
+          {{ else }}
+          maxUnavailable: {{ .Values.pdb.maxUnavailable }}
+          {{ end }}
+          selector:
+            # Match the generated Deployment by label
+            matchLabels:
+              tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+              istio.io/gateway-name: {{ .Gateway.metadata.name }}-child
+        {{ end }}
 
   # The following are templates used to 'implement' a 'parent' HTTPRoute
   httpRouteTemplate:
@@ -67,6 +145,10 @@ spec:
         metadata:
           name: {{ .HTTPRoute.metadata.name }}-child
           namespace: {{ .HTTPRoute.metadata.namespace }}
+          annotations:
+            {{ if .Values.tags }}
+            {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
         spec:
           parentRefs:
           {{ range .HTTPRoute.spec.parentRefs }}
