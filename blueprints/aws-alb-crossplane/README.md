@@ -25,7 +25,7 @@ This definition is provided in the following files:
 
 - [`gatewayclassblueprint-aws-alb-crossplane.yaml`](gatewayclassblueprint-aws-alb-crossplane.yaml) blueprint for infrastructure implementation
 - [`gatewayclass-aws-alb-crossplane.yaml`](gatewayclass-aws-alb-crossplane.yaml) definitions of `GatewayClass`es referencing the above `GatewayClassBlueprint`. Three `GatewayClass`es are created, one that is intended for internet exposed gateways (`public`), one for internet exposed gateways but access limited by e.g. ACLs (`private`) and one for non internet exposed gateways (`internal`).
-- [`gatewayclassconfig-aws-alb-crossplane-dev-env.yaml`](../../test-data/gatewayclassconfig-aws-alb-crossplane-dev-env.yaml) example settings for the two `GatewayClass`es defined in `gatewayclass-aws-alb-crossplane.yaml`, i.e. with different subnet settings for the internet-exposed and non internet-exposed `GatewayClass'es.
+- [`gatewayclassconfig-aws-alb-crossplane-dev-env.yaml`](../../test-data/gatewayclassconfig-aws-alb-crossplane-dev-env.yaml) example settings for the three `GatewayClass`es defined in `gatewayclass-aws-alb-crossplane.yaml`, i.e. with different subnet settings for the internet-exposed and non internet-exposed `GatewayClass'es.
 - [`gatewayclassblueprint-crossplane-aws-alb-values.yaml`](../../charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml)
 RBAC for bifrost-gateway-controller Helm deployment suited for the `aws-alb-crossplane` blueprint.
 
@@ -36,12 +36,16 @@ Provider](https://marketplace.upbound.io/providers/upbound/provider-aws). The
 following compatibility between this blueprint, Crossplane, Crossplane
 Upbound AWS provider and Istio versions has been verified:
 
-| Blueprint | AWS Provider | Crossplane | Istio | Status |
-| --------- | ------------ | ---------- | ----- | ------ |
+| Bifrost/Blueprint | AWS Provider | Crossplane | Istio | Status |
+| ----------------- | ------------ | ---------- | ----- | ------ |
 | `0.0.18` | `v0.28.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |
 | `0.0.18` | `v0.32.1` | `v1.11.0` | `1.16.1` | :x: |
 | `0.0.18` | `v0.33.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |
 | `0.0.19` | `v0.33.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |
+| `0.0.20` | `v0.33.0` | `v1.11.0` | `1.17.2` | :x: (*) |
+| `0.0.21` | `v0.33.0` | `v1.11.0` | `1.17.2` | :heavy_check_mark: |
+
+(*) In Istio [1.17.0 Gateway naming convention was changed](https://istio.io/latest/news/releases/1.17.x/announcing-1.17/change-notes/) to be a concatenation of Gateway `Name` and `GatewayClass`.
 
 ## Testing AWS/Crossplane/Istio Blueprint
 
@@ -55,6 +59,17 @@ version of the dependencies.
 - IAM role for AWS load balancer controller (see make target `deploy-aws-load-balancer-controller`)
 - A TLS certificate and associated domain name (see below).
 
+Specifically these environment variables should be provided:
+
+```
+export CLUSTERNAME=
+export AWS_LOAD_BALANCER_CONTROLLER_IAM_ROLE_ARN=
+export CROSSPLANE_INITIAL_IAM_ROLE_ARN=
+export CROSSPLANE_IAM_ROLE_ARN=
+export DOMAIN=
+export CERTIFICATE_ARN=
+```
+
 ### Deploying Dependencies
 
 Deploy dependencies with the make targets shown below. Version information can be left out to use default versions:
@@ -64,8 +79,8 @@ make deploy-gateway-api
 make deploy-aws-load-balancer-controller-crds
 AWS_LOAD_BALANCER_CONTROLLER_CHART_VERSION=v1.4.6  make deploy-aws-load-balancer-controller
 CROSSPLANE_VERSION=v1.11.0                         make deploy-crossplane
-CROSSPLANE_AWS_PROVIDER_VERSION=v0.28.0            make deploy-crossplane-aws-provider
-ISTIO_VERSION=1.16.1                               make deploy-istio
+CROSSPLANE_AWS_PROVIDER_VERSION=v0.33.0            make deploy-crossplane-aws-provider
+ISTIO_VERSION=1.17.2                               make deploy-istio
 ```
 
 Deploy controller and blueprint:
@@ -84,16 +99,18 @@ specific, this guide does not describe how to prepare it. Additionally,
 a namespace-default `GatewayClassConfig` may be needed:
 
 ```bash
-CERTIFICATE_ARN=some-arn-for-foo.example.com make deploy-namespace-gatewayclassconfig
+make deploy-namespace-gatewayclassconfig
 ```
 
 Deploy the getting-started use-case:
 
 ```bash
-GATEWAY_CLASS_NAME=aws-alb-crossplane-public DOMAIN=foo.example.com make deploy-getting-started-usecase
+GATEWAY_CLASS_NAME=aws-alb-crossplane-public make deploy-getting-started-usecase
 ```
 
-Test the deployed data-path when resources are ready:
+Test the deployed data-path when resources are ready (use
+e.g. `hack/demo/show-resources.sh` to observe status). Particularly
+watch for an address on `foo-gateway`.
 
 ```bash
 hack/demo/curl.sh $DOMAIN  # Where DOMAIN is as defined above

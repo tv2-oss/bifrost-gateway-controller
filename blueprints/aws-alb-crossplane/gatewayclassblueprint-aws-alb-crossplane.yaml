@@ -156,7 +156,7 @@ spec:
           targetGroupARN: {{ (index .Resources.LBTargetGroup 0).status.atProvider.arn }}
           targetType: ip
           serviceRef:
-            name: {{ .Gateway.metadata.name }}-child
+            name: {{ .Gateway.metadata.name }}-child-istio
             port: 80
       SecurityGroup: |
         apiVersion: ec2.aws.upbound.io/v1beta1

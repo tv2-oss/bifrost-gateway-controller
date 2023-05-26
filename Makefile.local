@@ -70,7 +70,7 @@ delete-cluster:
 	kind delete cluster --name kind-gwc-dev-cluster
 
 #################
-ISTIO_VERSION ?= 1.16.1
+ISTIO_VERSION ?= 1.17.2
 
 .PHONY: deploy-istio
 deploy-istio:
@@ -231,7 +231,7 @@ undeploy-aws-istio-blueprint:
 
 .PHONY: deploy-aws-istio-blueprint-local
 deploy-aws-istio-blueprint-local:
-	kubectl apply -f blueprints/gatewayclassblueprint-aws-alb-crossplane.yaml -f blueprints/gatewayclass-aws-alb-crossplane.yaml
+	kubectl apply -f blueprints/aws-alb-crossplane/gatewayclassblueprint-aws-alb-crossplane.yaml -f blueprints/aws-alb-crossplane/gatewayclass-aws-alb-crossplane.yaml
 
 .PHONY: undeploy-aws-istio-blueprint-local
 undeploy-aws-istio-blueprint-local:
