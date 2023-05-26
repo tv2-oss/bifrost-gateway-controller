@@ -33,7 +33,7 @@ setup-e2e-test-cluster: create-cluster deploy-gateway-api setup-external-dns-tes
 
 #################
 .PHONY: setup-external-dns-test
-setup-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
+setup-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-metrics-server deploy-multitool
 
 .PHONY: wait-ready-external-dns-test
 wait-ready-external-dns-test:
@@ -105,6 +105,11 @@ deploy-multitool:
 .PHONY: deploy-external-dns
 deploy-external-dns:
 	helm upgrade -i --repo https://kubernetes-sigs.github.io/external-dns external-dns external-dns --version 1.12.2 --values test-data/external-dns-values.yaml
+
+#################
+.PHONY: deploy-metrics-server
+deploy-metrics-server:
+	helm upgrade -i --repo https://kubernetes-sigs.github.io/metrics-server metrics-server metrics-server --version 3.8.3 -n kube-system --set args={--kubelet-insecure-tls}
 
 #################
 # https://kind.sigs.k8s.io/docs/user/loadbalancer/
