@@ -33,7 +33,7 @@ setup-e2e-test-cluster: create-cluster deploy-gateway-api setup-external-dns-tes
 
 #################
 .PHONY: setup-external-dns-test
-setup-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-metrics-server deploy-multitool
+setup-external-dns-test: deploy-etcd deploy-coredns deploy-external-dns deploy-multitool
 
 .PHONY: wait-ready-external-dns-test
 wait-ready-external-dns-test:
@@ -251,6 +251,7 @@ setup-getting-started: setup-getting-started-cluster setup-getting-started-contr
 setup-getting-started-cluster:
 	make create-cluster deploy-gateway-api
 	make deploy-metallb
+	make deploy-metrics-server
 	make deploy-istio
 	make deploy-contour deploy-contour-provisioner
 	make setup-external-dns-test
