@@ -27,6 +27,7 @@ Gateway API driven management of network infrastructure across Kubernetes and cl
 | controllerManager.manager.resources.limits.memory | string | `"128Mi"` |  |
 | controllerManager.manager.resources.requests.cpu | string | `"10m"` |  |
 | controllerManager.manager.resources.requests.memory | string | `"64Mi"` |  |
+| controllerManager.podAnnotations | object | `{}` |  |
 | controllerManager.replicas | int | `1` |  |
 | metricsService.ports[0].name | string | `"http"` |  |
 | metricsService.ports[0].port | int | `8080` |  |
