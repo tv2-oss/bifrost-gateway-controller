@@ -3,7 +3,10 @@
 ## [UNRELEASED]
 
 - Example text, add your PR info according to example below below this line. Do not bump chart version in Chart.yaml.
-- Added podAnnotations to chart, allowing users to set annotations for the controller pod
+
+## [0.1.7]
+
+- Added podAnnotations to chart, allowing users to set annotations for the controller pod. ([#189](https://github.com/tv2-oss/bifrost-gateway-controller/pull/189)) [@kemv](https://github.com/kemv)
 
 ## [0.1.6]
 
