@@ -50,6 +50,10 @@ controllerManager:
 
   # Annotations to add to the deployment
   annotations: {}
+
+  # Annotations to add to the pod
+  podAnnotations: {}
+
   replicas: 1
 
   deploymentStrategy:

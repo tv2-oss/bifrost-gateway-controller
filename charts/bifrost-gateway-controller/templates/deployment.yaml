@@ -22,6 +22,9 @@ spec:
         control-plane: manager
       {{- include "gateway-controller.selectorLabels" . | nindent 8 }}
       annotations:
+      {{- with .Values.controllerManager.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
         kubectl.kubernetes.io/default-container: manager
     spec:
       containers:

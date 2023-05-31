@@ -1,3 +1,5 @@
 controllerManager:
   annotations:
-    tv2.dk/gateway-controller/annontations: true
+    tv2.dk/gateway-controller/annotations: true
+  podAnnotations:
+    tv2.dk/gateway-controller/podAnnotations: true
