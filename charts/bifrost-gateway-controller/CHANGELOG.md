@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - Example text, add your PR info according to example below below this line. Do not bump chart version in Chart.yaml.
+- Added podAnnotations to chart, allowing users to set annotations for the controller pod
 
 ## [0.1.6]
 
