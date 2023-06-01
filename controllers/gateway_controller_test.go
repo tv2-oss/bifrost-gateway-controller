@@ -232,6 +232,7 @@ var _ = Describe("Gateway controller", func() {
 			Expect(setGatewayStatus(gwChildNN, &metav1.Condition{
 				Type:   string(gatewayapi.GatewayConditionReady),
 				Status: metav1.ConditionFalse,
+				//nolint:staticcheck // ready status is deprecated in gw-api 0.7.0 but since our implementation fits pre-0.7.0 and intended future use we keep the code
 				Reason: string(gatewayapi.GatewayReasonReady)}, nil)).Should(Succeed())
 			time.Sleep(5 * time.Second) // Ensure that controllers cache is updated and we can use 'Consistently' below
 
@@ -257,6 +258,7 @@ var _ = Describe("Gateway controller", func() {
 			Expect(setGatewayStatus(gwChildNN, &metav1.Condition{
 				Type:   string(gatewayapi.GatewayConditionReady),
 				Status: metav1.ConditionTrue,
+				//nolint:staticcheck // ready status is deprecated in gw-api 0.7.0 but since our implementation fits pre-0.7.0 and intended future use we keep the code
 				Reason: string(gatewayapi.GatewayReasonReady)},
 				&gatewayapi.GatewayAddress{Type: &addrType, Value: "4.5.6.7"})).Should(Succeed())
 
