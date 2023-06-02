@@ -3,7 +3,8 @@
 ## [UNRELEASED]
 
 - Example text, add your PR info according to example below below this line. Do not bump chart version in Chart.yaml.
-- chart image tag default to Chart.appVersion instead of latest. ([#194](https://github.com/tv2-oss/bifrost-gateway-controller/pull/194)) [@michaelvl](https://github.com/michaelvl)
+- Add json log support to helm chart ([#195](https://github.com/tv2-oss/bifrost-gateway-controller/pull/195)) [@michaelvl](https://github.com/michaelvl)
+- Chart image tag default to Chart.appVersion instead of latest. ([#194](https://github.com/tv2-oss/bifrost-gateway-controller/pull/194)) [@michaelvl](https://github.com/michaelvl)
 
 ## [0.1.7]
 
