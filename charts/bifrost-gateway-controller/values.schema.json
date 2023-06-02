@@ -50,6 +50,20 @@
                         "livenessProbe": {
                             "type": "object"
                         },
+                        "logging": {
+                            "required": [
+                                "format",
+                                "level"
+                            ],
+                            "properties": {
+                                "format": {
+                                    "type": "string"
+                                },
+                                "level": {
+                                    "type": "string"
+                                }
+                            }
+                        },
                         "readinessProbe": {
                             "type": "object"
                         },

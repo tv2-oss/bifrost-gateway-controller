@@ -19,6 +19,12 @@ controllerManager:
         cpu: 10m
         memory: 64Mi
 
+    logging:
+      # -- Logging format. Defaults to text
+      format: json
+      # -- Log level [debug|info|error]
+      level: debug
+
     livenessProbe:
       httpGet:
         path: /healthz

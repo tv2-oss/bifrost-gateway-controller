@@ -30,6 +30,10 @@ spec:
       containers:
       - args:
         - --leader-elect
+        - --zap-log-level={{ .Values.controllerManager.manager.logging.level }}
+        {{ if eq .Values.controllerManager.manager.logging.format "json" -}}
+        - --zap-devel=false
+        {{- end }}
         command:
         - /bifrost-gateway-controller
         {{- if (contains "sha256:" .Values.controllerManager.manager.image.tag) }}

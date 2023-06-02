@@ -18,6 +18,8 @@ Gateway API driven management of network infrastructure across Kubernetes and cl
 | controllerManager.manager.livenessProbe.httpGet.port | int | `8081` |  |
 | controllerManager.manager.livenessProbe.initialDelaySeconds | int | `15` |  |
 | controllerManager.manager.livenessProbe.periodSeconds | int | `20` |  |
+| controllerManager.manager.logging.format | string | `"json"` | Logging format. Defaults to text |
+| controllerManager.manager.logging.level | string | `"debug"` | Log level [debug|info|error] |
 | controllerManager.manager.rbac.additionalPermissions | list | `[]` |  |
 | controllerManager.manager.readinessProbe.httpGet.path | string | `"/readyz"` |  |
 | controllerManager.manager.readinessProbe.httpGet.port | int | `8081` |  |
