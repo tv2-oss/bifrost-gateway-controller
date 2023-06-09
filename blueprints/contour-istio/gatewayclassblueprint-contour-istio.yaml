@@ -97,7 +97,7 @@ spec:
           {{ end }}
           {{ if get .Values.hpa "maxReplicas" }}
           maxReplicas: {{ .Values.hpa.maxReplicas }}
-          {{ else }} # Ensure that max >= min
+          {{ else }} # Ensure that max >= min, even when maxReplicas is left undefined
             {{ if get .Values.hpa "minReplicas" }}
           maxReplicas: {{ .Values.hpa.minReplicas }}
             {{ end }}
