@@ -107,6 +107,11 @@ deploy-external-dns:
 	helm upgrade -i --repo https://kubernetes-sigs.github.io/external-dns external-dns external-dns --version 1.12.2 --values test-data/external-dns-values.yaml
 
 #################
+.PHONY: deploy-metrics-server
+deploy-metrics-server:
+	helm upgrade -i --repo https://kubernetes-sigs.github.io/metrics-server metrics-server metrics-server --version 3.8.3 -n kube-system --set args={--kubelet-insecure-tls}
+
+#################
 # https://kind.sigs.k8s.io/docs/user/loadbalancer/
 .PHONY: deploy-metallb
 deploy-metallb:
@@ -246,6 +251,7 @@ setup-getting-started: setup-getting-started-cluster setup-getting-started-contr
 setup-getting-started-cluster:
 	make create-cluster deploy-gateway-api
 	make deploy-metallb
+	make deploy-metrics-server
 	make deploy-istio
 	make deploy-contour deploy-contour-provisioner
 	make setup-external-dns-test
