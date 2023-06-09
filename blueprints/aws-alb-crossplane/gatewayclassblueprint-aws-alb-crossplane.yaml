@@ -49,7 +49,6 @@ spec:
           namespace: {{ .Gateway.metadata.namespace }}
           annotations:
             networking.istio.io/service-type: ClusterIP
-            sidecar.istio.io/proxyCPU: "1"
             {{ if .Values.tags }}
             {{ toYaml .Values.tags | nindent 4 }}
             {{ end }}
