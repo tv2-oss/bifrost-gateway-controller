@@ -1,0 +1,68 @@
+rbac:
+  extraRules:
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["list", "watch"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["*"]
+    verbs: ["list", "watch"]
+extraArgs:
+- --custom-resource-state-config
+-  |
+    spec:
+      resources:
+        - groupVersionKind:
+            group: gateway.networking.k8s.io
+            version: "v1beta1"
+            kind: Gateway
+          metricNamePrefix: "gatewayapi"
+          labelsFromPath:
+            name: ["metadata", "name"]
+            namespace: ["metadata", "namespace"]
+            classname: ["spec", "gatewayClassName"]
+          metrics:
+            - name: gateway_conditions
+              help: "Gateway conditions"
+              each:
+                type: Gauge
+                gauge:
+                  path: ["status", "conditions"]
+                  labelsFromPath:
+                    type: ["type"]
+                  valueFrom: ["status"]
+            # Zombie Gateways can be detected by comparing `gateway_conditions` with this
+            - name: gateway_class_info
+              help: "Gateways class"
+              each:
+                type: Info
+                info:
+                  labelsFromPath:
+                    classname: ["spec", "gatewayClassName"]
+        - groupVersionKind:
+            group: gateway.networking.k8s.io
+            version: "v1beta1"
+            kind: HTTPRoute
+          metricNamePrefix: "gatewayapi"
+          labelsFromPath:
+            name: ["metadata", "name"]
+            namespace: ["metadata", "namespace"]
+          metrics:
+            - name: httproute_conditions
+              help: "HTTPRoute conditions"
+              each:
+                type: Gauge
+                gauge:
+                  # This will not work for HTTPRoutes attached to multiple parents
+                  path: ["status", "parents", "0", "conditions"]
+                  labelsFromPath:
+                    type: ["type"]
+                  valueFrom: ["status"]
+            # Zombie HTTPRoutes can be detected by comparing `httproute_conditions` with this
+            - name: httproute_info
+              help: "HTTPRoute "
+              each:
+                type: Info
+                info:
+                  labelsFromPath:
+                    classname: ["spec", "parentRefs", "0"]
+- --custom-resource-state-only=true
