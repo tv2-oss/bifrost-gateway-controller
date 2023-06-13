@@ -114,6 +114,7 @@ deploy-metrics-server:
 #################
 .PHONY: deploy-kube-state-metrics
 deploy-kube-state-metrics:
+	helm upgrade -i --repo https://prometheus-community.github.io/helm-charts prometheus-operator-crds prometheus-operator-crds --version 4.0.2
 	helm upgrade -i --repo https://prometheus-community.github.io/helm-charts kube-state-metrics kube-state-metrics --version 5.7.0 -n kube-system --values test-data/kube-state-metrics-values.yaml
 
 #################
