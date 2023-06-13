@@ -1,60 +1,65 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "required": [
-        "controllerManager",
-        "serviceAccount",
-        "metricsService"
-    ],
+    "$schema": "http://json-schema.org/schema#",
+    "type": "object",
     "properties": {
         "controllerManager": {
-            "required": [
-                "manager",
-                "annotations",
-                "replicas",
-                "deploymentStrategy"
-            ],
+            "type": "object",
             "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "deploymentStrategy": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string"
+                        }
+                    }
+                },
                 "manager": {
-                    "required": [
-                        "image",
-                        "resources",
-                        "livenessProbe",
-                        "readinessProbe"
-                    ],
+                    "type": "object",
                     "properties": {
                         "image": {
-                            "required": [
-                                "repository",
-                                "name",
-                                "tag",
-                                "pullPolicy"
-                            ],
+                            "type": "object",
                             "properties": {
-                                "repository": {
-                                    "type": "string"
-                                },
                                 "name": {
-                                    "type": "string"
-                                },
-                                "tag": {
                                     "type": "string"
                                 },
                                 "pullPolicy": {
                                     "type": "string"
+                                },
+                                "repository": {
+                                    "type": "string"
+                                },
+                                "tag": {
+                                    "type": "string"
                                 }
                             }
                         },
-                        "resources": {
-                            "type": "object"
-                        },
                         "livenessProbe": {
-                            "type": "object"
+                            "type": "object",
+                            "properties": {
+                                "httpGet": {
+                                    "type": "object",
+                                    "properties": {
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "port": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "initialDelaySeconds": {
+                                    "type": "integer"
+                                },
+                                "periodSeconds": {
+                                    "type": "integer"
+                                }
+                            }
                         },
                         "logging": {
-                            "required": [
-                                "format",
-                                "level"
-                            ],
+                            "type": "object",
                             "properties": {
                                 "format": {
                                     "type": "string"
@@ -64,9 +69,6 @@
                                 }
                             }
                         },
-                        "readinessProbe": {
-                            "type": "object"
-                        },
                         "rbac": {
                             "type": "object",
                             "properties": {
@@ -74,36 +76,100 @@
                                     "type": "array"
                                 }
                             }
+                        },
+                        "readinessProbe": {
+                            "type": "object",
+                            "properties": {
+                                "httpGet": {
+                                    "type": "object",
+                                    "properties": {
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "port": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "initialDelaySeconds": {
+                                    "type": "integer"
+                                },
+                                "periodSeconds": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "resources": {
+                            "type": "object",
+                            "properties": {
+                                "limits": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string"
+                                        },
+                                        "memory": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "requests": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string"
+                                        },
+                                        "memory": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },
-                "annotationer": {
+                "podAnnotations": {
                     "type": "object"
                 },
                 "replicas": {
                     "type": "integer"
-                },
-                "deploymentStrategy": {
+                }
+            }
+        },
+        "prometheus": {
+            "type": "object",
+            "properties": {
+                "monitor": {
                     "type": "object",
-                    "required": [
-                        "type"
-                    ]
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "service": {
+                    "type": "object",
+                    "properties": {
+                        "port": {
+                            "type": "integer"
+                        },
+                        "type": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },
         "serviceAccount": {
             "type": "object",
-            "required": [
-                "create",
-                "annotations"
-            ]
-        },
-        "metricsService": {
-            "type": "object",
-            "required": [
-                "ports",
-                "type"
-            ]
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "create": {
+                    "type": "boolean"
+                }
+            }
         }
     }
 }

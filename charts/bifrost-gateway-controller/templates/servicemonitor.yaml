@@ -1,0 +1,21 @@
+{{- if .Values.prometheus.monitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "gateway-controller.fullname" . }}-manager-metrics
+  labels:
+    control-plane: manager
+    {{- include "gateway-controller.labels" . | nindent 4 }}
+spec:
+  jobLabel: {{ .Release.Name }}
+  selector:
+    matchLabels:
+      control-plane: manager
+      {{- include "gateway-controller.selectorLabels" . | nindent 4 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: /metrics
+{{- end  }}

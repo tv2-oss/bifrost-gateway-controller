@@ -107,6 +107,16 @@ deploy-external-dns:
 	helm upgrade -i --repo https://kubernetes-sigs.github.io/external-dns external-dns external-dns --version 1.12.2 --values test-data/external-dns-values.yaml
 
 #################
+.PHONY: deploy-prometheus-operator-crds
+deploy-prometheus-operator-crds:
+	helm upgrade -i --repo https://prometheus-community.github.io/helm-charts prometheus-operator-crds prometheus-operator-crds --version 4.0.2
+
+#################
+.PHONY: deploy-prometheus
+deploy-prometheus:
+	helm upgrade -i --repo https://prometheus-community.github.io/helm-charts kube-prometheus-stack kube-prometheus-stack --version 46.8.0 -n default --values test-data/kube-prometheus-stack-values.yaml
+
+#################
 .PHONY: deploy-metrics-server
 deploy-metrics-server:
 	helm upgrade -i --repo https://kubernetes-sigs.github.io/metrics-server metrics-server metrics-server --version 3.8.3 -n kube-system --set args={--kubelet-insecure-tls}
@@ -114,7 +124,6 @@ deploy-metrics-server:
 #################
 .PHONY: deploy-kube-state-metrics
 deploy-kube-state-metrics:
-	helm upgrade -i --repo https://prometheus-community.github.io/helm-charts prometheus-operator-crds prometheus-operator-crds --version 4.0.2
 	helm upgrade -i --repo https://prometheus-community.github.io/helm-charts kube-state-metrics kube-state-metrics --version 5.7.0 -n kube-system --values test-data/kube-state-metrics-values.yaml
 
 #################
@@ -210,12 +219,16 @@ BIFROST_VERSION ?= 0.1.6
 deploy-controller-helm:
 	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version ${BIFROST_VERSION} --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n bifrost-gateway-controller-system --create-namespace
 
+.PHONY: deploy-controller-local-helm
+deploy-controller-local-helm:
+	helm upgrade -i bifrost-gateway-controller-helm charts/bifrost-gateway-controller --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml -n bifrost-gateway-controller-system --create-namespace --set prometheus.monitor.enabled=true
+
 .PHONY: deploy-controller-aws-helm
 deploy-controller-aws-helm:
 	helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm --version ${BIFROST_VERSION} --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml -n bifrost-gateway-controller-system --create-namespace
 
-.PHONY: undeploy-controller
-undeploy-controller:
+.PHONY: undeploy-controller-helm
+undeploy-controller-helm:
 	helm uninstall -n bifrost-gateway-controller-system bifrost-gateway-controller-helm
 
 #################
