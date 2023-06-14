@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - Example text, add your PR info according to example below below this line. Do not bump chart version in Chart.yaml unless a chart release will be made following your PR.
+- Add ServiceMonitor CRD to enable metrics endpoint discovery and configuration ([#202](https://github.com/tv2-oss/bifrost-gateway-controller/pull/202)) [@michaelvl](https://github.com/michaelvl)
 
 ## [0.1.7]
 

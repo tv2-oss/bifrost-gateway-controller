@@ -31,10 +31,9 @@ Gateway API driven management of network infrastructure across Kubernetes and cl
 | controllerManager.manager.resources.requests.memory | string | `"64Mi"` |  |
 | controllerManager.podAnnotations | object | `{}` |  |
 | controllerManager.replicas | int | `1` |  |
-| metricsService.ports[0].name | string | `"http"` |  |
-| metricsService.ports[0].port | int | `8080` |  |
-| metricsService.ports[0].protocol | string | `"TCP"` |  |
-| metricsService.type | string | `"ClusterIP"` |  |
+| prometheus | object | `{"monitor":{"enabled":false},"service":{"port":8080,"type":"ClusterIP"}}` | Prometheus metrics |
+| prometheus.monitor | object | `{"enabled":false}` | Prometheus-operator ServiceMonitor metrics endpoint specification |
+| prometheus.service | object | `{"port":8080,"type":"ClusterIP"}` | Metrics service specification |
 | serviceAccount.annotations | object | `{}` |  |
 | serviceAccount.create | bool | `true` |  |
 

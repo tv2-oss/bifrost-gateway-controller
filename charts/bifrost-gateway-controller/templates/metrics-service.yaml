@@ -6,9 +6,11 @@ metadata:
     control-plane: manager
     {{- include "gateway-controller.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.metricsService.type }}
+  type: {{ .Values.prometheus.service.type }}
   selector:
     control-plane: manager
     {{- include "gateway-controller.selectorLabels" . | nindent 4 }}
   ports:
-    {{- .Values.metricsService.ports | toYaml | nindent 2 -}}
+  - name: http
+    port: {{ .Values.prometheus.service.port }}
+    protocol: TCP

@@ -72,9 +72,12 @@ serviceAccount:
   # Annotations to add to the service account
   annotations: {}
 
-metricsService:
-  ports:
-  - name: http
+# -- Prometheus metrics
+prometheus:
+  # -- Metrics service specification
+  service:
     port: 8080
-    protocol: TCP
-  type: ClusterIP
+    type: ClusterIP
+  # -- Prometheus-operator ServiceMonitor metrics endpoint specification
+  monitor:
+    enabled: false
