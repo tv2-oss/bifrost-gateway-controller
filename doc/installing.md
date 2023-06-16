@@ -40,3 +40,24 @@ helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-ga
 In addition to the *bifrost-gateway-controller*, you will need
 blueprints defining datapath implementations. See [Example
 GatewayClassBlueprints](../blueprints/README.md).
+
+## Metrics and Observability
+
+The controller provides [standard controller
+metrics](https://book.kubebuilder.io/reference/metrics-reference.html)
+and the Helm chart provides a
+[ServiceMonitor](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#monitoring.coreos.com/v1.ServiceMonitor)
+for integration with systems that understand these.
+
+Observability of Gateway-API resources is possbile through [Custom
+Resource State
+Metrics](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/customresourcestate-metrics.md)
+through kube-state-metrics. An example configuration for deploying
+kube-state-metrics is [provided
+here](test-data/kube-state-metrics-values.yaml). Generally, this
+configuration provides condition status for `GatewayClass`, `Gateway`
+and `HTTPRoute` resources.
+
+An SLI for e.g. `Gateway` resources can be created from the metric
+`gateway_conditions` and watching for `Gateway`s without the
+`Programmed` condition.
