@@ -20,7 +20,6 @@ spec:
 apiVersion: pkg.crossplane.io/v1
 kind: Provider
 metadata:
-  #name: upbound-provider-aws-ec2
   name: provider-aws-ec2
 spec:
   package: xpkg.upbound.io/upbound/provider-aws-ec2:$CROSSPLANE_AWS_PROVIDER_VERSION
@@ -30,7 +29,6 @@ spec:
 apiVersion: pkg.crossplane.io/v1
 kind: Provider
 metadata:
-  #name: upbound-provider-aws-elbv2
   name: provider-aws-elbv2
 spec:
   package: xpkg.upbound.io/upbound/provider-aws-elbv2:$CROSSPLANE_AWS_PROVIDER_VERSION
