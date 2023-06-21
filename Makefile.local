@@ -70,7 +70,7 @@ delete-cluster:
 	kind delete cluster --name kind-gwc-dev-cluster
 
 #################
-ISTIO_VERSION ?= 1.17.2
+ISTIO_VERSION ?= 1.18.0
 
 .PHONY: deploy-istio
 deploy-istio:
@@ -185,7 +185,7 @@ undeploy-aws-load-balancer-controller:
 	helm uninstall -n kube-system aws-load-balancer-controller
 
 #################
-CROSSPLANE_VERSION ?= v1.11.0
+CROSSPLANE_VERSION ?= v1.12.2
 
 .PHONY: deploy-crossplane
 deploy-crossplane:
@@ -195,7 +195,7 @@ deploy-crossplane:
 undeploy-crossplane:
 	helm uninstall crossplane -n crossplane-system
 
-CROSSPLANE_AWS_PROVIDER_VERSION ?= v0.28.0
+CROSSPLANE_AWS_PROVIDER_VERSION ?= v0.36.0
 # Note, templates also require CROSSPLANE_INITIAL_IAM_ROLE_ARN and CROSSPLANE_IAM_ROLE_ARN
 
 .PHONY: deploy-crossplane-aws-provider
@@ -203,8 +203,8 @@ deploy-crossplane-aws-provider:
 	cat test-data/crossplane-aws-provider.yaml_tpl | CROSSPLANE_AWS_PROVIDER_VERSION=${CROSSPLANE_AWS_PROVIDER_VERSION} CROSSPLANE_INITIAL_IAM_ROLE_ARN=${CROSSPLANE_INITIAL_IAM_ROLE_ARN} envsubst > crossplane-aws-provider.yaml
 	cat test-data/crossplane-aws-provider-config.yaml_tpl | CROSSPLANE_IAM_ROLE_ARN=${CROSSPLANE_IAM_ROLE_ARN} envsubst > crossplane-aws-provider-config.yaml
 	kubectl apply -f crossplane-aws-provider.yaml
-	kubectl wait "providers.pkg.crossplane.io/provider-aws" --for=condition=Installed --timeout=180s
-	kubectl wait "providers.pkg.crossplane.io/provider-aws" --for=condition=Healthy --timeout=180s
+	kubectl wait "providers.pkg.crossplane.io/provider-family-aws" --for=condition=Installed --timeout=180s
+	kubectl wait "providers.pkg.crossplane.io/provider-family-aws" --for=condition=Healthy --timeout=180s
 	kubectl apply -f crossplane-aws-provider-config.yaml
 
 .PHONY: undeploy-crossplane-aws-provider
@@ -232,7 +232,7 @@ undeploy-controller-helm:
 	helm uninstall -n bifrost-gateway-controller-system bifrost-gateway-controller-helm
 
 #################
-BIFROST_BLUEPRINTS_VERSION ?= 0.0.19
+BIFROST_BLUEPRINTS_VERSION ?= 0.0.21
 
 .PHONY: deploy-controller-blueprint
 setup-getting-started-controller-blueprint:
