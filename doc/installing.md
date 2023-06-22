@@ -46,7 +46,7 @@ GatewayClassBlueprints](../blueprints/README.md).
 The controller provides the following Prometheus/OpenMetrics metrics:
 
 | Metric | Type | Description |
-| ------------- | ------------- |
+| ------ | ---- | ----------- |
 | `bifrost_patchapply_total` | Counter | Number of server-side patch operations |
 | `bifrost_patchapply_errors_total` | Counter | Number of server-side patch errors |
 | `bifrost_template_errors_total` | Counter | Number of template render errors |
