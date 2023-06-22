@@ -43,11 +43,21 @@ GatewayClassBlueprints](../blueprints/README.md).
 
 ## Metrics and Observability
 
-The controller provides [standard controller
+The controller provides the following Prometheus/OpenMetrics metrics:
+
+| Metric | Type | Description |
+| ------------- | ------------- |
+| `bifrost_patchapply_total` | Counter | Number of server-side patch operations |
+| `bifrost_patchapply_errors_total` | Counter | Number of server-side patch errors |
+| `bifrost_template_errors_total` | Counter | Number of template render errors |
+| `bifrost_template_parse_errors_total` | Counter | Number of template parse errors |
+| `bifrost_resource_get_total` | Counter | Number of resources fetched to use as dependency in templates |
+
+Additionally the controller provides [standard controller
 metrics](https://book.kubebuilder.io/reference/metrics-reference.html)
 and the Helm chart provides a
 [ServiceMonitor](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#monitoring.coreos.com/v1.ServiceMonitor)
-for integration with systems that understand these.
+for integration with systems that understand this CRD.
 
 Observability of Gateway-API resources is possible through [Custom
 Resource State

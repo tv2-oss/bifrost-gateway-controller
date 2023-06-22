@@ -131,6 +131,7 @@ func parseTemplates(resourceTemplates map[string]string) ([]*ResourceTemplateSta
 		r.StringTemplate = tmpl
 		r.Template, err = parseSingleTemplate(tmplKey, tmpl)
 		if err != nil {
+			metricTemplateParseErrs.Inc()
 			return nil, fmt.Errorf("cannot parse template %q: %w", tmplKey, err)
 		}
 		r.NewResources = make([]ResourceComposite, 0)
@@ -165,6 +166,7 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 					// FIXME: These are convenient, but we should have a better logging design, i.e. it should be possible to enable rendering errors only
 					fmt.Printf("Template:\n%s\n", tmpl.StringTemplate)
 					fmt.Printf("Template values:\n%+v\n", values)
+					metricTemplateErrs.Inc()
 				}
 				continue
 			}
@@ -179,6 +181,7 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 				} else {
 					dynamicClient = r.DynamicClient().Resource(*res.GVR)
 				}
+				metricResourceGet.Inc()
 				res.Current, err = dynamicClient.Get(ctx, res.Rendered.GetName(), metav1.GetOptions{})
 				if err != nil {
 					logger.Error(err, "cannot get current resource", "templateName", tmpl.TemplateName, "resIdx", resIdx)

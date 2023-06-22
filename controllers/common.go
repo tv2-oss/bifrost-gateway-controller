@@ -317,6 +317,7 @@ func patchUnstructured(ctx context.Context, r ControllerDynClient, us *unstructu
 
 	force := true
 
+	metricPatchApply.Inc()
 	if namespace != nil {
 		dynamicClient := r.DynamicClient().Resource(*gvr).Namespace(*namespace)
 		_, err = dynamicClient.Patch(ctx, us.GetName(), types.ApplyPatchType, jsonData, metav1.PatchOptions{
@@ -331,5 +332,8 @@ func patchUnstructured(ctx context.Context, r ControllerDynClient, us *unstructu
 		})
 	}
 
+	if err != nil {
+		metricPatchApplyErrs.Inc()
+	}
 	return err
 }
