@@ -1,3 +1,5 @@
+collectors: []
+
 resources:
   limits:
    cpu: 100m
