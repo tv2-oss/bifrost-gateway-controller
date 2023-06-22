@@ -47,8 +47,11 @@ Upbound AWS provider and Istio versions has been verified:
 | `0.0.19` | `v0.33.0` | `v1.11.0` | `1.16.1` | :heavy_check_mark: |
 | `0.0.20` | `v0.33.0` | `v1.11.0` | `1.17.2` | :x: (*) |
 | `0.0.21` | `v0.33.0` | `v1.11.0` | `1.17.2` | :heavy_check_mark: |
+| `0.0.21` | `v0.36.0` | `v1.12.2` | `1.18.0` | :heavy_check_mark: (**) |
 
 (*) In Istio [1.17.0 Gateway naming convention was changed](https://istio.io/latest/news/releases/1.17.x/announcing-1.17/change-notes/) to be a concatenation of Gateway `Name` and `GatewayClass`.
+
+(**) From this time, we switched from using a monolothic AWS provider to using provider families. Details are in make target `deploy-crossplane-aws-provider`.
 
 ## Testing AWS/Crossplane/Istio Blueprint
 
@@ -81,16 +84,16 @@ Deploy dependencies with the make targets shown below. Version information can b
 make deploy-gateway-api
 make deploy-aws-load-balancer-controller-crds
 AWS_LOAD_BALANCER_CONTROLLER_CHART_VERSION=v1.4.6  make deploy-aws-load-balancer-controller
-CROSSPLANE_VERSION=v1.11.0                         make deploy-crossplane
-CROSSPLANE_AWS_PROVIDER_VERSION=v0.33.0            make deploy-crossplane-aws-provider
-ISTIO_VERSION=1.17.2                               make deploy-istio
+CROSSPLANE_VERSION=v1.12.2                         make deploy-crossplane
+CROSSPLANE_AWS_PROVIDER_VERSION=v0.36.0            make deploy-crossplane-aws-provider
+ISTIO_VERSION=1.18.0                               make deploy-istio
 ```
 
 Deploy controller and blueprint:
 
 ```
-BIFROST_VERSION=0.1.6              make deploy-controller-aws-helm
-BIFROST_BLUEPRINTS_VERSION=0.0.18  make deploy-aws-istio-blueprint
+BIFROST_VERSION=0.1.8              make deploy-controller-aws-helm
+BIFROST_BLUEPRINTS_VERSION=0.0.21  make deploy-aws-istio-blueprint
 ```
 
 Note, there is also a `deploy-aws-istio-blueprint-local` make target to deploy
