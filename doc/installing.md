@@ -49,7 +49,7 @@ and the Helm chart provides a
 [ServiceMonitor](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#monitoring.coreos.com/v1.ServiceMonitor)
 for integration with systems that understand these.
 
-Observability of Gateway-API resources is possbile through [Custom
+Observability of Gateway-API resources is possible through [Custom
 Resource State
 Metrics](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/customresourcestate-metrics.md)
 through kube-state-metrics. An example configuration for deploying
