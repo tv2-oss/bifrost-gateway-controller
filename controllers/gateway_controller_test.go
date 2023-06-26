@@ -388,7 +388,7 @@ var _ = Describe("Gateway controller non-ready resources", func() {
 				}
 				if !conditionStateIs(gwRead, "Accepted", PtrTo(metav1.ConditionTrue), nil, nil) ||
 					!conditionStateIs(gwRead, "Ready", PtrTo(metav1.ConditionFalse), nil, nil) ||
-					!conditionStateIs(gwRead, "Programmed", PtrTo(metav1.ConditionFalse), PtrTo("Pending"), PtrTo("Xmissing 1 resources: configMapTestIntermediate1\\[\\]")) {
+					!conditionStateIs(gwRead, "Programmed", PtrTo(metav1.ConditionFalse), PtrTo("Pending"), PtrTo("missing 1 resources: configMapTestIntermediate1\\[\\]")) {
 					return false
 				}
 				return true
@@ -397,7 +397,7 @@ var _ = Describe("Gateway controller non-ready resources", func() {
 	})
 })
 
-func conditionStateIs(gw *gatewayapi.Gateway, condType string, status *metav1.ConditionStatus, reason *string, messageRegEx *string) bool {
+func conditionStateIs(gw *gatewayapi.Gateway, condType string, status *metav1.ConditionStatus, reason, messageRegEx *string) bool {
 	var msgMatch *regexp.Regexp
 	if messageRegEx != nil {
 		msgMatch, _ = regexp.Compile(*messageRegEx)
