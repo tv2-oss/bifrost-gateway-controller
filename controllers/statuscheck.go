@@ -42,7 +42,7 @@ import (
 // `Ready` status condition, which is implemented through kstatus.
 func statusIsReady(templates []*ResourceTemplateState) (bool, error) {
 	for _, tmpl := range templates {
-		for _, res := range tmpl.NewResources {
+		for _, res := range tmpl.Resources {
 			if res.Current == nil {
 				return false, nil
 			}
@@ -62,9 +62,14 @@ func statusIsReady(templates []*ResourceTemplateState) (bool, error) {
 func statusExistingTemplates(templates []*ResourceTemplateState) []string {
 	var missing []string
 	for _, tmpl := range templates {
-		for resIdx, res := range tmpl.NewResources {
-			if res.Current == nil {
-				missing = append(missing, fmt.Sprintf("%s[%d]", tmpl.TemplateName, resIdx))
+		if len(tmpl.Resources) == 0 {
+			// No resources - we treat this an e.g. a render error and mark the unknown resulting number of resources with '[]'
+			missing = append(missing, fmt.Sprintf("%s[]", tmpl.TemplateName))
+		} else {
+			for resIdx, res := range tmpl.Resources {
+				if res.Current == nil {
+					missing = append(missing, fmt.Sprintf("%s[%d]", tmpl.TemplateName, resIdx))
+				}
 			}
 		}
 	}

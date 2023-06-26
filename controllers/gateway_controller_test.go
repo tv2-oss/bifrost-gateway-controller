@@ -33,6 +33,7 @@ package controllers
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -162,6 +163,35 @@ spec:
           rules:
           {{ toYaml .HTTPRoute.spec.rules | nindent 4 }}`
 
+// Blueprint that creates resources that never become ready
+const gatewayClassBlueprintManifestNonReady string = `
+apiVersion: gateway.tv2.dk/v1alpha1
+kind: GatewayClassBlueprint
+metadata:
+  name: default-gateway-class
+spec:
+  values: null
+  gatewayTemplate:
+    resourceTemplates:
+      configMapTestSource: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: source-configmap
+          namespace: {{ .Gateway.metadata.namespace }}
+        data:
+          valueToRead1: Hello
+          valueToRead2: World
+      configMapTestIntermediate1: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: intermediate1-configmap
+          namespace: {{ .Gateway.metadata.namespace }}
+        data:
+          valueIntermediate: {{ (index .Resources.configMapTestSource 0).data.valueToRead1NonExisting }}
+`
+
 var _ = Describe("Gateway controller", func() {
 
 	const (
@@ -213,6 +243,9 @@ var _ = Describe("Gateway controller", func() {
 				err := k8sClient.Get(ctx, gwChildNN, childGateway)
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
+			DeferCleanup(func() {
+				Expect(k8sClient.Delete(ctx, gw)).Should(Succeed())
+			})
 
 			By("Setting the owner reference to enable garbage collection")
 			t := true
@@ -246,8 +279,8 @@ var _ = Describe("Gateway controller", func() {
 				if kubernetes.ConditionsHaveLatestObservedGeneration(gwRead, gwRead.Status.Conditions) != nil {
 					return false
 				}
-				if !conditionStateIs(gwRead, "Ready", metav1.ConditionFalse) ||
-					!conditionStateIs(gwRead, "Programmed", metav1.ConditionTrue) {
+				if !conditionStateIs(gwRead, "Ready", PtrTo(metav1.ConditionFalse), nil, nil) ||
+					!conditionStateIs(gwRead, "Programmed", PtrTo(metav1.ConditionTrue), nil, nil) {
 					return false
 				}
 				return true
@@ -271,8 +304,8 @@ var _ = Describe("Gateway controller", func() {
 				if kubernetes.ConditionsHaveLatestObservedGeneration(gwRead, gwRead.Status.Conditions) != nil {
 					return false
 				}
-				if !conditionStateIs(gwRead, "Ready", metav1.ConditionTrue) ||
-					!conditionStateIs(gwRead, "Programmed", metav1.ConditionTrue) {
+				if !conditionStateIs(gwRead, "Ready", PtrTo(metav1.ConditionTrue), nil, nil) ||
+					!conditionStateIs(gwRead, "Programmed", PtrTo(metav1.ConditionTrue), nil, nil) {
 					return false
 				}
 				return true
@@ -295,9 +328,85 @@ var _ = Describe("Gateway controller", func() {
 	})
 })
 
-func conditionStateIs(gw *gatewayapi.Gateway, condType string, status metav1.ConditionStatus) bool {
+var _ = Describe("Gateway controller non-ready resources", func() {
+
+	const (
+		timeout  = time.Second * 10
+		interval = time.Millisecond * 250
+	)
+
+	var (
+		gwc  *gatewayapi.GatewayClass
+		gwcb *gwcapi.GatewayClassBlueprint
+		ctx  context.Context
+	)
+
+	BeforeEach(func() {
+		gwc = &gatewayapi.GatewayClass{}
+		gwcb = &gwcapi.GatewayClassBlueprint{}
+		ctx = context.Background()
+		Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
+		Expect(yaml.Unmarshal([]byte(gatewayClassBlueprintManifestNonReady), gwcb)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwcb)).Should(Succeed())
+	})
+
+	AfterEach(func() {
+		Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, gwcb)).Should(Succeed())
+	})
+
+	When("Reconciling a parent Gateway", func() {
+		var gw *gatewayapi.Gateway
+
+		BeforeEach(func() {
+			gw = &gatewayapi.Gateway{}
+			Expect(yaml.Unmarshal([]byte(gatewayManifest), gw)).To(Succeed())
+		})
+
+		It("Should lifecycle correctly", func() {
+
+			By("Creating the gateway")
+			Expect(k8sClient.Create(ctx, gw)).Should(Succeed())
+			DeferCleanup(func() {
+				Expect(k8sClient.Delete(ctx, gw)).Should(Succeed())
+			})
+
+			gwNN := types.NamespacedName{Name: gw.ObjectMeta.Name, Namespace: gw.ObjectMeta.Namespace}
+
+			By("Updating conditions")
+
+			gwRead := &gatewayapi.Gateway{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, gwNN, gwRead)
+				if err != nil {
+					return false
+				}
+				GinkgoT().Logf("gwRead cond: %+v\n", gwRead.Status.Conditions)
+				if kubernetes.ConditionsHaveLatestObservedGeneration(gwRead, gwRead.Status.Conditions) != nil {
+					return false
+				}
+				if !conditionStateIs(gwRead, "Accepted", PtrTo(metav1.ConditionTrue), nil, nil) ||
+					!conditionStateIs(gwRead, "Ready", PtrTo(metav1.ConditionFalse), nil, nil) ||
+					!conditionStateIs(gwRead, "Programmed", PtrTo(metav1.ConditionFalse), PtrTo("Pending"), PtrTo("Xmissing 1 resources: configMapTestIntermediate1\\[\\]")) {
+					return false
+				}
+				return true
+			}, 5*time.Second, interval).Should(BeTrue())
+		})
+	})
+})
+
+func conditionStateIs(gw *gatewayapi.Gateway, condType string, status *metav1.ConditionStatus, reason *string, messageRegEx *string) bool {
+	var msgMatch *regexp.Regexp
+	if messageRegEx != nil {
+		msgMatch, _ = regexp.Compile(*messageRegEx)
+	}
 	for _, cond := range gw.Status.Conditions {
-		if cond.Type == condType && cond.Status == status {
+		if cond.Type == condType &&
+			(status == nil || cond.Status == *status) &&
+			(reason == nil || cond.Reason == *reason) &&
+			(messageRegEx == nil || msgMatch.MatchString(cond.Message)) {
 			return true
 		}
 	}

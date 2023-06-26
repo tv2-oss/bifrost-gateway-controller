@@ -337,3 +337,7 @@ func patchUnstructured(ctx context.Context, r ControllerDynClient, us *unstructu
 	}
 	return err
 }
+
+func PtrTo[T any](val T) *T {
+	return &val
+}
