@@ -80,7 +80,7 @@ type ResourceTemplateState struct {
 	StringTemplate string
 
 	// Resource information, rendered and current
-	NewResources []ResourceComposite // FIXME, refactoring temp name
+	Resources []ResourceComposite
 }
 
 // Parameters used when rendering templates
@@ -134,7 +134,7 @@ func parseTemplates(resourceTemplates map[string]string) ([]*ResourceTemplateSta
 			metricTemplateParseErrs.Inc()
 			return nil, fmt.Errorf("cannot parse template %q: %w", tmplKey, err)
 		}
-		r.NewResources = make([]ResourceComposite, 0)
+		r.Resources = make([]ResourceComposite, 0)
 		templates = append(templates, &r)
 	}
 
@@ -158,8 +158,8 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 
 	for tIdx := range templates {
 		tmpl := templates[tIdx]
-		if len(tmpl.NewResources) == 0 {
-			tmpl.NewResources, err = template2Composite(r, tmpl.Template, values)
+		if len(tmpl.Resources) == 0 {
+			tmpl.Resources, err = template2Composite(r, tmpl.Template, values)
 			if err != nil {
 				if isFinalAttempt {
 					logger.Error(err, "cannot render template", "templateName", tmpl.TemplateName)
@@ -172,8 +172,8 @@ func renderTemplates(ctx context.Context, r ControllerDynClient, parent metav1.O
 			}
 		}
 		rendered++
-		for resIdx := range tmpl.NewResources {
-			res := &tmpl.NewResources[resIdx]
+		for resIdx := range tmpl.Resources {
+			res := &tmpl.Resources[resIdx]
 			if res.Current == nil {
 				var dynamicClient dynamic.ResourceInterface
 				if res.IsNamespaced {
@@ -205,7 +205,7 @@ func buildResourceValues(templates []*ResourceTemplateState) map[string]any {
 
 	for _, tmpl := range templates {
 		resSlice := make([]map[string]any, 0)
-		for _, res := range tmpl.NewResources {
+		for _, res := range tmpl.Resources {
 			if res.Current != nil {
 				resSlice = append(resSlice, res.Current.UnstructuredContent())
 			}
@@ -224,7 +224,7 @@ func applyTemplates(ctx context.Context, r ControllerDynClient, parent metav1.Ob
 	logger := log.FromContext(ctx)
 
 	for _, tmpl := range templates {
-		for _, res := range tmpl.NewResources {
+		for _, res := range tmpl.Resources {
 			if res.Rendered == nil || res.GVR == nil {
 				// We do not yet have enough information to render/apply this resource
 				continue

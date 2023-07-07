@@ -154,6 +154,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, fmt.Errorf("cannot parse templates: %w", err)
 	}
 
+	// At this point we are ready to accept the Gateway resource. If we encounter errors we track then in this variable
+	var errStatus error
+
 	// Resource templates may reference each other, with the
 	// worst-case being a strictly linear DAG. This means that we
 	// may have to loop N times, with N being the number of
@@ -169,9 +172,10 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("Rendered", "rendered", renderedNum, "exists", existsNum)
 
 		if err = applyTemplates(ctx, r, &gw, templates); err != nil {
-			return ctrl.Result{}, fmt.Errorf("unable to apply templates: %w", err)
+			errStatus = fmt.Errorf("unable to apply templates: %w", err)
 		}
 	}
+
 	requeue = (renderedNum != len(templates))
 	logger.Info("ending reconcile loop", "renderedNum", renderedNum, "totalNum", len(templates), "requeue", requeue)
 
@@ -259,14 +263,14 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		Message:            progMsg,
 		ObservedGeneration: gw.ObjectMeta.Generation})
 
-	// Set `Ready` condition based on child resource statuses AND status update
+	// Set `Ready` condition based on child resource statuses, status update and programmed status
 	status := metav1.ConditionFalse
 	isReady, err := statusIsReady(templates)
 	if err != nil {
 		logger.Error(err, "unable to update status condition due to sub-resource status error")
 		return ctrl.Result{}, err
 	}
-	if isReady && statusUpdateOK {
+	if isReady && statusUpdateOK && progStatus == metav1.ConditionTrue {
 		status = metav1.ConditionTrue
 	}
 	meta.SetStatusCondition(&gw.Status.Conditions, metav1.Condition{
@@ -287,7 +291,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("requeue - not all resources updated")
 		return ctrl.Result{RequeueAfter: dependencyMissingRequeuePeriod}, nil
 	}
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, errStatus
 }
 
 // Calculate union and intersection of Hostnames for use in templates.
