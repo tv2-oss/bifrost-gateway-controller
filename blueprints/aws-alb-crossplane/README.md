@@ -32,6 +32,10 @@ This definition is provided in the following files:
 - [`gatewayclassblueprint-crossplane-aws-alb-values.yaml`](../../charts/bifrost-gateway-controller/ci/gatewayclassblueprint-crossplane-aws-alb-values.yaml)
 RBAC for bifrost-gateway-controller Helm deployment suited for the `aws-alb-crossplane` blueprint.
 
+### TargetGroup name limit
+
+The `TargetGroup` resource in AWS has a character limit of 32 in AWS. This doesn't leave a lot of room for identifiers in the name. For this reason, the generated name (the format of which is `gw-<NAMESPACE>-<NAME>`) will be cut off at 25 characters, and then appended with the first 6 characters of the SHA1 of the entire name. This should ensure uniqueness of names, while also forcing conforming to the 32 character limit.
+
 ## Compatibility
 
 This blueprint use AWS Crossplane resources through the [Upbound AWS
