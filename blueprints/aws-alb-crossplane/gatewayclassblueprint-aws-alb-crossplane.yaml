@@ -116,10 +116,12 @@ spec:
               port: {{ .Values.healthCheck.port | quote }}
             port: 80
             protocol: HTTP
-            {{ if .Values.tags }}
             tags:
+              bifrost-gateway-controller/targetgroup_name: {{ .Gateway.metadata.name }}
+              bifrost-gateway-controller/targetgroup_namespace: {{ .Gateway.metadata.namespace }}
+              {{ if .Values.tags }}
               {{- toYaml .Values.tags | nindent 6 }}
-            {{ end }}
+              {{ end }}
             targetType: ip
       LBListenerRedirHttps: |
         apiVersion: elbv2.aws.upbound.io/v1beta1

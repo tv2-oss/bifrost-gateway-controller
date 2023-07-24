@@ -36,6 +36,8 @@ RBAC for bifrost-gateway-controller Helm deployment suited for the `aws-alb-cros
 
 The `TargetGroup` resource in AWS has a character limit of 32 in AWS. This doesn't leave a lot of room for identifiers in the name. For this reason, the generated name (the format of which is `gw-<NAMESPACE>-<NAME>`) will be cut off at 25 characters, and then appended with the first 6 characters of the SHA1 of the entire name. This should ensure uniqueness of names, while also forcing conforming to the 32 character limit.
 
+Because of this method, the name of `TargetGroups` might not always contain the full `name` and `namespace` of the corresponding Kubernetes resource. For this reason, these resources in AWS will also be tagged with `bifrost-gateway-controller/targetgroup_name` and `bifrost-gateway-controller/targetgroup_namespace`.
+
 ## Compatibility
 
 This blueprint use AWS Crossplane resources through the [Upbound AWS
