@@ -99,12 +99,12 @@ spec:
         metadata:
           labels:
             tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
-          name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+          name: {{ printf "gw-%s-%s" .Gateway.metadata.namespace .Gateway.metadata.name | substr 0 25}}-{{ printf "%s-%s" .Gateway.metadata.namespace .Gateway.metadata.name | sha1sum | substr 0 6 }}
         spec:
           providerConfigRef:
             name: {{ .Values.providerConfigName }}
           forProvider:
-            name: gw-{{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
+            name: {{ printf "gw-%s-%s" .Gateway.metadata.namespace .Gateway.metadata.name | substr 0 25}}-{{ printf "%s-%s" .Gateway.metadata.namespace .Gateway.metadata.name | sha1sum | substr 0 6 }}
             region: {{ .Values.region }}
             vpcId: {{ .Values.vpcId }}
             healthCheck:
