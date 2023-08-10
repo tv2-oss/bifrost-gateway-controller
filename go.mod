@@ -7,9 +7,10 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.8
+	github.com/prometheus/client_golang v1.15.1
 	k8s.io/api v0.27.3
 	k8s.io/apiextensions-apiserver v0.27.3
-	k8s.io/apimachinery v0.27.3
+	k8s.io/apimachinery v0.27.4
 	k8s.io/client-go v0.27.3
 	sigs.k8s.io/cli-utils v0.34.0
 	sigs.k8s.io/controller-runtime v0.15.0
@@ -54,7 +55,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.15.1 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
