@@ -243,9 +243,6 @@ var _ = Describe("Gateway controller", func() {
 				err := k8sClient.Get(ctx, gwChildNN, childGateway)
 				return err == nil
 			}, timeout, interval).Should(BeTrue())
-			DeferCleanup(func() {
-				Expect(k8sClient.Delete(ctx, gw)).Should(Succeed())
-			})
 
 			By("Setting the owner reference to enable garbage collection")
 			t := true
@@ -311,6 +308,8 @@ var _ = Describe("Gateway controller", func() {
 				return true
 			}, timeout, interval).Should(BeTrue())
 
+			By("Cleaning up the gateway")
+			Expect(k8sClient.Delete(ctx, gw)).Should(Succeed())
 		})
 
 		It("Should update inter resource-references", func() {
@@ -328,74 +327,73 @@ var _ = Describe("Gateway controller", func() {
 	})
 })
 
-// var _ = Describe("Gateway controller non-ready resources", func() {
+var _ = Describe("Gateway controller non-ready resources", func() {
 
-// 	const (
-// 		timeout  = time.Second * 10
-// 		interval = time.Millisecond * 250
-// 	)
+	const (
+		timeout  = time.Second * 10
+		interval = time.Millisecond * 250
+	)
 
-// 	var (
-// 		gwc  *gatewayapi.GatewayClass
-// 		gwcb *gwcapi.GatewayClassBlueprint
-// 		ctx  context.Context
-// 	)
+	var (
+		gwc  *gatewayapi.GatewayClass
+		gwcb *gwcapi.GatewayClassBlueprint
+		ctx  context.Context
+	)
 
-// 	BeforeEach(func() {
-// 		gwc = &gatewayapi.GatewayClass{}
-// 		gwcb = &gwcapi.GatewayClassBlueprint{}
-// 		ctx = context.Background()
-// 		Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
-// 		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
-// 		Expect(yaml.Unmarshal([]byte(gatewayClassBlueprintManifestNonReady), gwcb)).To(Succeed())
-// 		Expect(k8sClient.Create(ctx, gwcb)).Should(Succeed())
-// 	})
+	BeforeEach(func() {
+		gwc = &gatewayapi.GatewayClass{}
+		gwcb = &gwcapi.GatewayClassBlueprint{}
+		ctx = context.Background()
+		Expect(yaml.Unmarshal([]byte(gatewayClassManifest), gwc)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwc)).Should(Succeed())
+		Expect(yaml.Unmarshal([]byte(gatewayClassBlueprintManifestNonReady), gwcb)).To(Succeed())
+		Expect(k8sClient.Create(ctx, gwcb)).Should(Succeed())
+	})
 
-// 	AfterEach(func() {
-// 		Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
-// 		Expect(k8sClient.Delete(ctx, gwcb)).Should(Succeed())
-// 	})
+	AfterEach(func() {
+		Expect(k8sClient.Delete(ctx, gwc)).Should(Succeed())
+		Expect(k8sClient.Delete(ctx, gwcb)).Should(Succeed())
+	})
 
-// 	When("Reconciling a parent Gateway", func() {
-// 		var gw *gatewayapi.Gateway
+	When("Reconciling a parent Gateway", func() {
+		var gw *gatewayapi.Gateway
 
-// 		BeforeEach(func() {
-// 			gw = &gatewayapi.Gateway{}
-// 			Expect(yaml.Unmarshal([]byte(gatewayManifest), gw)).To(Succeed())
-// 		})
+		BeforeEach(func() {
+			gw = &gatewayapi.Gateway{}
+			Expect(yaml.Unmarshal([]byte(gatewayManifest), gw)).To(Succeed())
+		})
 
-// 		It("Should lifecycle correctly", func() {
+		It("Should lifecycle correctly", func() {
 
-// 			By("Creating the gateway")
-// 			Expect(k8sClient.Create(ctx, gw)).Should(Succeed())
-// 			DeferCleanup(func() {
-// 				Expect(k8sClient.Delete(ctx, gw)).Should(Succeed())
-// 			})
+			By("Creating the gateway")
+			Expect(k8sClient.Create(ctx, gw)).Should(Succeed())
 
-// 			gwNN := types.NamespacedName{Name: gw.ObjectMeta.Name, Namespace: gw.ObjectMeta.Namespace}
+			By("Updating conditions")
+			gwNN := types.NamespacedName{Name: gw.ObjectMeta.Name, Namespace: gw.ObjectMeta.Namespace}
 
-// 			By("Updating conditions")
+			gwRead := &gatewayapi.Gateway{}
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, gwNN, gwRead)
+				if err != nil {
+					return false
+				}
+				GinkgoT().Logf("gwRead cond: %+v\n", gwRead.Status.Conditions)
+				if kubernetes.ConditionsHaveLatestObservedGeneration(gwRead, gwRead.Status.Conditions) != nil {
+					return false
+				}
+				if !conditionStateIs(gwRead, "Accepted", PtrTo(metav1.ConditionTrue), nil, nil) ||
+					!conditionStateIs(gwRead, "Ready", PtrTo(metav1.ConditionFalse), nil, nil) ||
+					!conditionStateIs(gwRead, "Programmed", PtrTo(metav1.ConditionFalse), PtrTo("Pending"), PtrTo("missing 1 resources: configMapTestIntermediate1\\[\\]")) {
+					return false
+				}
+				return true
+			}, 5*time.Second, interval).Should(BeTrue())
 
-// 			gwRead := &gatewayapi.Gateway{}
-// 			Eventually(func() bool {
-// 				err := k8sClient.Get(ctx, gwNN, gwRead)
-// 				if err != nil {
-// 					return false
-// 				}
-// 				GinkgoT().Logf("gwRead cond: %+v\n", gwRead.Status.Conditions)
-// 				if kubernetes.ConditionsHaveLatestObservedGeneration(gwRead, gwRead.Status.Conditions) != nil {
-// 					return false
-// 				}
-// 				if !conditionStateIs(gwRead, "Accepted", PtrTo(metav1.ConditionTrue), nil, nil) ||
-// 					!conditionStateIs(gwRead, "Ready", PtrTo(metav1.ConditionFalse), nil, nil) ||
-// 					!conditionStateIs(gwRead, "Programmed", PtrTo(metav1.ConditionFalse), PtrTo("Pending"), PtrTo("missing 1 resources: configMapTestIntermediate1\\[\\]")) {
-// 					return false
-// 				}
-// 				return true
-// 			}, 5*time.Second, interval).Should(BeTrue())
-// 		})
-// 	})
-// })
+			By("Cleaning up the gateway")
+			Expect(k8sClient.Delete(ctx, gw)).Should(Succeed())
+		})
+	})
+})
 
 func conditionStateIs(gw *gatewayapi.Gateway, condType string, status *metav1.ConditionStatus, reason, messageRegEx *string) bool {
 	var msgMatch *regexp.Regexp
