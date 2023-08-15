@@ -16,7 +16,7 @@ spec:
         app: foo-store-v1
     spec:
       containers:
-      - image: hashicorp/http-echo:0.2.3
+      - image: hashicorp/http-echo:alpine
         name: foo-store-v1
         args:
         - "-text=Welcome-to-foo-store-v1"

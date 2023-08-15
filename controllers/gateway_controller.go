@@ -157,6 +157,43 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// At this point we are ready to accept the Gateway resource. If we encounter errors we track then in this variable
 	var errStatus error
 
+	// Handle finalizer and cleanup (in case of deletion)
+	logger.Info("checking finalizer and deletion")
+	finalizerName := "bifrost-cleanup"
+	if gw.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object.
+		logger.Info("deletion not found (finalizer)")
+		if !containsString(gw.ObjectMeta.Finalizers, finalizerName) {
+			logger.Info("finalizer not found attempting to add it")
+			gw.ObjectMeta.Finalizers = append(gw.ObjectMeta.Finalizers, finalizerName)
+			if err := r.Client().Update(ctx, &gw); err != nil {
+				logger.Error(err, "unable to update Gateway finalizer")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, errStatus
+		}
+	} else {
+		// The object is being deleted
+		if containsString(gw.ObjectMeta.Finalizers, finalizerName) {
+			// our finalizer is present, so lets handle our external dependency
+			//if err := r.deleteExternalDependency(gw); err != nil {
+			// if fail to delete the external dependency here, return with error
+			// so that it can be retried
+			// return reconcile.Result{}, err
+			//}
+
+			// remove our finalizer from the list and update it.
+			gw.ObjectMeta.Finalizers = removeString(gw.ObjectMeta.Finalizers, finalizerName)
+			if err := r.Client().Update(ctx, &gw); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+		// Our finalizer has finished, so the reconciler can do nothing.
+		//return ctrl.Result{}, nil
+	}
+
 	// Resource templates may reference each other, with the
 	// worst-case being a strictly linear DAG. This means that we
 	// may have to loop N times, with N being the number of

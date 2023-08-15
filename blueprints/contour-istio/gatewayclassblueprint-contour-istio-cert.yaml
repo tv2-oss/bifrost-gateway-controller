@@ -142,6 +142,15 @@ spec:
               tv2.dk/gw: {{ .Gateway.metadata.namespace }}-{{ .Gateway.metadata.name }}
               istio.io/gateway-name: {{ .Gateway.metadata.name }}-child
         {{ end }}
+      testNamespace: |
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: ns-{{ .Gateway.metadata.name }}
+          annotations:
+            {{ if .Values.tags }}
+            {{ toYaml .Values.tags | nindent 4 }}
+            {{ end }}
       tlsCertificate: |
         apiVersion: cert-manager.io/v1
         kind: Certificate

@@ -26,6 +26,7 @@ patchesStrategicMerge:
       - ""
       resources:
       - configmaps
+      - namespaces
       verbs:
       - create
       - delete
