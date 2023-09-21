@@ -6,7 +6,7 @@
 
 ## [0.1.9]
 
-- Update securityContext for container to contain `readOnlyRootFilesystem: true` and `runAsNonRoot: true` ([#249](https://github.com/tv2-oss/bifrost-gateway-controller/pull/249)) [#kemv](https://github.com/kemv)
+- Update securityContext for container to contain `readOnlyRootFilesystem: true` and `runAsNonRoot: true` ([#249](https://github.com/tv2-oss/bifrost-gateway-controller/pull/249)) [@kemv](https://github.com/kemv)
 
 ## [0.1.8]
 
