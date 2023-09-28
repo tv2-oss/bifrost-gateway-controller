@@ -82,7 +82,7 @@ jobs:
           git rev-parse --short "${{ github.event.pull_request.head.sha }}" >>${GITHUB_ENV}
 
       - name: Make PR build
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
           args: release --clean --snapshot

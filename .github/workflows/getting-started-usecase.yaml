@@ -24,7 +24,7 @@ jobs:
           install_only: true
 
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
           install-only: true
