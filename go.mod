@@ -10,7 +10,7 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	k8s.io/api v0.27.5
 	k8s.io/apiextensions-apiserver v0.27.5
-	k8s.io/apimachinery v0.27.5
+	k8s.io/apimachinery v0.27.9
 	k8s.io/client-go v0.27.5
 	sigs.k8s.io/cli-utils v0.35.0
 	sigs.k8s.io/controller-runtime v0.15.0
@@ -75,7 +75,7 @@ require (
 	golang.org/x/tools v0.12.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
