@@ -1,15 +1,21 @@
 #! /bin/bash
 
-CIDR=`docker network inspect -f '{{.IPAM.Config}}' kind | cut -d' ' -f1 | cut -c3-`
+for cidr in $(docker network inspect -f '{{json .IPAM.Config}}' kind | jq -r '.[].Subnet'); do
+    echo ">> $cidr"
+    if [[ "$cidr" =~ ([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)\/([0-9]+) ]]; then
+        b1=${BASH_REMATCH[1]}
+        b2=${BASH_REMATCH[2]}
+        b3=${BASH_REMATCH[3]}
+        b4=${BASH_REMATCH[4]}
+        nm=${BASH_REMATCH[5]}
+        break
+    fi
+done
 
-echo "Docker CIDR: $CIDR"
+echo "Docker IPv4 CIDR: $b1.$b2.$b3.$b4/$nm"
 
-# Assume a /16 CIDR
-
-BYTE12=`echo $CIDR | cut -d'.' -f1-2`
-
-CIDR_START="$BYTE12.255.200"
-CIDR_END="$BYTE12.255.250"
+CIDR_START="$b1.$b2.$b3.200"
+CIDR_END="$b1.$b2.$b3.250"
 
 cat <<EOF | kubectl apply -f -
 apiVersion: metallb.io/v1beta1
