@@ -218,7 +218,7 @@ $(ENVTEST): $(LOCALBIN)
 
 .PHONY: lint
 lint:
-	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:v1.50.1 golangci-lint run -v  --timeout 10m
+	golangci-lint run -v  --timeout 10m
 
 ##@ Helm-docs
 .PHONY: helm-docs

@@ -3,6 +3,7 @@
   "packages": [
     "gnumake@4.4.1",
     "go@1.23.4",
+    "golangci-lint@1.62.2",
     "goreleaser@2.5.0",
     "kind@0.24.0",
     "kubebuilder@4.3.1",
