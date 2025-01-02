@@ -34,7 +34,6 @@ package unitsuite
 import (
 	"embed"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/tv2-oss/bifrost-gateway-controller/test/unit/tests"
@@ -45,7 +44,6 @@ import (
 	"sigs.k8s.io/gateway-api/conformance/utils/flags"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 
-	"k8s.io/apimachinery/pkg/util/sets"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -76,8 +74,8 @@ func TestUnit(t *testing.T) {
 		t.Fatalf("Error adding scheme: %v", err)
 	}
 
-	supportedFeatures := parseSupportedFeatures(*flags.SupportedFeatures)
-	exemptFeatures := parseSupportedFeatures(*flags.ExemptFeatures)
+	supportedFeatures := suite.ParseSupportedFeatures(*flags.SupportedFeatures)
+	exemptFeatures := suite.ParseSupportedFeatures(*flags.ExemptFeatures)
 	for feature := range exemptFeatures {
 		supportedFeatures.Delete(feature)
 	}
@@ -86,21 +84,16 @@ func TestUnit(t *testing.T) {
 		*flags.GatewayClassName, *flags.CleanupBaseResources, *flags.ShowDebug, *flags.SupportedFeatures, *flags.ExemptFeatures, len(tests.UnitTests))
 
 	conformance.Manifests = Manifests
-	unitSuite := suite.New(suite.Options{
+	unitSuite, err := suite.NewConformanceTestSuite(suite.ConformanceOptions{
 		Client:               client,
 		GatewayClassName:     *flags.GatewayClassName,
 		Debug:                *flags.ShowDebug,
 		CleanupBaseResources: *flags.CleanupBaseResources,
 		SupportedFeatures:    supportedFeatures,
 	})
-	unitSuite.Setup(t)
-	unitSuite.Run(t, tests.UnitTests)
-}
-
-func parseSupportedFeatures(f string) sets.Set[suite.SupportedFeature] {
-	res := sets.Set[suite.SupportedFeature]{}
-	for _, value := range strings.Split(f, ",") {
-		res.Insert(suite.SupportedFeature(value))
+	if err != nil {
+		t.Fatalf("Error creating suite: %v", err)
 	}
-	return res
+	unitSuite.Setup(t, tests.UnitTests)
+	unitSuite.Run(t, tests.UnitTests)
 }

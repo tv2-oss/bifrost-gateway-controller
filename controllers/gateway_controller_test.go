@@ -44,7 +44,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1"
 
 	"sigs.k8s.io/gateway-api/conformance/utils/kubernetes"
 )
@@ -293,7 +293,7 @@ var _ = Describe("Gateway controller", func() {
 				Status: metav1.ConditionTrue,
 				//nolint:staticcheck // ready status is deprecated in gw-api 0.7.0 but since our implementation fits pre-0.7.0 and intended future use we keep the code
 				Reason: string(gatewayapi.GatewayReasonReady)},
-				&gatewayapi.GatewayAddress{Type: &addrType, Value: "4.5.6.7"})).Should(Succeed())
+				&gatewayapi.GatewayStatusAddress{Type: &addrType, Value: "4.5.6.7"})).Should(Succeed())
 
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, gwNN, gwRead)
@@ -414,7 +414,7 @@ func conditionStateIs(gw *gatewayapi.Gateway, condType string, status *metav1.Co
 	return false
 }
 
-func setGatewayStatus(nn types.NamespacedName, newCondition *metav1.Condition, address *gatewayapi.GatewayAddress) error {
+func setGatewayStatus(nn types.NamespacedName, newCondition *metav1.Condition, address *gatewayapi.GatewayStatusAddress) error {
 	gw := &gatewayapi.Gateway{}
 
 	if err := k8sClient.Get(context.TODO(), nn, gw); err != nil {
@@ -427,7 +427,7 @@ func setGatewayStatus(nn types.NamespacedName, newCondition *metav1.Condition, a
 		GinkgoT().Logf("update gw: %+v conditions: %+v\n", gw, newCondition)
 	}
 	if address != nil {
-		gw.Status.Addresses = []gatewayapi.GatewayAddress{}
+		gw.Status.Addresses = []gatewayapi.GatewayStatusAddress{}
 		gw.Status.Addresses = append(gw.Status.Addresses, *address)
 	}
 

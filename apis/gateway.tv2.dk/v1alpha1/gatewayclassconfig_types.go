@@ -39,7 +39,7 @@ import (
 type GatewayClassConfigSpec struct {
 	TemplateValues `json:",inline"`
 
-	TargetRef gatewayv1a2.PolicyTargetReference `json:"targetRef"`
+	TargetRef gatewayv1a2.NamespacedPolicyTargetReference `json:"targetRef"`
 }
 
 type GatewayClassConfigStatus struct {

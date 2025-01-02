@@ -46,11 +46,12 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	cache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gateway "sigs.k8s.io/gateway-api/apis/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -88,7 +89,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = gateway.AddToScheme(scheme.Scheme)
+	err = gateway.Install(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = gcapi.AddToScheme(scheme.Scheme)
@@ -103,8 +104,10 @@ var _ = BeforeSuite(func() {
 	syncPeriod, err := time.ParseDuration("5s")
 	Expect(err).NotTo(HaveOccurred())
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:     scheme.Scheme,
-		SyncPeriod: &syncPeriod,
+		Scheme: scheme.Scheme,
+		Cache: cache.Options{
+			SyncPeriod: &syncPeriod,
+		},
 	})
 	Expect(err).ToNot(HaveOccurred())
 
