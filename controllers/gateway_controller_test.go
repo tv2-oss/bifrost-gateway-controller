@@ -251,7 +251,7 @@ var _ = Describe("Gateway controller", func() {
 			t := true
 			expectedOwnerReference := metav1.OwnerReference{
 				Kind:               "Gateway",
-				APIVersion:         "gateway.networking.k8s.io/v1beta1",
+				APIVersion:         "gateway.networking.k8s.io/v1",
 				UID:                gw.ObjectMeta.GetUID(),
 				Name:               gw.ObjectMeta.Name,
 				Controller:         &t,
