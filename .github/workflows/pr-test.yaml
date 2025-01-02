@@ -12,15 +12,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: "go.mod"
-          cache: true
+      - uses: jetify-com/devbox-install-action@a03caf5813591bc882139eba6ae947930a83a427 # tag=v0.11.0
 
       - name: Run tests
         run: |
-          make test
+          devbox run -- make test
 
       # Build release manifests - not to release these, but to force a failure
       # below if repo does not already contain updated manifests
@@ -39,16 +35,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: "go.mod"
-          cache: true
+      - uses: jetify-com/devbox-install-action@a03caf5813591bc882139eba6ae947930a83a427 # tag=v0.11.0
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.50.1
-          args: --timeout 3m --verbose
+      - name: Run golangci-lint
+        run:
+          devbox run -- make lint
 
   # This is PR builds but does not push to a registry
   build-pr:
@@ -63,11 +54,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: "go.mod"
-          cache: true
+      - uses: jetify-com/devbox-install-action@a03caf5813591bc882139eba6ae947930a83a427 # tag=v0.11.0
 
       # Use goreleaser snapshot builds for PR builds to avoid duplication
       # This is a bit convoluted - see also goreleaser nightly builds feature
@@ -82,10 +69,8 @@ jobs:
           git rev-parse --short "${{ github.event.pull_request.head.sha }}" >>${GITHUB_ENV}
 
       - name: Make PR build
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          version: latest
-          args: release --clean --snapshot
+        run:
+          devbox run -- goreleaser release --clean --snapshot
 
       - name: List PR images
         run: |
