@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.16.5
   name: gatewayclassblueprints.gateway.tv2.dk
 spec:
   group: gateway.tv2.dk
@@ -162,7 +162,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.16.5
   labels:
     gateway.networking.k8s.io/policy: "true"
   name: gatewayclassconfigs.gateway.tv2.dk
@@ -212,11 +212,12 @@ spec:
                 x-kubernetes-preserve-unknown-fields: true
               targetRef:
                 description: |-
-                  PolicyTargetReference identifies an API object to apply policy to. This
-                  should be used as part of Policy resources that can target Gateway API
-                  resources. For more information on how this policy attachment model works,
-                  and a sample Policy resource, refer to the policy attachment documentation
-                  for Gateway API.
+                  NamespacedPolicyTargetReference identifies an API object to apply a direct or
+                  inherited policy to, potentially in a different namespace. This should only
+                  be used as part of Policy resources that need to be able to target resources
+                  in different namespaces. For more information on how this policy attachment
+                  model works, and a sample Policy resource, refer to the policy attachment
+                  documentation for Gateway API.
                 properties:
                   group:
                     description: Group is the group of the target resource.
@@ -325,7 +326,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.16.5
   labels:
     gateway.networking.k8s.io/policy: "true"
   name: gatewayconfigs.gateway.tv2.dk
@@ -375,11 +376,12 @@ spec:
                 x-kubernetes-preserve-unknown-fields: true
               targetRef:
                 description: |-
-                  PolicyTargetReference identifies an API object to apply policy to. This
-                  should be used as part of Policy resources that can target Gateway API
-                  resources. For more information on how this policy attachment model works,
-                  and a sample Policy resource, refer to the policy attachment documentation
-                  for Gateway API.
+                  NamespacedPolicyTargetReference identifies an API object to apply a direct or
+                  inherited policy to, potentially in a different namespace. This should only
+                  be used as part of Policy resources that need to be able to target resources
+                  in different namespaces. For more information on how this policy attachment
+                  model works, and a sample Policy resource, refer to the policy attachment
+                  documentation for Gateway API.
                 properties:
                   group:
                     description: Group is the group of the target resource.
