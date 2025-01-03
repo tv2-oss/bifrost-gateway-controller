@@ -20,8 +20,4 @@ jobs:
 
       - name: Verify getting-started usecase
         run: |
-          echo "** START DEBUG"
-          sleep 90
-          devbox run -- kubectl get po,gateway -A
-          ip a
           devbox run -- make wait-ready-getting-started-usecase tryout-getting-started-usecase

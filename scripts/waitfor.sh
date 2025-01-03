@@ -29,9 +29,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Repeat running command until it succeeds, with timeout after 60 attempts spaced 1s (+time running command)
+# Repeat running command until it succeeds, with timeout after 180 attempts spaced 1s (+time running command)
 
-for i in {1..60}; do
+for i in {1..180}; do
   if [ "$(${@})" ]; then
     break
   fi
