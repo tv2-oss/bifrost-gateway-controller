@@ -23,7 +23,7 @@ jobs:
       - name: Verify release manifests without changes
         run: |
           rm -rf config/release
-          make manifest-build
+          devbox run -- make manifest-build
           git status --porcelain
           if [[ -z `git status --porcelain` ]]; then echo "No repo changes"; else echo "Repo have unexpected changes"; exit 1; fi
 

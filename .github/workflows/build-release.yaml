@@ -20,15 +20,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: "go.mod"
-          cache: true
+      - uses: jetify-com/devbox-install-action@a03caf5813591bc882139eba6ae947930a83a427 # tag=v0.11.0
 
       - name: Run tests
         run: |
-          make test
+          devbox run -- make test
 
 
   release:
@@ -41,6 +37,8 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: jetify-com/devbox-install-action@a03caf5813591bc882139eba6ae947930a83a427 # tag=v0.11.0
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -50,12 +48,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: "go.mod"
-          cache: true
 
       # To be compatible with ENVs in 'make build'. Used in '.goreleaser.yaml'
       - name: Get SHA that triggered release
@@ -75,15 +67,13 @@ jobs:
       - name: Build release manifests
         run: |
           rm -rf config/release
-          make manifest-build
+          devbox run -- make manifest-build
 
       - name: Make release
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          version: v1.17.2
-          args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run:
+          goreleaser release
 
       - name: Container metadata
         id: meta
