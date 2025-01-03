@@ -35,8 +35,8 @@ import (
 	"os"
 	"testing"
 
+	"sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
 	"sigs.k8s.io/gateway-api/conformance/utils/flags"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
@@ -59,11 +59,11 @@ func TestConformance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing Kubernetes client: %v", err)
 	}
-	err = v1alpha2.AddToScheme(cl.Scheme())
+	err = v1alpha2.Install(cl.Scheme())
 	if err != nil {
 		t.Fatalf("Error adding api v1alpha2: %v", err)
 	}
-	err = v1beta1.AddToScheme(cl.Scheme())
+	err = v1.Install(cl.Scheme())
 	if err != nil {
 		t.Fatalf("Error adding api v1beta1: %v", err)
 	}
