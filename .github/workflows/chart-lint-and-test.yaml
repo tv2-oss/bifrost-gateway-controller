@@ -26,7 +26,7 @@ jobs:
 
       - name: Setup Chart Linting
         id: lint
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # tag=v2.6.1
         with:
           version: v3.7.1
 

@@ -18,12 +18,21 @@ linters-settings:
   nolintlint:
     require-explanation: true
     require-specific: true
+  revive:
+    rules:
+    - name: dot-imports
+      arguments:
+      - allowedPackages:
+        - github.com/onsi/ginkgo/v2
+        - github.com/onsi/gomega 
+  gosec:
+    excludes:
+    - G115
 
 linters:
   disable-all: true
   enable:
     - bodyclose
-    - depguard
     - dogsled
     - dupl
     - errcheck
@@ -55,5 +64,6 @@ linters:
 
 run:
   issues-exit-code: 1
-  skip-dirs:
+issues:
+  exclude-dirs:
     - test

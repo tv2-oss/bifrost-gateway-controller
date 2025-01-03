@@ -2,7 +2,6 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
 - apiGroups:
@@ -17,12 +16,16 @@ rules:
   - gateway.networking.k8s.io
   resources:
   - gatewayclasses/finalizers
+  - gateways/finalizers
+  - httproutes/finalizers
   verbs:
   - update
 - apiGroups:
   - gateway.networking.k8s.io
   resources:
   - gatewayclasses/status
+  - gateways/status
+  - httproutes/status
   verbs:
   - get
   - patch
@@ -31,31 +34,6 @@ rules:
   - gateway.networking.k8s.io
   resources:
   - gateways
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - gateway.networking.k8s.io
-  resources:
-  - gateways/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - gateway.networking.k8s.io
-  resources:
-  - gateways/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - gateway.networking.k8s.io
-  resources:
   - httproutes
   verbs:
   - create
@@ -66,66 +44,10 @@ rules:
   - update
   - watch
 - apiGroups:
-  - gateway.networking.k8s.io
-  resources:
-  - httproutes/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - gateway.networking.k8s.io
-  resources:
-  - httproutes/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
   - gateway.tv2.dk
   resources:
   - gatewayclassblueprints
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - gateway.tv2.dk
-  resources:
-  - gatewayclassblueprints/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - gateway.tv2.dk
-  resources:
-  - gatewayclassblueprints/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - gateway.tv2.dk
-  resources:
   - gatewayclassconfigs
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - gateway.tv2.dk
-  resources:
-  - gatewayclassconfigs/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - gateway.tv2.dk
-  resources:
-  - gatewayclassconfigs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - gateway.tv2.dk
-  resources:
   - gatewayconfigs
   verbs:
   - get
@@ -134,12 +56,16 @@ rules:
 - apiGroups:
   - gateway.tv2.dk
   resources:
+  - gatewayclassblueprints/finalizers
+  - gatewayclassconfigs/finalizers
   - gatewayconfigs/finalizers
   verbs:
   - update
 - apiGroups:
   - gateway.tv2.dk
   resources:
+  - gatewayclassblueprints/status
+  - gatewayclassconfigs/status
   - gatewayconfigs/status
   verbs:
   - get

@@ -43,26 +43,21 @@ wait-ready-external-dns-test:
 	until kubectl wait pods -l app.kubernetes.io/instance=external-dns --for condition=Ready --timeout=120s     ; do echo "."; sleep 1; done
 
 #################
-GATEWAY_API_VERSION ?= v0.7.1
+GATEWAY_API_VERSION ?= v1.2.1
 
 .PHONY: gateway-api-upstream-get
 gateway-api-upstream-get:
-	mkdir -p upstream-gateway-api/crds upstream-gateway-api/webhook
-	kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api/crds/crds.yaml
-	#kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=$(GATEWAY_API_VERSION)" > upstream-gateway-api-crds/crds.yaml
-	(cd upstream-gateway-api/webhook && for manifestfile in 0-namespace.yaml admission_webhook.yaml certificate_config.yaml; do curl -sL -O https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/$(GATEWAY_API_VERSION)/config/webhook/$$manifestfile; done)
+	mkdir upstream-gateway-api
+	curl -sL https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml > upstream-gateway-api/crds.yaml
 
 .PHONY: deploy-gateway-api
 deploy-gateway-api:
-	kubectl apply -f upstream-gateway-api/crds
-	kubectl apply -f upstream-gateway-api/webhook
-	echo "Waiting for gateway-api admission server to be ready"
-	kubectl -ngateway-system wait --for=condition=Available --timeout=120s deploy gateway-api-admission-server
+	kubectl apply -f upstream-gateway-api/
 
 #################
 .PHONY: create-cluster
 create-cluster:
-	cat test-data/kind-config.yaml_tpl | k8s_ver=1.25.3 envsubst > test-data/kind-config.yaml
+	cat test-data/kind-config.yaml_tpl | k8s_ver=1.32.0 envsubst > test-data/kind-config.yaml
 	kind create cluster --name kind-gwc-dev-cluster --config test-data/kind-config.yaml
 
 .PHONY: delete-cluster
@@ -70,7 +65,7 @@ delete-cluster:
 	kind delete cluster --name kind-gwc-dev-cluster
 
 #################
-ISTIO_VERSION ?= 1.18.0
+ISTIO_VERSION ?= 1.24.2
 
 .PHONY: deploy-istio
 deploy-istio:
@@ -89,7 +84,7 @@ cluster-load-controller-image:
 #################
 .PHONY: deploy-etcd
 deploy-etcd:
-	helm upgrade -i --repo https://charts.bitnami.com/bitnami etcd-test-only etcd --version 8.6.0 --set auth.rbac.create=false
+	helm upgrade -i --repo https://charts.bitnami.com/bitnami etcd-test-only etcd --version 10.5.1 --set auth.rbac.create=false
 
 #################
 .PHONY: deploy-coredns
@@ -130,22 +125,23 @@ deploy-kube-state-metrics:
 # https://kind.sigs.k8s.io/docs/user/loadbalancer/
 .PHONY: deploy-metallb
 deploy-metallb:
-	kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
+	kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.8/config/manifests/metallb-native.yaml
+	sleep 5
 	kubectl wait --namespace metallb-system --for=condition=ready pod --selector=app=metallb --timeout=90s
 	scripts/kind-metallb-configure.sh
 
 #################
 .PHONY: deploy-contour
 deploy-contour:
-	helm upgrade -i --repo https://charts.bitnami.com/bitnami contour contour -n projectcontour --version 11.0.0 --create-namespace
+	helm upgrade -i --repo https://charts.bitnami.com/bitnami contour contour -n projectcontour --version 19.2.0 --create-namespace
 
 # To allow contour to provision from gateway resources
 .PHONY: deploy-contour-provisioner
 deploy-contour-provisioner:
-	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.24/examples/gateway-provisioner/00-common.yaml
-	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.24/examples/gateway-provisioner/01-roles.yaml
-	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.24/examples/gateway-provisioner/02-rolebindings.yaml
-	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.24/examples/gateway-provisioner/03-gateway-provisioner.yaml
+	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.30/examples/gateway-provisioner/00-common.yaml
+	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.30/examples/gateway-provisioner/01-roles.yaml
+	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.30/examples/gateway-provisioner/02-rolebindings.yaml
+	kubectl apply -f https://raw.githubusercontent.com/projectcontour/contour/release-1.30/examples/gateway-provisioner/03-gateway-provisioner.yaml
 	kubectl apply -f test-data/contour-gatewayclass.yaml
 
 #################
@@ -308,7 +304,8 @@ deploy-namespace-gatewayclassconfig:
 
 .PHONY: wait-ready-getting-started-usecase
 wait-ready-getting-started-usecase:
-	scripts/waitfor.sh scripts/curl.sh -s --connect-timeout 1 --fail --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site
+	$(eval GATEWAY_IP=$(shell kubectl -n foo-infra get gateway foo-gateway -o jsonpath='{.status.addresses[0].value}'))
+	scripts/waitfor.sh scripts/curl.sh -s --connect-timeout 1 --fail --resolve foo.example.com:80:$(GATEWAY_IP) http://foo.example.com/site
 
 .PHONY: tryout-getting-started-usecase
 tryout-getting-started-usecase:

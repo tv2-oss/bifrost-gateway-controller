@@ -2,6 +2,7 @@
 
 ## [UNRELEASED]
 
+- Re-generated crds using new tooling versions (cause reformatting of `description` fields).
 - Example text, add your PR info according to example below below this line. Do not bump chart version in Chart.yaml unless a chart release will be made following your PR.
 
 ## [0.1.9]

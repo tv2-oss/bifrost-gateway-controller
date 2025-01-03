@@ -33,7 +33,7 @@ limitations under the License.
 package api
 
 import (
-	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const (

@@ -49,7 +49,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // Used to requeue when a resource is missing a dependency
@@ -193,7 +193,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			if statusMap, errs := template2maps(tmpl, &templateValues); errs != nil {
 				logger.Info("unable to render status template", "temporary error", errs, "template", tmplStr, "values", templateValues)
 			} else {
-				gw.Status.Addresses = []gatewayapi.GatewayAddress{}
+				gw.Status.Addresses = []gatewayapi.GatewayStatusAddress{}
 				_, found := statusMap[0]["addresses"] // FIXME, more addresses?
 				if found {
 					addresses := statusMap[0]["addresses"]

@@ -44,9 +44,11 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	cache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	gateway "sigs.k8s.io/gateway-api/apis/v1"
 
 	gatewaytv2dkv1a1 "github.com/tv2-oss/bifrost-gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	"github.com/tv2-oss/bifrost-gateway-controller/controllers"
@@ -64,7 +66,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(gateway.AddToScheme(scheme))
+	utilruntime.Must(gateway.Install(scheme))
 	utilruntime.Must(gatewaytv2dkv1a1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
@@ -98,13 +100,17 @@ func main() {
 
 	config := ctrl.GetConfigOrDie()
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: metricsAddr,
+		},
+		//Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
-		SyncPeriod:             &syncPeriod,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "71264cc8.bifrost-gateway-controller.tv2.dk",
+		Cache: cache.Options{
+			SyncPeriod: &syncPeriod,
+		},
+		LeaderElection:   enableLeaderElection,
+		LeaderElectionID: "71264cc8.bifrost-gateway-controller.tv2.dk",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

@@ -1,12 +1,15 @@
 # Getting Started using a KIND Cluster
 
-This guide describes how to exercise the *bifrost-gateway-controller*
+This guide describes how to exercise the _bifrost-gateway-controller_
 using a KIND cluster, i.e. this guide does not require a cloud
 account. Instead, some resources that typically are allocated from a
 cloud provider are instead simulated inside the KIND
 cluster. Specifically:
 
 - An `ingress` resource is used to simulate load-balancer allocation. [Contour](https://projectcontour.io) is used to implement the `ingress` resources.
+
+- [MetalLB](metallb.io) is used to assign IP addresses to the `type=LoadBalancer` `service` created by Contour.
+  **NOTE, The IP address pool used is taken from the Docker kind network and this require network access to the docker network from where we run our tests. I.e. this setup most likely only work on Linux, not Mac or Windows. In the demonstration below we test using a container-based curl, which will run in the docker network and thus this will work also on e.g. Mac**
 
 - Cert-manager is used together with a cluster-internal CA to issue certificates.
 
@@ -16,32 +19,20 @@ The cluster-internal datapath is implemented using Istio.
 
 ## Prerequisites
 
-The following is some of the prerequistites needed to build and run
-the getting-started guide.
-
-- Docker
-- [KIND](https://kind.sigs.k8s.io)
-- `kubectl`, `kustomize`, `make`, `helm`
-
-For building the controller etc. (developers):
-
-- Go (see [`go.mod`](go.mod) for version)
-- [GoReleaser](https://github.com/goreleaser/goreleaser)
-- Docker, with buildx
-- KubeBuilder and associated tooling
+See [devbox.json](https://www.jetify.com/docs/devbox/) definition in the root of the repo for tooling needed.
 
 ## Deploy KIND Cluster and Dependencies
 
 Deploy the KIND cluster and add gateway-API with:
 
-```
+```shell
 make create-cluster deploy-gateway-api
 ```
 
 Deploy MetalLB (for load-balancers) Istio control-plane, Contour and
 external-dns+local CoreDNS and cert-manager with:
 
-```
+```shell
 make deploy-metallb
 make deploy-istio
 make deploy-contour deploy-contour-provisioner
@@ -50,7 +41,8 @@ make deploy-cert-manager
 ```
 
 Alternatively the following make target wraps all of above commands:
-```
+
+```shell
 make setup-getting-started-cluster
 ```
 
@@ -63,7 +55,7 @@ by the following sections.
 
 Deploying the controller using Helm can be done as follows:
 
-```
+```shell
 helm upgrade -i bifrost-gateway-controller-helm oci://ghcr.io/tv2-oss/bifrost-gateway-controller-helm -n bifrost-gateway-controller-system --create-namespace --values charts/bifrost-gateway-controller/ci/gatewayclassblueprint-contour-istio-values.yaml
 ```
 
@@ -73,7 +65,7 @@ Deploying the controller using the generated manifests will
 additionally test these, hence this is recommended for end-to-end
 testing:
 
-```
+```shell
 make build docker-build             # Build controller+container
 make install                        # Install CRDs
 make cluster-load-controller-image  # Load container into KIND
@@ -85,14 +77,14 @@ make deploy                         # Deploy from YAML manifests
 Running the controller locally is useful during development of the
 controller:
 
-```
+```shell
 make install   # Install CRDs
 make run
 ```
 
 ### Deploy GatewayClass for KIND Datapath
 
-```
+```shell
 kubectl apply -f blueprints/contour-istio/gatewayclass-contour-istio-cert.yaml
 kubectl apply -f blueprints/contour-istio/gatewayclassblueprint-contour-istio-cert.yaml
 ```
@@ -112,7 +104,7 @@ developer personas that manage two applications in `foo-store` and
 To watch the progress and resources created, it can be convenient to watch for
 resources with the following command:
 
-```
+```shell
 watch kubectl get gateway,httproute,ingress,certificate,po,gatewayclass -A
 ```
 
@@ -121,14 +113,14 @@ watch kubectl get gateway,httproute,ingress,certificate,po,gatewayclass -A
 The cluster operator persona creates namespaces (and RBAC etc, but
 that is out out-of-scope for this guide):
 
-```
+```shell
 kubectl apply -f test-data/getting-started/foo-namespaces.yaml
 ```
 
 The cluster-operator/SRE also creates the common `Gateway` using the
 `GatewayClass` created previously:
 
-```
+```shell
 cat test-data/getting-started/foo-gateway.yaml | GATEWAY_CLASS_NAME=contour-istio-cert DOMAIN=foo.example.com envsubst | kubectl apply -f -
 ```
 
@@ -137,7 +129,7 @@ cat test-data/getting-started/foo-gateway.yaml | GATEWAY_CLASS_NAME=contour-isti
 As a 'site' developer we deploy the 'foo-site' application and associated
 routing into the `foo-site` namespace:
 
-```
+```shell
 kubectl -n foo-site apply -f test-data/getting-started/app-foo-site.yaml
 kubectl -n foo-site apply -f test-data/getting-started/foo-site-httproute.yaml
 ```
@@ -147,7 +139,7 @@ kubectl -n foo-site apply -f test-data/getting-started/foo-site-httproute.yaml
 As a 'store' developer we deploy the v1 and v2 versions of the 'foo-store'
 application and associated routing into the `foo-store` namespace:
 
-```
+```shell
 kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v1.yaml
 kubectl -n foo-store apply -f test-data/getting-started/app-foo-store-v2.yaml
 kubectl -n foo-store apply -f test-data/getting-started/foo-store-httproute.yaml
@@ -163,12 +155,16 @@ ingress-gateway names will start with `foo-gateway-istio-`.
 
 ### Testing the Datapath
 
-Test access to foo-site and foo-store applications (this uses ports
-exported from KIND to your localhost):
+Test access to foo-site and foo-store applications.
+First look IP of load-balancer:
 
+```shell
+export GATEWAY_IP=$(kubectl -n projectcontour get svc contour-envoy -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
 ```
-curl --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/site
-curl --resolve foo.example.com:80:127.0.0.1 http://foo.example.com/store
+
+```shell
+scripts/curl.sh -s --resolve foo.example.com:80:$GATEWAY_IP http://foo.example.com/site
+scripts/curl.sh -s --resolve foo.example.com:80:$GATEWAY_IP http://foo.example.com/store
 ```
 
 Expect to see a `Welcome-to-foo-site`, `Welcome-to-foo-store-v1` and
@@ -177,9 +173,9 @@ Expect to see a `Welcome-to-foo-site`, `Welcome-to-foo-store-v1` and
 Similarly, but using HTTPS through the cert-manager issued
 certificate:
 
-```
-curl --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/site
-curl --cacert foo-example-com.crt --resolve foo.example.com:443:127.0.0.1 https://foo.example.com/store
+```shell
+scripts/curl.sh -s --cacert foo-example-com.crt --resolve foo.example.com:443:$GATEWAY_IP https://foo.example.com/site
+scripts/curl.sh -s --cacert foo-example-com.crt --resolve foo.example.com:443:$GATEWAY_IP https://foo.example.com/store
 ```
 
 ### Testing Integration with DNS
@@ -190,7 +186,7 @@ configured to update a test-only CoreDNS instance. This CoreDNS
 instance can be quieried using the tooling container also deployed as
 part of the KIND cluster setup:
 
-```
+```shell
 kubectl exec -it deploy/multitool -- dig @coredns-test-only-coredns example.com +short
 ```
 
@@ -198,6 +194,6 @@ The output should be the same IP address as reported from `kubectl get gateway -
 
 ## Cleanup
 
-```
+```shell
 make delete-cluster
 ```

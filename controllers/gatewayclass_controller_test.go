@@ -41,7 +41,7 @@ import (
 	gwcapi "github.com/tv2-oss/bifrost-gateway-controller/apis/gateway.tv2.dk/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	gateway "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const gatewayclassManifest string = `
@@ -118,15 +118,15 @@ var _ = Describe("GatewayClass controller", func() {
 	)
 
 	var (
-		gwcIn, gwc *gateway.GatewayClass
+		gwcIn, gwc *gatewayapi.GatewayClass
 		gwcb       *gwcapi.GatewayClassBlueprint
 		ctx        context.Context
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		gwcIn = &gateway.GatewayClass{}
-		gwc = &gateway.GatewayClass{}
+		gwcIn = &gatewayapi.GatewayClass{}
+		gwc = &gatewayapi.GatewayClass{}
 		gwcb = &gwcapi.GatewayClassBlueprint{}
 	})
 
@@ -146,7 +146,7 @@ var _ = Describe("GatewayClass controller", func() {
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, lookupKey, gwc)
 				if err != nil ||
-					gwc.Status.Conditions[0].Type != string(gateway.GatewayClassConditionStatusAccepted) ||
+					gwc.Status.Conditions[0].Type != string(gatewayapi.GatewayClassConditionStatusAccepted) ||
 					gwc.Status.Conditions[0].Status != "True" {
 					return false
 				}
@@ -170,9 +170,9 @@ var _ = Describe("GatewayClass controller", func() {
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, lookupKey, gwc)
 				if err != nil ||
-					gwc.Status.Conditions[0].Type != string(gateway.GatewayClassConditionStatusAccepted) ||
+					gwc.Status.Conditions[0].Type != string(gatewayapi.GatewayClassConditionStatusAccepted) ||
 					gwc.Status.Conditions[0].Status != "False" ||
-					gwc.Status.Conditions[0].Reason != string(gateway.GatewayClassReasonInvalidParameters) {
+					gwc.Status.Conditions[0].Reason != string(gatewayapi.GatewayClassReasonInvalidParameters) {
 					return false
 				}
 				return true
