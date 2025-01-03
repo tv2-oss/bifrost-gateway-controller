@@ -38,5 +38,5 @@ for i in {1..180}; do
   sleep 1
 done
 if [ ! "$(${@})" ]; then
-  echo "Failed ro run '${1}' after 60 attempts"
+  echo "Failed 180 attempts running '${1}'"
 fi
