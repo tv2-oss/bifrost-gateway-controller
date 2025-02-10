@@ -105,7 +105,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # tag=v3.7.0
+    - uses: sigstore/cosign-installer@c56c2d3e59e4281cc41dea2217323ba5694b171e # tag=v3.8.0
 
     - name: Sign container
       run: cosign sign --yes ${{ needs.release.outputs.image }}
@@ -116,7 +116,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # tag=v3.7.0
+    - uses: sigstore/cosign-installer@c56c2d3e59e4281cc41dea2217323ba5694b171e # tag=v3.8.0
 
     - name: Verify signature
       run: cosign verify --certificate-identity-regexp 'https://github.com/${{ github.repository }}/.github/workflows/build-release.yaml@refs/.*' --certificate-oidc-issuer https://token.actions.githubusercontent.com ${{ needs.release.outputs.image }}
