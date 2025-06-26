@@ -16,16 +16,10 @@ jobs:
 
       - uses: jetify-com/devbox-install-action@22b0f5500b14df4ea357ce673fbd4ced940ed6a1 # tag=v0.13.0
 
-      - name: Setup Chart Linting
-        id: lint
-        uses: helm/chart-testing-action@0d28d3144d3a25ea2cc349d6e59901c4ff469b3b # tag=v2.7.0
-        with:
-          version: v3.7.1
-
-      - name: Run docs-testing (helm-docs)
+      - name: Verify Helm docs updated
         id: helm-docs
         run: |
-          ./scripts/helm-docs.sh
+          devbox run -- helm-docs
           if [[ $(git diff --stat) != '' ]]; then
             echo -e '\033[0;31mDocumentation outdated!\033[0m ❌'
             git diff --color
@@ -38,20 +32,20 @@ jobs:
         id: list-changed
         run: |
           ## If executed with debug this won't work anymore.
-          changed=$(ct --config ./.github/configs/ct-lint.yaml list-changed)
+          changed=$(devbox run -- ct --config ./.github/configs/ct-lint.yaml list-changed)
           if [[ -n "$changed" ]]; then
             echo "changed=true >> $GITHUB_OUTPUT"
           fi
 
       - name: Run chart-testing (lint)
-        run: ct lint --config ./.github/configs/ct-lint.yaml
+        run: devbox run -- ct lint --config ./.github/configs/ct-lint.yaml
 
       - name: Create kind cluster
         uses: helm/kind-action@v1.12.0
         if: steps.list-changed.outputs.changed == 'true'
 
       - name: Run chart-testing (install)
-        run: ct install
+        run: devbox run -- ct install
         if: steps.list-changed.outputs.changed == 'true'
 
       # Check CRD update

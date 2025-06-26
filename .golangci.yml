@@ -12,7 +12,7 @@ linters-settings:
       - performance
       - style
   govet:
-    check-shadowing: true
+    shadow: true
     enable:
       - fieldalignment
   nolintlint:
@@ -24,7 +24,7 @@ linters-settings:
       arguments:
       - allowedPackages:
         - github.com/onsi/ginkgo/v2
-        - github.com/onsi/gomega 
+        - github.com/onsi/gomega
   gosec:
     excludes:
     - G115
@@ -36,7 +36,6 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
     - exhaustive
     - goconst
     - gocritic
