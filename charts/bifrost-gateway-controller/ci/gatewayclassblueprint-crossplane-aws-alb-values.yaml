@@ -1,67 +1,66 @@
-controllerManager:
-  manager:
-    rbac:
-      additionalPermissions:
-      - apiGroups:
-        - elbv2.aws.upbound.io
-        resources:
-        - lbs
-        - lbtargetgroups
-        - lblisteners
-        verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
-      - apiGroups:
-        - ec2.aws.upbound.io
-        resources:
-        - securitygroups
-        - securitygrouprules
-        verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
-      - apiGroups:
-        - elbv2.k8s.aws
-        resources:
-        - targetgroupbindings
-        verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
-      - apiGroups:
-        - autoscaling
-        resources:
-        - horizontalpodautoscalers
-        verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
-      - apiGroups:
-        - policy
-        resources:
-        - poddisruptionbudgets
-        verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
+controller:
+  rbac:
+    additionalPermissions:
+    - apiGroups:
+      - elbv2.aws.upbound.io
+      resources:
+      - lbs
+      - lbtargetgroups
+      - lblisteners
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+    - apiGroups:
+      - ec2.aws.upbound.io
+      resources:
+      - securitygroups
+      - securitygrouprules
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+    - apiGroups:
+      - elbv2.k8s.aws
+      resources:
+      - targetgroupbindings
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+    - apiGroups:
+      - autoscaling
+      resources:
+      - horizontalpodautoscalers
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+    - apiGroups:
+      - policy
+      resources:
+      - poddisruptionbudgets
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch

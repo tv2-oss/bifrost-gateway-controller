@@ -4,25 +4,25 @@ metadata:
   name: {{ include "gateway-controller.fullname" . }}-manager
   labels:
     {{- include "gateway-controller.labels" . | nindent 4 }}
-  {{- with .Values.controllerManager.annotations }}
+  {{- with .Values.controller.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  replicas: {{ .Values.controllerManager.replicas }}
+  replicas: {{ .Values.controller.replicas }}
   selector:
     matchLabels:
       control-plane: manager
     {{- include "gateway-controller.selectorLabels" . | nindent 6 }}
   strategy:
-    {{- toYaml .Values.controllerManager.deploymentStrategy | nindent 4 }}
+    {{- toYaml .Values.controller.deploymentStrategy | nindent 4 }}
   template:
     metadata:
       labels:
         control-plane: manager
       {{- include "gateway-controller.selectorLabels" . | nindent 8 }}
       annotations:
-      {{- with .Values.controllerManager.podAnnotations }}
+      {{- with .Values.controller.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
         kubectl.kubernetes.io/default-container: manager
@@ -30,22 +30,22 @@ spec:
       containers:
       - args:
         - --leader-elect
-        - --zap-log-level={{ .Values.controllerManager.manager.logging.level }}
-        {{ if eq .Values.controllerManager.manager.logging.format "json" -}}
+        - --zap-log-level={{ .Values.controller.logging.level }}
+        {{ if eq .Values.controller.logging.format "json" -}}
         - --zap-devel=false
         {{- end }}
         command:
         - /bifrost-gateway-controller
-        {{- if (contains "sha256:" .Values.controllerManager.manager.image.tag) }}
-        image: "{{ .Values.controllerManager.manager.image.repository }}/{{ .Values.controllerManager.manager.image.name }}@{{ .Values.controllerManager.manager.image.tag }}"
+        {{- if (contains "sha256:" .Values.controller.image.tag) }}
+        image: "{{ .Values.controller.image.repository }}/{{ .Values.controller.image.name }}@{{ .Values.controller.image.tag }}"
           {{- else }}
-        image: "{{ .Values.controllerManager.manager.image.repository }}/{{ .Values.controllerManager.manager.image.name }}:{{ default .Chart.AppVersion .Values.controllerManager.manager.image.tag }}"
+        image: "{{ .Values.controller.image.repository }}/{{ .Values.controller.image.name }}:{{ default .Chart.AppVersion .Values.controller.image.tag }}"
           {{- end }}
-        imagePullPolicy: {{ .Values.controllerManager.manager.image.pullPolicy }}
+        imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
         name: manager
-        livenessProbe: {{- toYaml .Values.controllerManager.manager.livenessProbe | nindent 10 }}
-        readinessProbe: {{- toYaml .Values.controllerManager.manager.readinessProbe | nindent 10 }}
-        resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10 }}
+        livenessProbe: {{- toYaml .Values.controller.livenessProbe | nindent 10 }}
+        readinessProbe: {{- toYaml .Values.controller.readinessProbe | nindent 10 }}
+        resources: {{- toYaml .Values.controller.resources | nindent 10 }}
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
@@ -53,6 +53,10 @@ spec:
           capabilities:
             drop:
             - ALL
+      {{- with .Values.controller.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       securityContext:
         runAsNonRoot: true
         seccompProfile:

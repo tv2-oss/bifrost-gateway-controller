@@ -1,59 +1,58 @@
 # Default values for bifrost-gateway-controller
 
-controllerManager:
-  # controller-manager deployment configuration
-  manager:
+controller:
+  image:
+    repository: ghcr.io/tv2-oss
+    name: bifrost-gateway-controller
+    # -- Image tag. Defaults to `.Chart.appVersion`
+    tag: ""
+    pullPolicy: IfNotPresent
+    # -- Image pull secrets.
+    pullSecrets: []
 
-    image:
-      repository: ghcr.io/tv2-oss
-      name: bifrost-gateway-controller
-      # -- Image tag. Defaults to `.Chart.appVersion`
-      tag: ""
-      pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 64Mi
 
-    resources:
-      limits:
-        cpu: 500m
-        memory: 128Mi
-      requests:
-        cpu: 10m
-        memory: 64Mi
+  logging:
+    # -- Logging format. Defaults to text
+    format: json
+    # -- Log level [debug|info|error]
+    level: debug
 
-    logging:
-      # -- Logging format. Defaults to text
-      format: json
-      # -- Log level [debug|info|error]
-      level: debug
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8081
+    initialDelaySeconds: 15
+    periodSeconds: 20
 
-    livenessProbe:
-      httpGet:
-        path: /healthz
-        port: 8081
-      initialDelaySeconds: 15
-      periodSeconds: 20
+  readinessProbe:
+    httpGet:
+      path: /readyz
+      port: 8081
+    initialDelaySeconds: 5
+    periodSeconds: 10
 
-    readinessProbe:
-      httpGet:
-        path: /readyz
-        port: 8081
-      initialDelaySeconds: 5
-      periodSeconds: 10
-
-    rbac:
-      additionalPermissions: []
-      # Example
-      # - apiGroups:
-      #   - networking.k8s.io
-      #   resources:
-      #   - ingresses
-      #   verbs:
-      #   - create
-      #   - delete
-      #   - get
-      #   - list
-      #   - patch
-      #   - update
-      #   - watch
+  rbac:
+    additionalPermissions: []
+    # Example
+    # - apiGroups:
+    #   - networking.k8s.io
+    #   resources:
+    #   - ingresses
+    #   verbs:
+    #   - create
+    #   - delete
+    #   - get
+    #   - list
+    #   - patch
+    #   - update
+    #   - watch
 
   # Annotations to add to the deployment
   annotations: {}

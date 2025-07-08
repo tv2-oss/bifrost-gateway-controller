@@ -22,6 +22,12 @@
                         "image": {
                             "type": "object",
                             "properties": {
+                                "pullSecrets": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                        }
+                                },
                                 "name": {
                                     "type": "string"
                                 },
