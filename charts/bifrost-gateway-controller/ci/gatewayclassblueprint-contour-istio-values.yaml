@@ -1,52 +1,51 @@
-controllerManager:
-  manager:
-    rbac:
-      additionalPermissions:
-      - apiGroups:
-        - networking.k8s.io
-        resources:
-        - ingresses
-        verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
-      - apiGroups:
-        - cert-manager.io
-        resources:
-        - certificates
-        verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
-      - apiGroups:
-        - autoscaling
-        resources:
-        - horizontalpodautoscalers
-        verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
-      - apiGroups:
-        - policy
-        resources:
-        - poddisruptionbudgets
-        verbs:
-        - create
-        - delete
-        - get
-        - list
-        - patch
-        - update
-        - watch
+controller:
+  rbac:
+    additionalPermissions:
+    - apiGroups:
+      - networking.k8s.io
+      resources:
+      - ingresses
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+    - apiGroups:
+      - cert-manager.io
+      resources:
+      - certificates
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+    - apiGroups:
+      - autoscaling
+      resources:
+      - horizontalpodautoscalers
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+    - apiGroups:
+      - policy
+      resources:
+      - poddisruptionbudgets
+      verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch

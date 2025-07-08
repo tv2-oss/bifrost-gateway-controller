@@ -1,4 +1,4 @@
-controllerManager:
+controller:
   annotations:
     tv2.dk/gateway-controller/annotations: true
   podAnnotations:

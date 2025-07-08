@@ -145,7 +145,7 @@ rules:
   - get
   - patch
   - update
-{{ with .Values.controllerManager.manager.rbac.additionalPermissions }}
+{{ with .Values.controller.rbac.additionalPermissions }}
   {{- toYaml . }}
 {{- end }}
 ---

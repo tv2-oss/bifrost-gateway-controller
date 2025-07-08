@@ -1,6 +1,6 @@
 # bifrost-gateway-controller-helm
 
-![Version: 0.1.11](https://img.shields.io/badge/Version-0.1.11-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.0.21](https://img.shields.io/badge/AppVersion-0.0.21-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.0.24](https://img.shields.io/badge/AppVersion-0.0.24-informational?style=flat-square)
 
 Gateway API driven management of network infrastructure across Kubernetes and cloud infrastructure
 
@@ -8,29 +8,30 @@ Gateway API driven management of network infrastructure across Kubernetes and cl
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| controllerManager.annotations | object | `{}` |  |
-| controllerManager.deploymentStrategy.type | string | `"Recreate"` |  |
-| controllerManager.manager.image.name | string | `"bifrost-gateway-controller"` |  |
-| controllerManager.manager.image.pullPolicy | string | `"IfNotPresent"` |  |
-| controllerManager.manager.image.repository | string | `"ghcr.io/tv2-oss"` |  |
-| controllerManager.manager.image.tag | string | `""` | Image tag. Defaults to `.Chart.appVersion` |
-| controllerManager.manager.livenessProbe.httpGet.path | string | `"/healthz"` |  |
-| controllerManager.manager.livenessProbe.httpGet.port | int | `8081` |  |
-| controllerManager.manager.livenessProbe.initialDelaySeconds | int | `15` |  |
-| controllerManager.manager.livenessProbe.periodSeconds | int | `20` |  |
-| controllerManager.manager.logging.format | string | `"json"` | Logging format. Defaults to text |
-| controllerManager.manager.logging.level | string | `"debug"` | Log level [debug|info|error] |
-| controllerManager.manager.rbac.additionalPermissions | list | `[]` |  |
-| controllerManager.manager.readinessProbe.httpGet.path | string | `"/readyz"` |  |
-| controllerManager.manager.readinessProbe.httpGet.port | int | `8081` |  |
-| controllerManager.manager.readinessProbe.initialDelaySeconds | int | `5` |  |
-| controllerManager.manager.readinessProbe.periodSeconds | int | `10` |  |
-| controllerManager.manager.resources.limits.cpu | string | `"500m"` |  |
-| controllerManager.manager.resources.limits.memory | string | `"128Mi"` |  |
-| controllerManager.manager.resources.requests.cpu | string | `"10m"` |  |
-| controllerManager.manager.resources.requests.memory | string | `"64Mi"` |  |
-| controllerManager.podAnnotations | object | `{}` |  |
-| controllerManager.replicas | int | `1` |  |
+| controller.annotations | object | `{}` |  |
+| controller.deploymentStrategy.type | string | `"Recreate"` |  |
+| controller.image.name | string | `"bifrost-gateway-controller"` |  |
+| controller.image.pullPolicy | string | `"IfNotPresent"` |  |
+| controller.image.pullSecrets | list | `[]` | Image pull secrets. |
+| controller.image.repository | string | `"ghcr.io/tv2-oss"` |  |
+| controller.image.tag | string | `""` | Image tag. Defaults to `.Chart.appVersion` |
+| controller.livenessProbe.httpGet.path | string | `"/healthz"` |  |
+| controller.livenessProbe.httpGet.port | int | `8081` |  |
+| controller.livenessProbe.initialDelaySeconds | int | `15` |  |
+| controller.livenessProbe.periodSeconds | int | `20` |  |
+| controller.logging.format | string | `"json"` | Logging format. Defaults to text |
+| controller.logging.level | string | `"debug"` | Log level [debug|info|error] |
+| controller.podAnnotations | object | `{}` |  |
+| controller.rbac.additionalPermissions | list | `[]` |  |
+| controller.readinessProbe.httpGet.path | string | `"/readyz"` |  |
+| controller.readinessProbe.httpGet.port | int | `8081` |  |
+| controller.readinessProbe.initialDelaySeconds | int | `5` |  |
+| controller.readinessProbe.periodSeconds | int | `10` |  |
+| controller.replicas | int | `1` |  |
+| controller.resources.limits.cpu | string | `"500m"` |  |
+| controller.resources.limits.memory | string | `"128Mi"` |  |
+| controller.resources.requests.cpu | string | `"10m"` |  |
+| controller.resources.requests.memory | string | `"64Mi"` |  |
 | prometheus | object | `{"monitor":{"enabled":false},"service":{"port":8080,"type":"ClusterIP"}}` | Prometheus metrics |
 | prometheus.monitor | object | `{"enabled":false}` | Prometheus-operator ServiceMonitor metrics endpoint specification |
 | prometheus.service | object | `{"port":8080,"type":"ClusterIP"}` | Metrics service specification |
